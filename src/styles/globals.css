@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+
+
+@custom-variant dark (&:is(.dark *));
+
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px #fffbf700 inset !important;
+  -webkit-text-fill-color: #7d7d7d !important;
+  /* caret-color: #ffffff !important; */
+  /* border-radius: 9999px; */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a {
+  cursor: pointer;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;  
+}
+
+@keyframes spin-dot {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-spin-dot-one {
+  animation: spin-dot 1.2s ease-in-out infinite 0s;
+}
+
+.animate-spin-dot-two {
+  animation: spin-dot 1.2s ease-in-out infinite 0.3s;
+}
+
+.animate-spin-dot-three {
+  animation: spin-dot 1.2s ease-in-out infinite 0.6s;
+}
+
+.animate-spin-dot-four {
+  animation: spin-dot 1.2s ease-in-out infinite 0.9s;
+}
