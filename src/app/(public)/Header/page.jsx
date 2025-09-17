@@ -247,7 +247,6 @@ const Header = ({ params }) => {
               priority
             />
           </div>
-saddsasdsad
           {/* User Dropdown - Only show if authenticated and not on login/register pages */}
           {shouldShowUserDropdown && (
             <div className="relative user-dropdown">
