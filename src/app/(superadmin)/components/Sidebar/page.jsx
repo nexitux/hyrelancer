@@ -80,7 +80,7 @@ export default function Sidebar() {
       href: '/superadmin/services',
       subLinks: [
         { id: 'services-list', label: 'Service List', href: '/control/ServicesList' },
-        { id: 'services-add', label: 'Add Service', href: '/control/ServicesList/addService' }
+        { id: 'services-ad', label: 'Add Service', href: '/control/ServicesList/addService' }
       ]
     },
     { 
@@ -89,7 +89,7 @@ export default function Sidebar() {
       icon: MdWork, 
       href: '/freelancers',
       subLinks: [
-        { id: 'freelancers-list', label: 'Freelancer List', href: '/control/freelancelist' },
+        { id: 'freelancers-lists', label: 'Freelancer List', href: '/control/freelancelist' },
         { id: 'freelancers-add', label: 'Add Freelancer', href: '/control/freelancelist/addFreelancer' },
         { id: 'freelancers-suggestions', label: 'Freelancer Suggestions', href: '/control/freelancelist/SuggectionFreelancer' }
       ]

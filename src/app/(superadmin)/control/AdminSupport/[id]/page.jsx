@@ -186,7 +186,7 @@ const TicketDetail = () => {
     setAllTickets(prevTickets => 
       prevTickets.map(ticket => 
         ticket.id === ticketId ? { 
-          ...ticket, 
+          ...ticket,  
           status: newStatus,
           updatedAt: new Date().toISOString()
         } : ticket
