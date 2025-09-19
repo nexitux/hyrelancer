@@ -709,7 +709,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     {
       title: 'Action', key: 'action', render: (_, record) => (
         <Space>
-          <Button type="primary" icon={<EditOutlined />} onClick={e => openEditModal(record, e)} className="bg-blue-600 hover:bg-blue-700">Edit (Modal)</Button>
+          <Button type="primary" icon={<EditOutlined />} onClick={e => openEditModal(record, e)} className="bg-blue-600 hover:bg-blue-700">Edit</Button>
         </Space>
       )
     }

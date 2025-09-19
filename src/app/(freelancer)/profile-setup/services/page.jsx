@@ -21,7 +21,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
   const [form] = Form.useForm();
   const [categorySuggestionForm] = Form.useForm();
   const [serviceSuggestionForm] = Form.useForm();
-  const [serviceTypes, setServiceTypes] = useState([]);
+  const [serviceTypes, setServiceTypes] = useState([]);                                                   
   const [allServices, setAllServices] = useState([]);
   const [allCities, setAllCities] = useState([]);
   const [citiesByState, setCitiesByState] = useState({});
@@ -541,7 +541,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
       const index = newList.findIndex(item => item.serviceType === selectedServiceType);
 
       if (index >= 0) {
-        if (newList[index].services.some(s => s.se_id === selectedService)) {
+        if (newList[index].services.sany(s => s.se_id === selectedService)) {
           message.warning("This service is already in your list");
           return prev;
         }
@@ -1062,7 +1062,11 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                     <Row gutter={16}>
                       <Col xs={24} md={10}>
                         <div className="mb-4">
-                          <label className="font-medium">Categories</label>
+                          <Tooltip title="Select the main category of your service" placement="topLeft">
+                            <label className="font-medium flex items-center">
+                              Categories <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </label>
+                          </Tooltip>
                           <Select
                             value={selectedServiceType}
                             placeholder="Select a service type"
@@ -1086,7 +1090,11 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       </Col>
                       <Col xs={24} md={10}>
                         <div className="mb-4">
-                          <label className="font-medium">Service</label>
+                          <Tooltip title="Select the specific service you offer" placement="topLeft">
+                            <label className="font-medium flex items-center">
+                              Service <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </label>
+                          </Tooltip>
                           <Select
                             value={selectedService}
                             placeholder={selectedServiceType ? "Select a service" : "First select a category"}
@@ -1220,20 +1228,26 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       </div>
                     )}
                     <Form.Item name="is_remote" valuePropName="checked" className="mb-4">
-                      <Checkbox
-                        onChange={(e) => {
-                          setIsRemote(e.target.checked);
-                        }}
-                      >
-                        I work remotely
-                      </Checkbox>
+                      <Tooltip title="Check if you offer services remotely" placement="right">
+                        <Checkbox
+                          onChange={(e) => {
+                            setIsRemote(e.target.checked);
+                          }}
+                        >
+                          I work remotely
+                        </Checkbox>
+                      </Tooltip>
                     </Form.Item>
 
 
                     <Row gutter={16}>
                       <Col xs={24} md={10}>
                         <div className="mb-4">
-                          <label className="font-medium">State</label>
+                          <Tooltip title="Select the state where you provide services" placement="topLeft">
+                            <label className="font-medium flex items-center">
+                              State <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </label>
+                          </Tooltip>
                           <Select
                             value={selectedState}
                             placeholder="Select a state"
@@ -1241,7 +1255,6 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             className="w-full"
                             size="large"
                             showSearch
-
                             optionFilterProp="children"
                             filterOption={(input, option) =>
                               (option?.children ?? '').toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -1258,7 +1271,11 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       </Col>
                       <Col xs={24} md={10}>
                         <div className="mb-4">
-                          <label className="font-medium">Cities</label>
+                          <Tooltip title="Select the cities within the state where you provide services" placement="topLeft">
+                            <label className="font-medium flex items-center">
+                              Cities <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </label>
+                          </Tooltip>
                           <Select
                             mode="multiple"
                             value={selectedCities}
@@ -1320,7 +1337,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                     <Col xs={24} md={24}>
                       <Form.Item
                         name="amountType"
-                        label={<span className="font-medium">Payment Terms</span>}
+                        label={
+                          <Tooltip title="Select how you charge for your service (per project or hourly)" placement="topLeft">
+                            <span className="font-medium flex items-center">
+                              Payment Terms <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </span>
+                          </Tooltip>
+                        }
                       >
                         <Select
                           placeholder="Select type"
@@ -1338,7 +1361,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                     <Col xs={24} md={12}>
                       <Form.Item
                         name="worktime"
-                        label={<span className="font-medium">Work Completion Time</span>}
+                        label={
+                          <Tooltip title="Select the typical time to complete a service" placement="topLeft">
+                            <span className="font-medium flex items-center">
+                              Work Completion Time <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </span>
+                          </Tooltip>
+                        }
                       >
                         <Select
                           placeholder="Select time"
@@ -1355,7 +1384,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                     <Col xs={24} md={12}>
                       <Form.Item
                         name="amount"
-                        label={<span className="font-medium">Standard Rate</span>}
+                        label={
+                          <Tooltip title="Enter your standard rate in INR" placement="topLeft">
+                            <span className="font-medium flex items-center">
+                              Standard Rate <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </span>
+                          </Tooltip>
+                        }
                         rules={[
                           {
                             validator: (_, value) => {
@@ -1389,7 +1424,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       <Col xs={24} md={12}>
                         <Form.Item
                           name="idType"
-                          label={<span className="font-medium">ID Type</span>}
+                          label={
+                            <Tooltip title="Select the type of identification you are providing" placement="topLeft">
+                              <span className="font-medium flex items-center">
+                                ID Type <InfoCircleOutlined className="ml-1 text-gray-400" />
+                              </span>
+                            </Tooltip>
+                          }
                         >
                           <Select
                             placeholder="Select ID type"
@@ -1406,7 +1447,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       <Col xs={24} md={12}>
                         <Form.Item
                           name="idNumber"
-                          label={<span className="font-medium">ID Number</span>}
+                          label={
+                            <Tooltip title="Enter the number of your identification document" placement="topLeft">
+                              <span className="font-medium flex items-center">
+                                ID Number <InfoCircleOutlined className="ml-1 text-gray-400" />
+                              </span>
+                            </Tooltip>
+                          }
                           dependencies={["idType"]}
                           rules={[
                             ({ getFieldValue }) => ({
@@ -1466,7 +1513,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       <Col xs={24}>
                         <Form.Item
                           name="idFile"
-                          label={<span className="font-medium">Upload ID Proof</span>}
+                          label={
+                            <Tooltip title="Upload a clear image of your ID proof" placement="topLeft">
+                              <span className="font-medium flex items-center">
+                                Upload ID Proof <InfoCircleOutlined className="ml-1 text-gray-400" />
+                              </span>
+                            </Tooltip>
+                          }
                           extra="Upload a clear photo of your ID (JPG/PNG, max 10MB)"
                         >
                           {existingFileUrl && !isIdProofDeleted && (
@@ -1519,10 +1572,12 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                 </div>
 
                 <div className="mb-6">
-                  <div className="flex justify-between items-center mb-1">
-                    <Text className="text-sm font-medium">Service Completion</Text>
-                    <Text className="text-sm">{calculateProgress()}%</Text>
-                  </div>
+                  <Tooltip title="Your progress in completing the service details" placement="top">
+                    <div className="flex justify-between items-center mb-1">
+                      <Text className="text-sm font-medium">Service Completion</Text>
+                      <Text className="text-sm">{calculateProgress()}%</Text>
+                    </div>
+                  </Tooltip>
                   <Progress
                     percent={calculateProgress()}
                     strokeColor="#1890ff"
@@ -1531,7 +1586,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                   />
                 </div>
 
-                // In the edit mode form buttons section:
+
                 <div className="flex justify-end gap-3 mt-8">
                   {/* Always show back button if onBack is provided */}
                   {onBack && (

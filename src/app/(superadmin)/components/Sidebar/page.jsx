@@ -104,6 +104,16 @@ export default function Sidebar() {
         { id: 'customer-add', label: 'Add Customer', href: '/control/customerlist/addCustomer' },
       ]
     },
+    { 
+      id: 'AdminSupport', 
+      label: 'AdminSupport', 
+      icon: MdPeople, 
+      href: '/AdminSupport',
+      subLinks: [
+        { id: 'AdminSupport', label: 'Ticekt List', href: '/control/AdminSupport' },
+        
+      ]
+    },
   ];
 
   const isActive = (href) => {

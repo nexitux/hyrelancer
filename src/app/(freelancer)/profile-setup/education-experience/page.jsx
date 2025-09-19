@@ -2,11 +2,11 @@
 import { useState, useEffect } from "react";
 import {
   Form, Input, Button, Collapse, Card, Row, Col, Divider,
-  Table, Typography, Descriptions, Space, message, Select, Spin, Checkbox
+  Table, Typography, Descriptions, Space, message, Select, Spin, Checkbox, Popconfirm
 } from "antd";
 import {
   PlusOutlined, CloseOutlined, EditOutlined, CheckOutlined,
-  BookOutlined, LaptopOutlined, UserOutlined, EyeOutlined
+  BookOutlined, LaptopOutlined, UserOutlined, EyeOutlined, DeleteOutlined
 } from "@ant-design/icons";
 import { useSelector } from 'react-redux';
 import api from "@/config/api";
@@ -71,6 +71,26 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
     { value: 'PG', label: 'Postgraduate (PG)' },
     { value: 'Other', label: 'Freelancer Expertise' }
   ];
+
+  // Delete item handler
+  const handleDeleteItem = async (type, id) => {
+    try {
+      const encodedId = btoa(id.toString());
+      await api.get(`/deleteItem/${type}/${encodedId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      message.success('Item deleted successfully');
+      
+      // Refetch data to update the UI
+      await fetchProfessionalData();
+    } catch (error) {
+      console.error('Delete error:', error);
+      message.error('Failed to delete item');
+    }
+  };
 
   // Fetch existing professional data
   const fetchProfessionalData = async () => {
@@ -525,6 +545,28 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
       dataIndex: 'fc_year',
       key: 'year',
     },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 100,
+      render: (_, record) => (
+        <Popconfirm
+          title="Are you sure you want to delete this education record?"
+          onConfirm={() => handleDeleteItem(2, record.fc_id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button 
+            type="link" 
+            danger 
+            icon={<DeleteOutlined />}
+            size="small"
+          >
+            Delete
+          </Button>
+        </Popconfirm>
+      ),
+    },
   ];
 
   // Table columns for experience
@@ -545,6 +587,28 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
       dataIndex: 'fj_desc',
       key: 'description',
       render: (text) => <Text ellipsis={{ tooltip: text }}>{text}</Text>,
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 100,
+      render: (_, record) => (
+        <Popconfirm
+          title="Are you sure you want to delete this experience record?"
+          onConfirm={() => handleDeleteItem(3, record.fj_id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button 
+            type="link" 
+            danger 
+            icon={<DeleteOutlined />}
+            size="small"
+          >
+            Delete
+          </Button>
+        </Popconfirm>
+      ),
     },
   ];
 
@@ -839,11 +903,13 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                         <Form.Item
                                           name={[`education_${field.key}`, 'type']}
                                           label={<span className="font-medium">Education Type</span>}
+                                          rules={[{ required: true, message: "Please Select education type" }]}
                                           initialValue={field.type}
                                         >
                                           <Select
                                             placeholder="Select education type"
                                             size="large"
+                                           
                                             onChange={(value) => {
                                               // keep local state in sync (so label/placeholders etc. update)
                                               setEducationFields(prev => prev.map(f =>
@@ -885,7 +951,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                               field.type === 'PG' ? 'Specialization' :
                                                 'Expertise/Skill'}
                                           </span>}
-                                          rules={[{ required: true, message: "This field is required" }]}
+                                          rules={[{ required: false, message: "This field is required" }]}
                                         >
                                           <Input
                                             placeholder={
@@ -903,7 +969,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                           label={<span className="font-medium">
                                             {field.type === 'Other' ? 'Institution/Platform' : 'Institution'}
                                           </span>}
-                                          rules={[{ required: true, message: "Please enter institution name" }]}
+                                          rules={[{ required: false, message: "Please enter institution name" }]}
                                         >
                                           <Input
                                             placeholder={
@@ -1095,7 +1161,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                       <Form.Item
                                         name={[`experience_${field.key}`, 'description']}
                                         label={<span className="font-medium">Job Description</span>}
-                                        rules={[{ required: true, message: "Please enter job description" }]}
+                                        rules={[{ required: false, message: "Please enter job description" }]}
                                       >
                                         <TextArea
                                           rows={4}

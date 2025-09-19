@@ -1,4 +1,4 @@
-import { FaTachometerAlt, FaBriefcase, FaUser, } from "react-icons/fa";
+import { FaTachometerAlt, FaBriefcase, FaUser,SupportIcon } from "react-icons/fa";
 
 export const freelancerMenu = [
   {
@@ -35,6 +35,12 @@ export const freelancerMenu = [
     name: "Account",
     subItems: [{ name: "Change Password", path: "/freelancer-dashboard/Changepassword", pro: false },
                { name: "Delete Profile", path: "/freelancer-dashboard/Deleteprofile", pro: false }
+    ]
+  },
+  {
+    icon: <FaUser  className="w-4 h-4" />,
+    name: "Support Tickets",
+    subItems: [{ name: "Support Tickets", path: "/freelancer-dashboard/support-tickets", pro: false }
     ]
   },
 ];
