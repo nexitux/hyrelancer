@@ -3,7 +3,8 @@ import axios from "axios";
 import { store } from "../redux/store";
 import { logoutAdmin } from "../redux/slices/adminSlice"; // Import the specific admin logout action
 
-const ADMIN_API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://test.hyrelancer.in/api/admin";
+const ADMIN_API_BASE_URL =
+  process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://test.hyrelancer.in/api/admin";
 
 const adminApi = axios.create({
   baseURL: ADMIN_API_BASE_URL,
@@ -17,16 +18,19 @@ const adminApi = axios.create({
 adminApi.interceptors.request.use(
   (config) => {
     try {
+      // ensure headers object exists
+      config.headers = config.headers || {};
+
+      let adminToken = null;
       if (typeof window !== "undefined") {
-        const adminToken = localStorage.getItem("adminToken") || store.getState()?.admin?.token;
-        if (adminToken) {
-          config.headers.Authorization = `Bearer ${adminToken}`;
-        }
+        adminToken = localStorage.getItem("adminToken") || store.getState()?.admin?.token;
       } else {
-        const adminToken = store.getState()?.admin?.token;
-        if (adminToken) {
-          config.headers.Authorization = `Bearer ${adminToken}`;
-        }
+        // server-side: read token from redux store if available
+        adminToken = store.getState()?.admin?.token;
+      }
+
+      if (adminToken) {
+        config.headers.Authorization = `Bearer ${adminToken}`;
       }
     } catch (e) {
       console.warn("Error attaching admin token:", e);
@@ -40,15 +44,51 @@ adminApi.interceptors.request.use(
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      store.dispatch(logoutAdmin());
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("adminToken");
-        window.location.href = "/gateway"; // Redirect to admin login page
+    try {
+      if (error?.response?.status === 401) {
+        // best-effort dispatch; fail quietly if logoutAdmin isn't available
+        try {
+          store.dispatch(logoutAdmin());
+        } catch (e) {
+          console.warn("logoutAdmin dispatch failed:", e);
+        }
+
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("adminToken");
+          window.location.href = "/gateway"; // Redirect to admin login page (change if needed)
+        }
       }
+    } catch (e) {
+      console.warn("adminApi response interceptor error:", e);
     }
     return Promise.reject(error);
   }
 );
+
+/**
+ * Helpers to manage admin token programmatically
+ */
+export function setAdminToken(token) {
+  if (token) {
+    adminApi.defaults.headers = adminApi.defaults.headers || {};
+    adminApi.defaults.headers.Authorization = `Bearer ${token}`;
+    try {
+      if (typeof window !== "undefined") localStorage.setItem("adminToken", token);
+    } catch (e) {
+      console.warn("setAdminToken localStorage write failed:", e);
+    }
+  } else {
+    delete adminApi.defaults.headers.Authorization;
+    try {
+      if (typeof window !== "undefined") localStorage.removeItem("adminToken");
+    } catch (e) {
+      console.warn("clear adminToken localStorage failed:", e);
+    }
+  }
+}
+
+export function clearAdminToken() {
+  setAdminToken(null);
+}
 
 export default adminApi;

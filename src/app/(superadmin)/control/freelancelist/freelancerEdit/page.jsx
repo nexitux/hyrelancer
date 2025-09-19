@@ -67,7 +67,7 @@ export default function ProfilePage({ params }) {
       label: (
         <div className="flex gap-2 items-center px-2 py-3">
           <ScheduleOutlined className="text-lg" />
-          <span>Education & Experience</span>
+          <span>Career</span>
         </div>
       ),
       children: <Education />,
