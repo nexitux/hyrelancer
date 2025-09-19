@@ -10,12 +10,14 @@ import {
   MdMoreVert,
   MdCheckCircle,
   MdCancel,
-  MdErrorOutline
+  MdErrorOutline,
+  MdPending,
+  MdBlock
 } from 'react-icons/md';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
-import { message } from 'antd'; // Make sure to import message
+import { message } from 'antd';
 
 // --- API Configuration ---
 const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
@@ -28,6 +30,67 @@ const TokenManager = {
   }
 };
 
+// --- Status Mapping Helper ---
+const getStatusInfo = (freelancer) => {
+  const isActive = freelancer.is_active;
+  const isActiveAcc = freelancer.is_active_acc;
+  const isRegiComplete = freelancer.is_regi_complete;
+  
+  // Priority order: Account status -> Active status -> Registration status
+  if (isActiveAcc === '0') {
+    return { 
+      status: 'Inactive', 
+      color: 'bg-red-100 text-red-800',
+      icon: <MdBlock size={12} />
+    };
+  }
+
+  if (isActiveAcc === '1') {
+    return { 
+      status: 'Active', 
+      color: 'bg-green-100 text-green-800',
+      icon: <MdBlock size={12} />
+    };
+  }
+  
+  if (isActive === '0') {
+    return { 
+      status: 'Deleted', 
+      color: 'bg-gray-100 text-gray-800',
+      icon: <MdCancel size={12} />
+    };
+  }
+  
+  if (isActive === '1') {
+    return { 
+      status: 'Approved', 
+      color: 'bg-green-100 text-green-800',
+      icon: <MdCheckCircle size={12} />
+    };
+  }
+  
+  if (isActive === '2') {
+    if (isRegiComplete === '0') {
+      return { 
+        status: 'Pending Approval', 
+        color: 'bg-orange-100 text-orange-800',
+        icon: <MdPending size={12} />
+      };
+    }
+    return { 
+      status: 'Pending Approval', 
+      color: 'bg-yellow-100 text-yellow-800',
+      icon: <MdPending size={12} />
+    };
+  }
+  
+  return { 
+    status: 'Unknown', 
+    color: 'bg-gray-100 text-gray-800',
+    icon: <MdErrorOutline size={12} />
+  };
+};
+
 export default function ListFreelancerPage() {
   const router = useRouter();
 
@@ -35,6 +98,7 @@ export default function ListFreelancerPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedFreelancers, setSelectedFreelancers] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   // API Data State
   const [allFreelancers, setAllFreelancers] = useState([]);
@@ -69,11 +133,14 @@ export default function ListFreelancerPage() {
           throw new Error(`Failed to fetch freelancers: ${response.statusText}`);
         }
 
-        const data = await response.json();
-
-        const processedData = data.map(freelancer => ({
+        const result = await response.json();
+        
+        // Handle both direct array response and data property
+        const freelancersData = result.data || result;
+        
+        const processedData = freelancersData.map(freelancer => ({
           ...freelancer,
-          status: freelancer.is_active === '1' ? 'Active' : 'Inactive'
+          statusInfo: getStatusInfo(freelancer)
         }));
 
         setAllFreelancers(processedData);
@@ -96,7 +163,7 @@ export default function ListFreelancerPage() {
   // --- Client-side Filtering ---
   const filteredFreelancers = useMemo(() => {
     return allFreelancers.filter(freelancer => {
-      const matchesStatus = selectedStatus === 'all' || freelancer.status === selectedStatus;
+      const matchesStatus = selectedStatus === 'all' || freelancer.statusInfo.status === selectedStatus;
       return matchesStatus;
     });
   }, [allFreelancers, selectedStatus]);
@@ -104,15 +171,17 @@ export default function ListFreelancerPage() {
   // --- Statistics Calculation ---
   const stats = useMemo(() => {
     const total = allFreelancers.length;
-    const active = allFreelancers.filter(f => f.status === "Active").length;
-    const inactive = total - active;
-    return { total, active, inactive };
+    const active = allFreelancers.filter(f => f.statusInfo.status === "Active").length;
+    const inactive = allFreelancers.filter(f => f.statusInfo.status === "Inactive").length;
+    const pending = allFreelancers.filter(f => f.statusInfo.status === "Pending Approval").length;
+    const blocked = allFreelancers.filter(f => f.statusInfo.status === "Blocked").length;
+    return { total, active, inactive, pending, blocked };
   }, [allFreelancers]);
 
   // --- Event Handlers ---
-
-  const handleDeactivate = async (freelancerIds) => {
-    if (!window.confirm(`Are you sure you want to deactivate ${freelancerIds.length} freelancer(s)?`)) {
+  const handleStatusUpdate = async (freelancerIds, action) => {
+    const actionText = action === 'deactivate' ? 'deactivate' : 'activate';
+    if (!window.confirm(`Are you sure you want to ${actionText} ${freelancerIds.length} freelancer(s)?`)) {
       return;
     }
 
@@ -126,25 +195,37 @@ export default function ListFreelancerPage() {
     for (const id of freelancerIds) {
       try {
         const encodedId = Base64.encode(id.toString());
+        const endpoint = action === 'deactivate' ? 'DELETE' : 'PATCH';
         const response = await fetch(`${API_BASE_URL}/freelancers/${encodedId}`, {
-          method: 'DELETE',
+          method: endpoint,
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json',
-          }
+            'Content-Type': 'application/json',
+          },
+          body: action !== 'deactivate' ? JSON.stringify({ is_active: '1' }) : undefined
         });
 
         if (!response.ok) {
           const result = await response.json();
-          throw new Error(result.error || `Failed to deactivate freelancer ID ${id}`);
+          throw new Error(result.error || `Failed to ${actionText} freelancer ID ${id}`);
         }
 
+        // Update local state
         setAllFreelancers(prevFreelancers =>
-          prevFreelancers.map(freelancer =>
-            freelancer.id === id
-              ? { ...freelancer, status: 'Inactive', is_active: '0' }
-              : freelancer
-          )
+          prevFreelancers.map(freelancer => {
+            if (freelancer.id === id) {
+              const updatedFreelancer = {
+                ...freelancer,
+                is_active: action === 'deactivate' ? '0' : '1'
+              };
+              return {
+                ...updatedFreelancer,
+                statusInfo: getStatusInfo(updatedFreelancer)
+              };
+            }
+            return freelancer;
+          })
         );
         successCount++;
       } catch (err) {
@@ -154,7 +235,7 @@ export default function ListFreelancerPage() {
     }
     
     if (successCount > 0) {
-        message.success(`${successCount} freelancer(s) deactivated successfully.`);
+      message.success(`${successCount} freelancer(s) ${actionText}d successfully.`);
     }
     setSelectedFreelancers([]);
   };
@@ -174,6 +255,12 @@ export default function ListFreelancerPage() {
       setSelectedFreelancers(filteredFreelancers.map(f => f.id));
     }
   };
+
+  // Get unique status options for filter dropdown
+  const statusOptions = useMemo(() => {
+    const uniqueStatuses = [...new Set(allFreelancers.map(f => f.statusInfo.status))];
+    return uniqueStatuses.sort();
+  }, [allFreelancers]);
 
   return (
     <div className="p-6 min-h-screen bg-slate-50">
@@ -213,8 +300,9 @@ export default function ListFreelancerPage() {
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                {statusOptions.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
               </select>
             </div>
             <button
@@ -228,8 +316,8 @@ export default function ListFreelancerPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-3">
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-5">
         <div className="p-4 bg-white rounded-xl border shadow-sm border-slate-200">
           <div className="flex justify-between items-center">
             <div>
@@ -244,7 +332,7 @@ export default function ListFreelancerPage() {
         <div className="p-4 bg-white rounded-xl border shadow-sm border-slate-200">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-slate-600">Active Freelancers</p>
+              <p className="text-sm text-slate-600">Active</p>
               <p className="text-2xl font-bold text-green-600">{stats.active}</p>
             </div>
             <div className="flex justify-center items-center w-10 h-10 bg-green-100 rounded-lg">
@@ -255,11 +343,33 @@ export default function ListFreelancerPage() {
         <div className="p-4 bg-white rounded-xl border shadow-sm border-slate-200">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-slate-600">Inactive Freelancers</p>
-              <p className="text-2xl font-bold text-red-600">{stats.inactive}</p>
+              <p className="text-sm text-slate-600">Inactive</p>
+              <p className="text-2xl font-bold text-gray-600">{stats.inactive}</p>
+            </div>
+            <div className="flex justify-center items-center w-10 h-10 bg-gray-100 rounded-lg">
+              <MdCancel className="text-gray-600" size={20} />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-white rounded-xl border shadow-sm border-slate-200">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-slate-600">Incomplete</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+            </div>
+            <div className="flex justify-center items-center w-10 h-10 bg-yellow-100 rounded-lg">
+              <MdPending className="text-yellow-600" size={20} />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-white rounded-xl border shadow-sm border-slate-200">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-slate-600">Blocked</p>
+              <p className="text-2xl font-bold text-red-600">{stats.blocked}</p>
             </div>
             <div className="flex justify-center items-center w-10 h-10 bg-red-100 rounded-lg">
-              <MdCancel className="text-red-600" size={20} />
+              <MdBlock className="text-red-600" size={20} />
             </div>
           </div>
         </div>
@@ -284,7 +394,13 @@ export default function ListFreelancerPage() {
           {selectedFreelancers.length > 0 && (
             <div className="flex gap-2 items-center">
               <button
-                onClick={() => handleDeactivate(selectedFreelancers)}
+                onClick={() => handleStatusUpdate(selectedFreelancers, 'activate')}
+                className="px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+              >
+                Activate Selected
+              </button>
+              <button
+                onClick={() => handleStatusUpdate(selectedFreelancers, 'deactivate')}
                 className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 Deactivate Selected
@@ -301,15 +417,16 @@ export default function ListFreelancerPage() {
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Username</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Email</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Mobile</th>
+                <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Registration</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Status</th>
                 <th className="px-6 py-3 text-sm font-semibold text-right text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
-                <tr><td colSpan="6" className="py-12 text-center">Loading...</td></tr>
+                <tr><td colSpan="7" className="py-12 text-center">Loading...</td></tr>
               ) : error ? (
-                <tr><td colSpan="6" className="py-12 text-center text-red-500">{error}</td></tr>
+                <tr><td colSpan="7" className="py-12 text-center text-red-500">{error}</td></tr>
               ) : filteredFreelancers.length > 0 ? (
                 filteredFreelancers.map((freelancer) => (
                   <tr key={freelancer.id} className="transition-colors hover:bg-slate-50">
@@ -327,46 +444,76 @@ export default function ListFreelancerPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap"><p className="text-slate-800">{freelancer.username}</p></td>
-                    <td className="px-6 py-4 whitespace-nowrap"><p className="text-slate-800">{freelancer.email}</p></td>
-                    <td className="px-6 py-4 whitespace-nowrap"><p className="text-slate-800">{freelancer.mobile}</p></td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-slate-800">{freelancer.username}</p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-slate-800">{freelancer.email}</p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-slate-800">{freelancer.mobile}</p>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        freelancer.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        freelancer.is_regi_complete === '1' 
+                          ? 'bg-green-100 text-green-800' 
+                          : freelancer.is_regi_complete === '2'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-orange-100 text-orange-800'
                       }`}>
-                        {freelancer.status === 'Active' ? <MdCheckCircle size={12} /> : <MdCancel size={12} />}
-                        {freelancer.status}
+                        {freelancer.is_regi_complete === '1' 
+                          ? 'Complete' 
+                          : freelancer.is_regi_complete === '2'
+                          ? 'Under Review'
+                          : 'Incomplete'
+                        }
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${freelancer.statusInfo.color}`}>
+                        {freelancer.statusInfo.icon}
+                        {freelancer.statusInfo.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex gap-2 justify-end items-center">
                         <Link
-                          href={`/freelancelist/freelancerView/${Base64.encode(freelancer.id.toString())}`}
+                          href={`freelancelist/freelancerView/${Base64.encode(freelancer.id.toString())}`}
                           className="p-2 text-blue-600 rounded-lg transition-colors hover:bg-blue-50"
                           title="View"
                         >
                           <MdVisibility size={16} />
                         </Link>
                         <Link
-                          href={`/freelancelist/freelancerEdit/${Base64.encode(freelancer.id.toString())}`}
+                          href={`freelancelist/freelancerEdit/${Base64.encode(freelancer.id.toString())}`}
                           className="p-2 rounded-lg transition-colors text-slate-600 hover:bg-slate-50"
                           title="Edit"
                         >
                           <MdEdit size={16} />
                         </Link>
-                        <button
-                          className="p-2 text-red-600 rounded-lg transition-colors hover:bg-red-50"
-                          title="Deactivate"
-                          onClick={() => handleDeactivate([freelancer.id])}
-                        >
-                          <MdDelete size={16} />
-                        </button>
+                        {freelancer.statusInfo.status !== 'Inactive' ? (
+                          <button
+                            className="p-2 text-red-600 rounded-lg transition-colors hover:bg-red-50"
+                            title="Deactivate"
+                            onClick={() => handleStatusUpdate([freelancer.id], 'deactivate')}
+                          >
+                            <MdDelete size={16} />
+                          </button>
+                        ) : (
+                          <button
+                            className="p-2 text-green-600 rounded-lg transition-colors hover:bg-green-50"
+                            title="Activate"
+                            onClick={() => handleStatusUpdate([freelancer.id], 'activate')}
+                          >
+                            <MdCheckCircle size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="6" className="py-12 text-center">No freelancers found.</td></tr>
+                <tr><td colSpan="7" className="py-12 text-center">No freelancers found.</td></tr>
               )}
             </tbody>
           </table>

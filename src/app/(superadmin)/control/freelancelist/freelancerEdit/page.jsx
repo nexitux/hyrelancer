@@ -56,21 +56,21 @@ export default function ProfilePage({ params }) {
       key: "3",
       label: (
         <div className="flex gap-2 items-center px-2 py-3">
-          <IdcardOutlined className="text-lg" />
-          <span>ID Section</span>
+          <GlobalOutlined className="text-lg" />
+          <span>Service</span>
         </div>
       ),
-      children: <Idsection />,
+      children: <Service />,
     },
     {
       key: "4",
       label: (
         <div className="flex gap-2 items-center px-2 py-3">
           <ScheduleOutlined className="text-lg" />
-          <span>Skills</span>
+          <span>Education & Experience</span>
         </div>
       ),
-      children: <Skills />,
+      children: <Education />,
     },
     {
       key: "5",
@@ -86,11 +86,11 @@ export default function ProfilePage({ params }) {
       key: "6",
       label: (
         <div className="flex gap-2 items-center px-2 py-3">
-          <GlobalOutlined className="text-lg" />
-          <span>Service</span>
+          <IdcardOutlined className="text-lg" />
+          <span>ID Section</span>
         </div>
       ),
-      children: <Service />,
+      children: <Idsection />,
     },
     {
       key: "7",
@@ -107,10 +107,10 @@ export default function ProfilePage({ params }) {
       label: (
         <div className="flex gap-2 items-center px-2 py-3">
           <ScheduleOutlined className="text-lg" />
-          <span>Education</span>
+          <span>Skills</span>
         </div>
       ),
-      children: <Education />,
+      children: <Skills />,
     },
     {
       key: "9",

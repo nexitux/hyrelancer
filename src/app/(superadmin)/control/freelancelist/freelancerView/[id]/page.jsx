@@ -12,7 +12,8 @@ import {
   CalendarOutlined,
   IdcardOutlined,
   EditOutlined,
-  HomeOutlined
+  HomeOutlined,
+  ArrowLeftOutlined
 } from "@ant-design/icons";
 import Link from 'next/link';
 
@@ -30,20 +31,94 @@ const TokenManager = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('adminToken');
     }
+  },
+  setToken: (token) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('adminToken', token);
+    }
+  }
+};
+
+// --- Status Helper Functions ---
+const getStatusInfo = (freelancer) => {
+  const isActive = freelancer.is_active;
+  const isActiveAcc = freelancer.is_active_acc;
+  const isRegiComplete = freelancer.is_regi_complete;
+  
+  if (isActiveAcc === '0') {
+    return { 
+      status: 'Blocked', 
+      color: 'red',
+      icon: <CloseCircleOutlined />
+    };
+  }
+  
+  if (isActive === '0') {
+    return { 
+      status: 'Inactive', 
+      color: 'default',
+      icon: <CloseCircleOutlined />
+    };
+  }
+  
+  if (isActive === '1') {
+    return { 
+      status: 'Active', 
+      color: 'green',
+      icon: <CheckCircleOutlined />
+    };
+  }
+  
+  if (isActive === '2') {
+    if (isRegiComplete === '0') {
+      return { 
+        status: 'Registration Incomplete', 
+        color: 'orange',
+        icon: <CloseCircleOutlined />
+      };
+    }
+    return { 
+      status: 'Pending Approval', 
+      color: 'gold',
+      icon: <CheckCircleOutlined />
+    };
+  }
+  
+  return { 
+    status: 'Unknown', 
+    color: 'default',
+    icon: <CloseCircleOutlined />
+  };
+};
+
+const getRegistrationStatusInfo = (status) => {
+  switch (status) {
+    case '0':
+      return { text: 'Incomplete', color: 'orange' };
+    case '1':
+      return { text: 'Complete', color: 'green' };
+    case '2':
+      return { text: 'Under Review', color: 'blue' };
+    default:
+      return { text: 'Unknown', color: 'default' };
   }
 };
 
 const FreelancerProfile = () => {
   const params = useParams();
   const router = useRouter();
-  const freelancerId = params.id; // Assuming the URL is /.../freelancers/[id]
+  const freelancerId = params.id;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [freelancerData, setFreelancerData] = useState(null);
 
   useEffect(() => {
     const fetchFreelancerData = async () => {
-      if (!freelancerId) return;
+      if (!freelancerId) {
+        setError('No freelancer ID provided');
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
@@ -51,36 +126,74 @@ const FreelancerProfile = () => {
         
         const token = TokenManager.getToken();
         if (!token) {
-          TokenManager.removeToken();
-          router.push('/gateway'); // Redirect to login if no token
-          return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/freelancers/${freelancerId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-          }
-        });
-
-        if (response.status === 401) {
+          message.error('Authentication token not found. Please login again.');
           TokenManager.removeToken();
           router.push('/gateway');
           return;
         }
 
-        if (!response.ok) {
-           const errorData = await response.json();
-           throw new Error(errorData.error || `Failed to fetch freelancer data`);
+        console.log('Fetching freelancer data for ID:', freelancerId);
+        console.log('API URL:', `${API_BASE_URL}/freelancers/${freelancerId}`);
+
+        const response = await fetch(`${API_BASE_URL}/freelancers/${freelancerId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
+        if (response.status === 401) {
+          message.error('Authentication failed. Please login again.');
+          TokenManager.removeToken();
+          router.push('/gateway');
+          return;
         }
 
-        const data = await response.json();
-        setFreelancerData(data);
+        if (response.status === 404) {
+          setError('Freelancer not found');
+          setLoading(false);
+          return;
+        }
+
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+          }
+          throw new Error(errorMessage);
+        }
+
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        // Handle the API response structure - data is wrapped in 'data' property
+        if (responseData.data) {
+          setFreelancerData(responseData.data);
+          
+          // Update token if provided
+          if (responseData.token) {
+            TokenManager.setToken(responseData.token);
+          }
+        } else if (responseData.id) {
+          // Fallback in case data is not wrapped
+          setFreelancerData(responseData);
+        } else {
+          throw new Error('Invalid response format');
+        }
         
       } catch (err) {
         console.error('Error fetching freelancer:', err);
-        setError(err.message || 'Failed to load freelancer data');
-        message.error(err.message || 'Failed to load freelancer data');
+        const errorMessage = err.message || 'Failed to load freelancer data';
+        setError(errorMessage);
+        message.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -90,20 +203,33 @@ const FreelancerProfile = () => {
   }, [freelancerId, router]);
 
   // --- Helper Functions ---
-  const getStatusColor = (status) => (status === '1' ? 'green' : 'red');
-  const getStatusText = (status) => (status === '1' ? 'Active' : 'Inactive');
-  const getCompletionStatusText = (status) => (status === '1' ? 'Complete' : 'Incomplete');
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  };
+
+  const handleBack = () => {
+    router.back();
+  };
+
+  const handleEdit = () => {
+    router.push(`/control/freelancelist/freelancerEdit/${freelancerId}`);
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Spin size="large" />
+        <Spin size="large" tip="Loading freelancer data..." />
       </div>
     );
   }
@@ -111,11 +237,23 @@ const FreelancerProfile = () => {
   if (error) {
     return (
       <div className="p-4 md:p-8">
+        <Button 
+          onClick={handleBack} 
+          className="mb-4"
+          icon={<ArrowLeftOutlined />}
+        >
+          Back to Freelancers
+        </Button>
         <Alert 
-          message="Error" 
+          message="Error Loading Data" 
           description={error} 
           type="error" 
           showIcon 
+          action={
+            <Button size="small" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          }
         />
       </div>
     );
@@ -124,9 +262,16 @@ const FreelancerProfile = () => {
   if (!freelancerData) {
     return (
       <div className="p-4 md:p-8">
+        <Button 
+          onClick={handleBack} 
+          className="mb-4"
+          icon={<ArrowLeftOutlined />}
+        >
+          Back to Freelancers
+        </Button>
         <Alert 
           message="Not Found" 
-          description="Freelancer could not be found." 
+          description="Freelancer data could not be found." 
           type="warning" 
           showIcon 
         />
@@ -134,15 +279,23 @@ const FreelancerProfile = () => {
     );
   }
 
+  const statusInfo = getStatusInfo(freelancerData);
+  const registrationInfo = getRegistrationStatusInfo(freelancerData.is_regi_complete);
+
   return (
     <div className="p-4 min-h-screen bg-gray-50 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Back Button and Header */}
         <div className="mb-6">
-          <Button onClick={() => router.back()} className="mb-4">
-            ← Back to Freelancers
+          <Button 
+            onClick={handleBack} 
+            className="mb-4"
+            icon={<ArrowLeftOutlined />}
+          >
+            Back to Freelancers
           </Button>
           <h1 className="text-3xl font-bold text-gray-800">Freelancer Profile</h1>
+          <p className="text-gray-600 mt-2">View and manage freelancer information</p>
         </div>
 
         <Card className="overflow-hidden rounded-2xl border-0 shadow-lg">
@@ -156,21 +309,21 @@ const FreelancerProfile = () => {
             <h2 className="mt-4 mb-2 text-2xl font-bold text-white drop-shadow-lg">
               {freelancerData.name || 'N/A'}
             </h2>
-            <p className="text-lg font-medium text-purple-100">{freelancerData.user_type}</p>
-             <div className="flex absolute -bottom-9 left-1/2 space-x-3 transform -translate-x-1/2">
-                <Button
-                  icon={<EditOutlined />}
-                  className="flex gap-1 items-center px-4 py-2 text-purple-600 bg-white rounded-lg border-none shadow-md transition-all hover:bg-gray-100 hover:scale-105"
-                  // onClick={() => router.push(`/path/to/edit-freelancer/${freelancerId}`)}
-                >
-                  Edit
-                </Button>
-                <Button 
-                  icon={<MessageOutlined />}
-                  className="flex gap-1 items-center px-4 py-2 text-white bg-green-600 rounded-lg border-none shadow-md transition-all hover:bg-green-700 hover:scale-105"
-                >
-                  Message
-                </Button>
+            <p className="text-lg font-medium text-purple-100">{freelancerData.user_type || 'Freelancer'}</p>
+            <div className="flex absolute -bottom-9 left-1/2 space-x-3 transform -translate-x-1/2">
+              <Button
+                icon={<EditOutlined />}
+                className="flex gap-1 items-center px-4 py-2 text-purple-600 bg-white rounded-lg border-none shadow-md transition-all hover:bg-gray-100 hover:scale-105"
+                onClick={handleEdit}
+              >
+                Edit
+              </Button>
+              <Button 
+                icon={<MessageOutlined />}
+                className="flex gap-1 items-center px-4 py-2 text-white bg-green-600 rounded-lg border-none shadow-md transition-all hover:bg-green-700 hover:scale-105"
+              >
+                Message
+              </Button>
             </div>
           </div>
 
@@ -179,18 +332,25 @@ const FreelancerProfile = () => {
             {/* Status Tags */}
             <div className="flex flex-wrap gap-3 justify-center mb-8">
               <Tag 
-                color={getStatusColor(freelancerData.is_active)} 
-                icon={freelancerData.is_active === '1' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                color={statusInfo.color} 
+                icon={statusInfo.icon}
                 className="px-3 py-1 text-sm font-medium"
               >
-                Account: {getStatusText(freelancerData.is_active)}
+                Status: {statusInfo.status}
               </Tag>
               <Tag 
-                color={getStatusColor(freelancerData.is_regi_complete)} 
+                color={registrationInfo.color} 
                 icon={freelancerData.is_regi_complete === '1' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
                 className="px-3 py-1 text-sm font-medium"
               >
-                Registration: {getCompletionStatusText(freelancerData.is_regi_complete)}
+                Registration: {registrationInfo.text}
+              </Tag>
+              <Tag 
+                color={freelancerData.is_active_acc === '1' ? 'green' : 'red'} 
+                icon={freelancerData.is_active_acc === '1' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                className="px-3 py-1 text-sm font-medium"
+              >
+                Account: {freelancerData.is_active_acc === '1' ? 'Active' : 'Blocked'}
               </Tag>
             </div>
 
@@ -204,9 +364,23 @@ const FreelancerProfile = () => {
                   Contact Information
                 </h3>
                 <div className="space-y-4">
-                  <InfoItem icon={<MailOutlined />} label="Email Address" value={freelancerData.email} />
-                  <InfoItem icon={<PhoneOutlined />} label="Mobile Number" value={freelancerData.mobile} />
-                  <InfoItem icon={<HomeOutlined />} label="Address" value={freelancerData.address} />
+                  <InfoItem 
+                    icon={<MailOutlined />} 
+                    label="Email Address" 
+                    value={freelancerData.email}
+                    verified={freelancerData.email_verified_at}
+                  />
+                  <InfoItem 
+                    icon={<PhoneOutlined />} 
+                    label="Mobile Number" 
+                    value={freelancerData.mobile}
+                    verified={freelancerData.mobile_verified_at}
+                  />
+                  <InfoItem 
+                    icon={<HomeOutlined />} 
+                    label="Address" 
+                    value={freelancerData.address || 'Not provided'} 
+                  />
                 </div>
               </div>
 
@@ -216,10 +390,51 @@ const FreelancerProfile = () => {
                   Account Details
                 </h3>
                 <div className="space-y-4">
-                   <InfoItem icon={<IdcardOutlined />} label="Freelancer ID" value={`#${freelancerData.id}`} />
-                   <InfoItem icon={<UserOutlined />} label="Username" value={freelancerData.username} />
-                   <InfoItem icon={<CalendarOutlined />} label="Member Since" value={formatDate(freelancerData.created_at)} />
+                  <InfoItem 
+                    icon={<IdcardOutlined />} 
+                    label="Freelancer ID" 
+                    value={`#${freelancerData.id}`} 
+                  />
+                  <InfoItem 
+                    icon={<UserOutlined />} 
+                    label="Username" 
+                    value={freelancerData.username} 
+                  />
+                  <InfoItem 
+                    icon={<CalendarOutlined />} 
+                    label="Member Since" 
+                    value={formatDate(freelancerData.created_at)} 
+                  />
+                  <InfoItem 
+                    icon={<CalendarOutlined />} 
+                    label="Last Updated" 
+                    value={formatDate(freelancerData.updated_at)} 
+                  />
                 </div>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <Divider />
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                Additional Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500 font-medium">Account Type</p>
+                  <p className="text-gray-800 font-medium">{freelancerData.user_type || 'N/A'}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500 font-medium">Status</p>
+                  <p className="text-gray-800 font-medium">{freelancerData.is_status || 'N/A'}</p>
+                </div>
+                {freelancerData.google_id && (
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-500 font-medium">Google Account</p>
+                    <p className="text-gray-800 font-medium">Connected</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -229,15 +444,23 @@ const FreelancerProfile = () => {
   );
 };
 
-// --- Reusable InfoItem Component for cleaner code ---
-const InfoItem = ({ icon, label, value }) => (
+// --- Enhanced InfoItem Component ---
+const InfoItem = ({ icon, label, value, verified }) => (
   <div className="flex items-start p-4 bg-gray-50 rounded-lg">
     <div className="flex justify-center items-center mr-4 w-10 h-10 text-gray-600 bg-gray-100 rounded-full">
       {icon}
     </div>
-    <div>
+    <div className="flex-1">
       <p className="text-sm text-gray-500 font-medium">{label}</p>
-      <p className="text-gray-800 font-medium">{value || 'Not provided'}</p>
+      <div className="flex items-center gap-2">
+        <p className="text-gray-800 font-medium">{value || 'Not provided'}</p>
+        {verified && (
+          <Tag color="green" size="small">
+            <CheckCircleOutlined className="mr-1" />
+            Verified
+          </Tag>
+        )}
+      </div>
     </div>
   </div>
 );

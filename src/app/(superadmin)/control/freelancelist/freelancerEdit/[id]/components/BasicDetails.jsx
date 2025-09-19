@@ -65,30 +65,6 @@ const BasicDetails = () => {
               <Input placeholder="Enter your email" className="h-12" />
             </Form.Item>
           </Col>
-          <Col span={12}>
-            <Form.Item
-              label="Username"
-              name="username"
-              rules={[{ required: true, message: 'Please input your username!' }]}
-            >
-              <Input placeholder="Enter your username" className="h-12" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={24}>
-          <Col span={24}>
-            <Form.Item
-              label="Address"
-              name="address"
-            >
-              <TextArea 
-                rows={4} 
-                placeholder="Enter your address"
-                className="resize-none"
-              />
-            </Form.Item>
-          </Col>
         </Row>
 
         <div className="flex gap-4 mt-8">
@@ -97,7 +73,7 @@ const BasicDetails = () => {
             onClick={handleAddToSite}
             className="px-8 h-12 font-medium bg-blue-600 border-blue-600 hover:bg-blue-700"
           >
-            Add To Site
+            cancel
           </Button>
           <Button 
             type="primary" 
