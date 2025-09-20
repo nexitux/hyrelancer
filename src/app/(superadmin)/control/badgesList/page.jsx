@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { EditOutlined, DeleteOutlined, TrophyOutlined } from '@ant-design/icons';
-import { Table, Tag, Button, Modal, Form, Input, Select, Upload, message, Spin, Card, Row, Col } from 'antd';
+import { Table, Tag, Button, Modal, Form, Input, Select, Upload, message, Spin, Card, Row, Col, Popconfirm } from 'antd';
 import adminApi from '../../../../config/adminApi';
 
 const BadgesTable = () => {
@@ -9,6 +9,7 @@ const BadgesTable = () => {
   const [editingBadge, setEditingBadge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalLoading, setModalLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(null); // Track which badge is being deleted
   const [form] = Form.useForm();
   const [badges, setBadges] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -33,6 +34,34 @@ const BadgesTable = () => {
       console.error('Error fetching badges:', error);
       message.error('Failed to load badges');
       setLoading(false);
+    }
+  };
+
+  // Handle Delete with Popconfirm
+  const handleDelete = async (badgeId, badgeName) => {
+    try {
+      setDeleteLoading(badgeId); // Set loading for specific badge
+      console.log('Attempting to delete badge:', { badgeId, badgeName });
+      
+      // Use Base64 encoded ID (the correct method)
+      const encodedId = btoa(badgeId.toString());
+      console.log('Deleting with encoded ID:', encodedId);
+      
+      const deleteResponse = await adminApi.delete(`/deleteBadge/${encodedId}`);
+      console.log('Delete response:', deleteResponse);
+
+      if (deleteResponse.status === 200 || deleteResponse.status === 204) {
+        // Remove from local state
+        setBadges(prev => prev.filter(badge => badge.b_id !== badgeId));
+        message.success(`Badge "${badgeName}" deleted successfully`);
+      } else {
+        throw new Error('Unexpected response status');
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      message.error(`Failed to delete badge: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setDeleteLoading(null); // Clear loading state
     }
   };
 
@@ -62,54 +91,6 @@ const BadgesTable = () => {
       message.error('Failed to load badge details');
     } finally {
       setModalLoading(false);
-    }
-  };
-
-  // Fixed Handle Delete function
-  const handleDelete = async (badge) => {
-    try {
-      // Show confirmation modal
-      Modal.confirm({
-        title: 'Delete Badge',
-        content: `Are you sure you want to delete the badge "${badge.b_name}"?`,
-        okText: 'Yes, Delete',
-        okType: 'danger',
-        cancelText: 'Cancel',
-        centered: true,
-        onOk: async () => {
-          try {
-            // Show loading state
-            const hideLoading = message.loading('Deleting badge...', 0);
-            
-            // Encode the ID as base64 to match backend expectation
-            const encodedId = btoa(badge.b_id.toString());
-            
-            // Use the correct endpoint format with ID in URL
-            const response = await adminApi.delete(`/deleteBadge/${encodedId}`);
-            
-            // Hide loading
-            hideLoading();
-            
-            // Check if response is successful
-            if (response.status === 200 || response.status === 204) {
-              // Update local state to remove the deleted badge
-              setBadges(prevBadges => prevBadges.filter(item => item.b_id !== badge.b_id));
-              message.success('Badge deleted successfully');
-            } else {
-              throw new Error('Delete request failed');
-            }
-          } catch (err) {
-            console.error('Delete error:', err.response?.data || err);
-            message.error(err.response?.data?.message || 'Failed to delete badge');
-          }
-        },
-        onCancel: () => {
-          // User cancelled, do nothing
-        }
-      });
-    } catch (error) {
-      console.error('Error showing delete confirmation:', error);
-      message.error('Error occurred while trying to delete');
     }
   };
 
@@ -270,32 +251,33 @@ const BadgesTable = () => {
       width: 150,
       render: (_, record) => (
         <div className="flex gap-2 items-center">
+          <Popconfirm
+            title="Delete Badge"
+            description={`Are you sure you want to delete "${record.b_name}"?`}
+            onConfirm={() => handleDelete(record.b_id, record.b_name)}
+            okText="Yes, Delete"
+            cancelText="Cancel"
+            okType="danger"
+            placement="topRight"
+            disabled={deleteLoading === record.b_id}
+          >
+            <Button 
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              loading={deleteLoading === record.b_id}
+              className="flex items-center justify-center"
+              title="Delete Badge"
+            >
+              Delete
+            </Button>
+          </Popconfirm>
+
           <Button 
             type="primary"
-            danger
             size="small"
-            icon={<DeleteOutlined />} 
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              handleDelete(record);
-            }}
-         
-            className="flex items-center justify-center"
-            title="Delete Badge"
-          >
-            Delete
-          </Button>
-       
-          <Button 
-            type="default"
-            size="small"
-            icon={<EditOutlined />} 
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              handleEdit(record);
-            }}
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
             className="flex items-center justify-center"
             title="Edit Badge"
           >
@@ -304,7 +286,6 @@ const BadgesTable = () => {
         </div>
       ),
     },
-    
   ];
 
   return (
@@ -334,7 +315,7 @@ const BadgesTable = () => {
             <Card className="text-center">
               <div className="text-orange-500 text-2xl mb-2"><TrophyOutlined/></div>
               <h3 className="font-semibold">Verification Badges</h3>
-              <p className="text-2xl font-bold">{badges.filter(b => b.b_type.includes('verify')).length}</p>
+              <p className="text-2xl font-bold">{badges.filter(b => b.b_type && b.b_type.includes('verify')).length}</p>
             </Card>
           </Col>
           <Col span={6}>
@@ -355,7 +336,13 @@ const BadgesTable = () => {
             <Table 
               columns={columns} 
               dataSource={badges} 
-              pagination={{ pageSize: 5, showSizeChanger: true }} 
+              pagination={{ 
+                pageSize: 5, 
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => 
+                  `${range[0]}-${range[1]} of ${total} badges`
+              }} 
               className="rounded-lg overflow-hidden" 
               scroll={{ x: 1000 }}
             />
