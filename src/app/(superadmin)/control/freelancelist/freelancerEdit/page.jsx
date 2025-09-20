@@ -17,15 +17,12 @@ import {
 // Import tab content components
 import BasicDetails from "./[id]/components/BasicDetails";
 import ProfileForm from "./[id]/components/ProfileForm";
-import Idsection from "./[id]/components/Idsection";
 import Skills from "./[id]/components/Skills";
-import Experince from "./[id]/components/Experince";
 import Service from "./[id]/components/service-free";
-import Area from "./[id]/components/Area";
 import Education from "./[id]/components/Education";
-import Expertices from "./[id]/components/Expertices";
+import Scoialmedia from "./[id]/components/Socialmedia";
 import Portfolio from "./[id]/components/portfolio";
-import ChnagePassword from "./[id]/components/ChnagePassword";
+import ChnagePassword from "./[id]/components/ChangePassword";
 
 export default function ProfilePage({ params }) {
   const { id } = params;
@@ -72,55 +69,25 @@ export default function ProfilePage({ params }) {
       ),
       children: <Education />,
     },
-    {
-      key: "5",
-      label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <GlobalOutlined className="text-lg" />
-          <span>Experience</span>
-        </div>
-      ),
-      children: <Experince />,
-    },
-    {
-      key: "6",
-      label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <IdcardOutlined className="text-lg" />
-          <span>ID Section</span>
-        </div>
-      ),
-      children: <Idsection />,
-    },
-    {
-      key: "7",
-      label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <ClusterOutlined className="text-lg" />
-          <span>Available Area</span>
-        </div>
-      ),
-      children: <Area />,
-    },
-    {
-      key: "8",
-      label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <ScheduleOutlined className="text-lg" />
-          <span>Skills</span>
-        </div>
-      ),
-      children: <Skills />,
-    },
+    // {
+    //   key: "8",
+    //   label: (
+    //     <div className="flex gap-2 items-center px-2 py-3">
+    //       <ScheduleOutlined className="text-lg" />
+    //       <span>Skills</span>
+    //     </div>
+    //   ),
+    //   children: <Skills />,
+    // },
     {
       key: "9",
       label: (
         <div className="flex gap-2 items-center px-2 py-3">
           <TrophyOutlined className="text-lg" />
-          <span>Expertise</span>
+          <span>Scoialmedia</span>
         </div>
       ),
-      children: <Expertices />,
+      children: <Scoialmedia />,
     },
     {
       key: "10",
@@ -132,20 +99,20 @@ export default function ProfilePage({ params }) {
       ),
       children: <Portfolio />,
     },
-    {
-      key: "11",
-      label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <LockOutlined className="text-lg" />
-          <span>Change Password</span>
-        </div>
-      ),
-      children: <ChnagePassword />,
-    },
+    // {
+    //   key: "11",
+    //   label: (
+    //     <div className="flex gap-2 items-center px-2 py-3">
+    //       <LockOutlined className="text-lg" />
+    //       <span>Change Password</span>
+    //     </div>
+    //   ),
+    //   children: <ChnagePassword />,
+    // },
   ];
 
   return (
-    <div className="p-4 min-h-screen bg-gray-50">
+    <div className="p-4 bg-gray-50">
       <div className="mx-auto max-w-7xl">
         <Tabs
           activeKey={activeKey}
@@ -160,7 +127,7 @@ export default function ProfilePage({ params }) {
             backgroundColor: "#3a599c",
             borderRadius: "8px",
             padding: "3px 0",
-            overflowY: "auto", // Enable vertical scrolling
+            overflowY: "hidden", // Enable vertical scrolling
             overflowX: "hidden", // Hide horizontal scrollbar
           }}
         />
