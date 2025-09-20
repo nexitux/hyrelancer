@@ -182,7 +182,7 @@ export default function FreelancerSuggestionList() {
     setSuggestionDetails(null);
   };
 
-  const handleReject = async (record) => {
+  const handleDelete = async (record) => {
     try {
       const token = TokenManager.getToken();
       
@@ -191,24 +191,24 @@ export default function FreelancerSuggestionList() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/rejectSuggestion`, {
-        method: 'POST',
+      const encodedId = Base64.encode(record.key.toString());
+      const response = await fetch(`${API_BASE_URL}/deleteSuggestion/${encodedId}`, {
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({ suggestionId: record.key }),
       });
       
       if (response.ok) {
-        message.success('Suggestion rejected successfully');
-        fetchSuggestions();
+        const result = await response.json();
+        message.success(result.message || 'Suggestion deleted successfully');
+        fetchSuggestions(); // Refresh the list
       } else {
-        message.error('Failed to reject suggestion');
+        message.error('Failed to delete suggestion');
       }
     } catch (error) {
-      message.error('Error rejecting suggestion: ' + error.message);
+      message.error('Error deleting suggestion: ' + error.message);
     }
   };
 
@@ -263,9 +263,9 @@ export default function FreelancerSuggestionList() {
             danger
             size="small"
             icon={<DeleteOutlined />}
-            onClick={() => handleReject(record)}
+            onClick={() => handleDelete(record)}
           >
-            Reject
+            Delete
           </Button>
         </div>
       ),

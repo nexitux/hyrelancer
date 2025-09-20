@@ -34,7 +34,8 @@ export const freelancerMenu = [
     icon: <FaUser className="w-4 h-4" />,
     name: "Account",
     subItems: [{ name: "Change Password", path: "/freelancer-dashboard/Changepassword", pro: false },
-               { name: "Delete Profile", path: "/freelancer-dashboard/Deleteprofile", pro: false }
+               { name: "Delete Profile", path: "/freelancer-dashboard/Deleteprofile", pro: false },
+               { name: "Deactivate Profile", path: "/freelancer-dashboard/acc-active", pro: false }
     ]
   },
   {

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Monitor,
@@ -11,121 +11,93 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import api from "../../../../config/api";
 
 const CategorySelector = () => {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [hoveredCategory, setHoveredCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Category data with icons and subcategories
-  const categories = [
-    {
-      key: "technology",
-      name: "Technology",
-      icon: Monitor,
-      gradient: "from-blue-500 to-cyan-400",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200",
-      textColor: "text-blue-700",
-      subcategories: [
-        "Web Development",
-        "Mobile Apps",
-        "AI & Machine Learning",
-        "Cloud Computing",
-        "Cybersecurity",
-      ],
-    },
-    {
-      key: "design",
-      name: "Design",
-      icon: Palette,
-      gradient: "from-pink-500 to-rose-400",
-      bgColor: "bg-pink-50",
-      borderColor: "border-pink-200",
-      textColor: "text-pink-700",
-      subcategories: [
-        "UI/UX Design",
-        "Graphic Design",
-        "Branding",
-        "Web Design",
-        "Print Design",
-      ],
-    },
-    {
-      key: "business",
-      name: "Business",
-      icon: Briefcase,
-      gradient: "from-amber-500 to-orange-400",
-      bgColor: "bg-amber-50",
-      borderColor: "border-amber-200",
-      textColor: "text-amber-700",
-      subcategories: [
-        "Consulting",
-        "Marketing",
-        "Finance",
-        "Operations",
-        "HR Services",
-      ],
-    },
-    {
-      key: "sports",
-      name: "Sports",
-      icon: Trophy,
-      gradient: "from-emerald-500 to-teal-400",
-      bgColor: "bg-emerald-50",
-      borderColor: "border-emerald-200",
-      textColor: "text-emerald-700",
-      subcategories: [
-        "Team Sports",
-        "Individual Sports",
-        "Fitness Training",
-        "Sports Equipment",
-        "Sports Events",
-      ],
-    },
-    {
-      key: "lifestyle",
-      name: "Lifestyle",
-      icon: Heart,
-      gradient: "from-rose-500 to-pink-400",
-      bgColor: "bg-rose-50",
-      borderColor: "border-rose-200",
-      textColor: "text-rose-700",
-      subcategories: [
-        "Fashion",
-        "Beauty",
-        "Home & Garden",
-        "Hobbies",
-        "Relationships",
-      ],
-    },
-    {
-      key: "education",
-      name: "Education",
-      icon: GraduationCap,
-      gradient: "from-indigo-500 to-purple-400",
-      bgColor: "bg-indigo-50",
-      borderColor: "border-indigo-200",
-      textColor: "text-indigo-700",
-      subcategories: [
-        "Online Courses",
-        "Tutoring",
-        "Certification",
-        "Language Learning",
-        "Skills Development",
-      ],
-    },
-  ];
+  // Dynamic categories and subcategories from API
+  const [categories, setCategories] = useState([]);
+  const [subcategoryMap, setSubcategoryMap] = useState({});
+
+  // Build categories/subcategories from API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSiteData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.get('/getSiteData');
+        const data = res?.data || {};
+        const scList = Array.isArray(data.sc_list) ? data.sc_list : [];
+        const seList = Array.isArray(data.se_list) ? data.se_list : [];
+
+        // Assign default icon/visuals cyclically
+        const iconCycle = [Monitor, Palette, Briefcase, Trophy, Heart, GraduationCap];
+        const colorCycle = [
+          { gradient: 'from-blue-500 to-cyan-400', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700' },
+          { gradient: 'from-pink-500 to-rose-400', bgColor: 'bg-pink-50', borderColor: 'border-pink-200', textColor: 'text-pink-700' },
+          { gradient: 'from-amber-500 to-orange-400', bgColor: 'bg-amber-50', borderColor: 'border-amber-200', textColor: 'text-amber-700' },
+          { gradient: 'from-emerald-500 to-teal-400', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', textColor: 'text-emerald-700' },
+          { gradient: 'from-indigo-500 to-purple-400', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', textColor: 'text-indigo-700' },
+          { gradient: 'from-sky-500 to-blue-500', bgColor: 'bg-sky-50', borderColor: 'border-sky-200', textColor: 'text-sky-700' },
+        ];
+
+        const builtCategories = scList.filter(sc => sc.sc_id !== 1).map((sc, idx) => {
+          const color = colorCycle[idx % colorCycle.length];
+          const IconComp = iconCycle[idx % iconCycle.length];
+          return {
+            key: String(sc.sc_id),
+            scId: sc.sc_id,
+            name: sc.sc_name,
+            icon: IconComp,
+            gradient: color.gradient,
+            bgColor: color.bgColor,
+            borderColor: color.borderColor,
+            textColor: color.textColor,
+          };
+        });
+
+        const builtSubMap = {};
+        scList.filter(sc => sc.sc_id !== 1).forEach((sc) => {
+          const scId = sc.sc_id;
+          builtSubMap[scId] = seList
+            .filter((se) => se.se_sc_id === scId)
+            .map((se) => ({ id: se.se_id, name: se.se_name }));
+        });
+
+        if (isMounted) {
+          setCategories(builtCategories);
+          setSubcategoryMap(builtSubMap);
+        }
+      } catch (e) {
+        if (isMounted) setError('Failed to load categories');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchSiteData();
+    return () => { isMounted = false; };
+  }, []);
 
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
     setSelectedSubcategory(null);
   };
 
-  const handleSubcategorySelect = (subcategory) => {
-    setSelectedSubcategory(subcategory);
+  const handleSubcategorySelect = (service) => {
+    const serviceId = service?.id || service;
+    setSelectedSubcategory(serviceId);
+    if (selectedCategory?.scId && serviceId) {
+      router.push(`/customer-dashboard/job-post/form?category=${selectedCategory.scId}&service=${serviceId}`);
+    } else {
     router.push("/customer-dashboard/job-post/form");
+    }
   };
 
   return (
@@ -206,6 +178,13 @@ const CategorySelector = () => {
                 </p>
               </div>
 
+              {loading && (
+                <div className="text-gray-500 text-sm">Loading categories...</div>
+              )}
+              {error && !loading && (
+                <div className="text-red-600 text-sm">{error}</div>
+              )}
+              {!loading && !error && (
               <div className="space-y-3">
                 {categories.map((category) => {
                   const IconComponent = category.icon;
@@ -252,7 +231,7 @@ const CategorySelector = () => {
                             {category.name}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            {category.subcategories.length} specializations
+                            {(subcategoryMap[category.scId]?.length || 0)} specializations
                           </p>
                         </div>
                         <ArrowRight
@@ -268,6 +247,7 @@ const CategorySelector = () => {
                   );
                 })}
               </div>
+              )}
             </div>
 
             {/* Subcategories Panel */}
@@ -294,13 +274,13 @@ const CategorySelector = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedCategory.subcategories.map(
-                      (subcategory, index) => (
+                    {(subcategoryMap[selectedCategory.scId] || []).map(
+                      (service, index) => (
                         <div
                           key={index}
-                          onClick={() => handleSubcategorySelect(subcategory)}
+                          onClick={() => handleSubcategorySelect(service)}
                           className={`group p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                            selectedSubcategory === subcategory
+                            selectedSubcategory === (service?.id || service)
                               ? "border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 shadow-lg"
                               : "border-gray-200 hover:border-gray-300 hover:bg-white/70 hover:shadow-md"
                           }`}
@@ -308,16 +288,16 @@ const CategorySelector = () => {
                           <div className="flex items-center justify-between">
                             <span
                               className={`font-medium transition-colors duration-300 ${
-                                selectedSubcategory === subcategory
+                                selectedSubcategory === (service?.id || service)
                                   ? "text-purple-700"
                                   : "text-gray-900 group-hover:text-gray-700"
                               }`}
                             >
-                              {subcategory}
+                              {service?.name || service}
                             </span>
                             <div
                               className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
-                                selectedSubcategory === subcategory
+                                selectedSubcategory === (service?.id || service)
                                   ? "bg-gradient-to-r from-purple-500 to-indigo-500 scale-110"
                                   : "bg-gray-200 group-hover:bg-gray-300"
                               }`}
@@ -325,7 +305,7 @@ const CategorySelector = () => {
                               <ArrowRight
                                 size={12}
                                 className={
-                                  selectedSubcategory === subcategory
+                                  selectedSubcategory === (service?.id || service)
                                     ? "text-white"
                                     : "text-gray-600"
                                 }

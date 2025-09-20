@@ -21,7 +21,8 @@ export const customerMenu = [
     icon: <FaUser className="w-4 h-4" />,
     name: "Account",
     subItems: [{ name: "Change Password", path: "/customer-dashboard/Changepassword", pro: false },
-               { name: "Delete Profile", path: "/customer-dashboard/Deleteprofile", pro: false }
+               { name: "Delete Profile", path: "/customer-dashboard/Deleteprofile", pro: false },
+               { name: "Deactivate Profile", path: "/customer-dashboard/acc-active", pro: false }
     ]
   },
 ];
