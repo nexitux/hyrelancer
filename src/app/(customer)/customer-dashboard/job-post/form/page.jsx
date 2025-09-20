@@ -6,6 +6,8 @@ import Image from 'next/image';
 import api from '../../../../../config/api';
 import breadcrumb from '../../../../../../public/images/breadcrumb_service.webp';
 import { ArrowLeft, Upload, Camera, MapPin, User, Phone, Mail, DollarSign, Calendar, FileText } from 'lucide-react';
+import { Select } from 'antd';
+const { Option } = Select;
 
 const JobPostForm = () => {
   const [formData, setFormData] = useState({
@@ -38,6 +40,10 @@ const JobPostForm = () => {
   });
   const [hideContact, setHideContact] = useState(false);
   const [errors, setErrors] = useState({});
+  const [languages, setLanguages] = useState([]);
+  const [languagesLoading, setLanguagesLoading] = useState(false);
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
 
   const categories = [
     'Technology', 'Design', 'Business', 'Marketing', 'Sales', 
@@ -65,8 +71,8 @@ const JobPostForm = () => {
 
     if (!formData.title.trim()) {
       newErrors.title = 'Job title is required';
-    } else if (formData.title.length < 10) {
-      newErrors.title = 'Job title must be at least 10 characters';
+    } else if (formData.title.length < 5) {
+      newErrors.title = 'Job title must be at least 5 characters';
     }
 
     if (!formData.workMode) {
@@ -75,21 +81,19 @@ const JobPostForm = () => {
 
     if (!formData.experience) {
       newErrors.experience = 'Experience is required';
-    } else if (parseInt(formData.experience) < 0) {
-      newErrors.experience = 'Experience cannot be negative';
     }
 
     if (formData.workMode !== 'Remote' && !formData.location.trim()) {
       newErrors.location = 'Location is required for non-remote positions';
     }
 
-    if (!formData.budgetFrom) {
+    if (!formData.budgetFrom || formData.budgetFrom.trim() === '') {
       newErrors.budgetFrom = 'Budget from is required';
     } else if (parseInt(formData.budgetFrom) <= 0) {
       newErrors.budgetFrom = 'Budget must be greater than 0';
     }
 
-    if (!formData.budgetTo) {
+    if (!formData.budgetTo || formData.budgetTo.trim() === '') {
       newErrors.budgetTo = 'Budget to is required';
     } else if (parseInt(formData.budgetTo) <= 0) {
       newErrors.budgetTo = 'Budget must be greater than 0';
@@ -140,12 +144,7 @@ const JobPostForm = () => {
       setFormData(prev => ({ ...prev, phone: onlyDigits }));
       return;
     }
-    if (name === 'experience') {
-      const onlyDigits = value.replace(/[^0-9]/g, '');
-      setFormData(prev => ({ ...prev, [name]: onlyDigits }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (name === 'workMode') {
       if (value === 'Remote') {
         setFormData(prev => ({ ...prev, location: '' }));
@@ -162,16 +161,22 @@ const JobPostForm = () => {
 
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
     const newPhotos = files.map(file => ({
       id: Date.now() + Math.random(),
       file,
       url: URL.createObjectURL(file)
     }));
+    
     setUploadedPhotos(prev => {
       const remaining = Math.max(0, 3 - prev.length);
       const toAdd = newPhotos.slice(0, remaining);
       return [...prev, ...toAdd];
     });
+    
+    // Clear the input value so the same file can be selected again
+    e.target.value = '';
   };
 
   const removePhoto = (id) => {
@@ -226,7 +231,7 @@ const JobPostForm = () => {
     payload.append('name', formData.name);
     payload.append('phone', formData.phone);
     payload.append('email', formData.email);
-    // Plain contact_* keys required by backend
+    
     payload.append('contact_name', hideContact ? '' : (formData.name || ''));
     payload.append('contact_email', hideContact ? '' : (formData.email || ''));
     payload.append('contact_mobile', hideContact ? '' : (formData.phone || ''));
@@ -385,6 +390,80 @@ const JobPostForm = () => {
     })();
     return () => { mounted = false; };
   }, [formData.phone]);
+
+  // Fetch languages from API
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      try {
+        setLanguagesLoading(true);
+        const response = await api.get("/getLanglist");
+
+        if (response.data && response.data.la_list) {
+          const formattedLanguages = response.data.la_list.map((lang) => ({
+            id: lang.la_id,
+            value: lang.la_language.toLowerCase(),
+            label: lang.la_language,
+          }));
+          setLanguages(formattedLanguages);
+        }
+      } catch (error) {
+        console.error("Error fetching languages:", error);
+        // Fallback to default languages if API fails
+        const fallbackLanguages = [
+          { id: 1, value: "english", label: "English" },
+          { id: 2, value: "spanish", label: "Spanish" },
+          { id: 3, value: "french", label: "French" },
+          { id: 4, value: "german", label: "German" },
+          { id: 5, value: "chinese", label: "Chinese" },
+          { id: 6, value: "japanese", label: "Japanese" },
+          { id: 7, value: "italian", label: "Italian" },
+          { id: 8, value: "portuguese", label: "Portuguese" },
+        ];
+        setLanguages(fallbackLanguages);
+      } finally {
+        setLanguagesLoading(false);
+      }
+    };
+
+    fetchLanguages();
+  }, []);
+
+  // Fetch cities from API
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        setCitiesLoading(true);
+        const response = await api.get("/getStatelist");
+
+        if (response.data && response.data.city) {
+          const formattedCities = response.data.city.map((city) => ({
+            id: city.cit_id,
+            value: city.cit_name.toLowerCase(),
+            label: city.cit_name,
+          }));
+          setCities(formattedCities);
+        }
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+        // Fallback to default cities if API fails
+        const fallbackCities = [
+          { id: 1, value: "mumbai", label: "Mumbai" },
+          { id: 2, value: "delhi", label: "Delhi" },
+          { id: 3, value: "bangalore", label: "Bangalore" },
+          { id: 4, value: "chennai", label: "Chennai" },
+          { id: 5, value: "kolkata", label: "Kolkata" },
+          { id: 6, value: "hyderabad", label: "Hyderabad" },
+          { id: 7, value: "pune", label: "Pune" },
+          { id: 8, value: "ahmedabad", label: "Ahmedabad" },
+        ];
+        setCities(fallbackCities);
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -559,20 +638,46 @@ const JobPostForm = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Preferred Language
                 </label>
-                <select
-                  name="language"
-                  value={formData.language}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                <Select
+                  mode="multiple"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) => {
+                    const optionChildren = (option?.children || "").toString();
+                    const optionValue = (option?.value || "").toString();
+                    return (
+                      optionChildren.toLowerCase().includes(input.toLowerCase()) ||
+                      optionValue.toLowerCase().includes(input.toLowerCase())
+                    );
+                  }}
+                  placeholder={
+                    languagesLoading
+                      ? "Loading languages..."
+                      : "Select languages you prefer"
+                  }
+                  size="large"
+                  loading={languagesLoading}
+                  disabled={languagesLoading}
+                  notFoundContent={
+                    languagesLoading ? (
+                      "Loading..."
+                    ) : (
+                      "No languages found"
+                    )
+                  }
+                  value={formData.language ? formData.language.split(',').filter(Boolean) : []}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, language: value.join(',') }));
+                  }}
+                  className="w-full"
+                  style={{ minHeight: '48px' }}
                 >
-                  <option value="">Select language</option>
-                  <option value="kannada">kannada</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="tamil">Tamil</option>
-                  <option value="gujarati">Gujarati</option>
-                  <option value="urdu">Urdu</option>
-                  <option value="German">German</option>
-                </select>
+                  {languages.map((lang) => (
+                    <Option key={lang.id} value={lang.value}>
+                      {lang.label}
+                    </Option>
+                  ))}
+                </Select>
               </div>
             </div>
 
@@ -580,44 +685,84 @@ const JobPostForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Experience Required (Years) <span className="text-red-500">*</span>
+                  Experience Required <span className="text-red-500">*</span>
                 </label>
-                      <input
-                  type="number"
-                  name="experience"
-                  value={formData.experience}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 2"
-                  min="0"
-                  step="1"
-                  className={`w-full px-4 py-3 rounded-xl border ${
-                    errors.experience ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-                  } focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                        required
-                      />
+                <Select
+                  showSearch
+                  allowClear
+                  optionFilterProp="children"
+                  filterOption={(input, option) => {
+                    const optionChildren = (option?.children || "").toString();
+                    const optionValue = (option?.value || "").toString();
+                    return (
+                      optionChildren.toLowerCase().includes(input.toLowerCase()) ||
+                      optionValue.toLowerCase().includes(input.toLowerCase())
+                    );
+                  }}
+                  placeholder="Select experience level (e.g., 2 to 5 year)"
+                  size="large"
+                  value={formData.experience || undefined}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, experience: value || '' }));
+                  }}
+                  className="w-full"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Option value="0 to 1 year">0 to 1 year</Option>
+                  <Option value="1 to 2 year">1 to 2 year</Option>
+                  <Option value="2 to 5 year">2 to 5 year</Option>
+                  <Option value="5 to 10 year">5 to 10 year</Option>
+                  <Option value="10+ years">10+ years</Option>
+                </Select>
                 {errors.experience && <p className="text-red-500 text-xs mt-1">{errors.experience}</p>}
-                      </div>
+              </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Location {formData.workMode !== 'Remote' && <span className="text-red-500">*</span>}
-                    </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder={formData.workMode === 'Remote' ? 'Not required for Remote' : 'Job location'}
-                  disabled={formData.workMode === 'Remote'}
-                  className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 ${
-                    formData.workMode === 'Remote'
-                      ? 'border-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed'
-                      : errors.location 
-                        ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                        : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
-                  }`}
-                  required={formData.workMode !== 'Remote'}
-                />
+                </label>
+                <Select
+                  mode="multiple"
+                  showSearch
+                  allowClear
+                  optionFilterProp="children"
+                  filterOption={(input, option) => {
+                    const optionChildren = (option?.children || "").toString();
+                    const optionValue = (option?.value || "").toString();
+                    return (
+                      optionChildren.toLowerCase().includes(input.toLowerCase()) ||
+                      optionValue.toLowerCase().includes(input.toLowerCase())
+                    );
+                  }}
+                  placeholder={
+                    formData.workMode === 'Remote' 
+                      ? "Not required for Remote" 
+                      : citiesLoading 
+                        ? "Loading cities..." 
+                        : "Select cities (e.g., Mumbai, Delhi)"
+                  }
+                  size="large"
+                  value={formData.location ? formData.location.split(',').filter(Boolean) : []}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, location: value.join(',') }));
+                  }}
+                  className="w-full"
+                  style={{ minHeight: '48px' }}
+                  disabled={formData.workMode === 'Remote' || citiesLoading}
+                  notFoundContent={
+                    citiesLoading ? (
+                      "Loading..."
+                    ) : (
+                      "No cities found"
+                    )
+                  }
+                >
+                  {cities.map((city) => (
+                    <Option key={city.id} value={city.value}>
+                      {city.label}
+                    </Option>
+                  ))}
+                </Select>
                 {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
               </div>
             </div>
@@ -689,62 +834,42 @@ const JobPostForm = () => {
               Upload Company Photos (Up to 3)
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {/* Main photo slot */}
-              <div className="relative">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center hover:border-blue-400 transition-colors">
-                  <Upload size={24} className="text-blue-500 mb-2" />
-                  <span className="text-xs text-blue-600 font-medium">Main Photo</span>
-                </div>
-              </div>
-
-              {/* Additional photo slots */}
-              {Array.from({ length: 2 }).map((_, index) => (
-                <div key={index} className="relative">
+              {/* Upload button - only show if less than 3 photos */}
+              {uploadedPhotos.length < 3 && (
+                <div className="relative">
                   <input
                     type="file"
+                    multiple
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <div className="aspect-square bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center hover:border-gray-400 transition-colors">
-                    <Camera size={20} className="text-gray-400 mb-1" />
-                    <span className="text-xs text-gray-500">Add Photo</span>
+                  <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center hover:border-blue-400 transition-colors">
+                    <Upload size={24} className="text-blue-500 mb-2" />
+                    <span className="text-xs text-blue-600 font-medium">Add Photos</span>
                   </div>
+                </div>
+              )}
+
+              {/* Display uploaded photos */}
+              {uploadedPhotos.map((photo, index) => (
+                <div key={photo.id} className="relative group">
+                  <img
+                    src={photo.url}
+                    alt={`Uploaded photo ${index + 1}`}
+                    className="w-full aspect-square object-cover rounded-lg border-2 border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(photo.id)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
 
-            {/* Uploaded photos preview */}
-            {uploadedPhotos.length > 0 && (
-              <div className="mt-6">
-                <h3 className="font-semibold text-gray-700 mb-3">Uploaded Photos ({uploadedPhotos.length}/3)</h3>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-                  {uploadedPhotos.map(photo => (
-                    <div key={photo.id} className="relative group">
-                      <img
-                        src={photo.url}
-                        alt="Uploaded"
-                        className="w-full aspect-square object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(photo.id)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Contact Information Section */}

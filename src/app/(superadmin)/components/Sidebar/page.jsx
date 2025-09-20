@@ -114,6 +114,16 @@ export default function Sidebar() {
         
       ]
     },
+    { 
+      id: 'badgesList', 
+      label: 'badgesList', 
+      icon: MdPeople, 
+      href: '/badgesList',
+      subLinks: [
+        { id: 'badgesList', label: 'Badges List', href: '/control/badgesList' },
+        
+      ]
+    },
   ];
 
   const isActive = (href) => {
