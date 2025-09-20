@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
-import { 
+import {
   Bold, Italic, Strikethrough, List, ListOrdered, Quote, Undo, Redo,
-  AlignLeft, AlignCenter, AlignRight, Plus, Trash2, 
+  AlignLeft, AlignCenter, AlignRight, Plus, Trash2,
   FileImage, Video, Edit, ArrowLeft, User, Briefcase, Settings
 } from 'lucide-react';
 
@@ -16,15 +16,17 @@ const AdminContentForm = () => {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [currentView, setCurrentView] = useState('loading'); // 'loading', 'newUser', 'dashboard', 'editSkills', 'editPortfolio'
   const [error, setError] = useState('');
-  
+
   // Form state for new user / portfolio
   const [title, setTitle] = useState('');
   const [imageFields, setImageFields] = useState([{ id: 1, file: null, preview: null }]);
   const [videoFields, setVideoFields] = useState([{ id: Date.now(), url: '' }]);
-  
+
   // Skills management
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
+
+  const [editingPortfolioId, setEditingPortfolioId] = useState(null);
 
   // Initialize TipTap editor
   const editor = useEditor({
@@ -48,10 +50,10 @@ const AdminContentForm = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Simulate different scenarios - modify this based on your API response
       const mockResponse = {
         // Change this to null or false to simulate new user
@@ -67,7 +69,7 @@ const AdminContentForm = () => {
         ],
         skills: ['React', 'Node.js', 'JavaScript']
       };
-      
+
       if (mockResponse.portfolio || mockResponse.skills) {
         setUserData(mockResponse);
         setCurrentView('dashboard');
@@ -124,7 +126,7 @@ const AdminContentForm = () => {
 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Simulate successful creation
       const newUserData = {
         portfolio: [{
@@ -144,7 +146,7 @@ const AdminContentForm = () => {
 
       setUserData(newUserData);
       setCurrentView('dashboard');
-      
+
     } catch (error) {
       console.error('Error creating user:', error);
       setError('Failed to save data. Please try again.');
@@ -175,7 +177,7 @@ const AdminContentForm = () => {
 
       setUserData(prev => ({ ...prev, skills }));
       setCurrentView('dashboard');
-      
+
     } catch (error) {
       console.error('Error updating skills:', error);
       setError('Failed to update skills. Please try again.');
@@ -195,55 +197,105 @@ const AdminContentForm = () => {
       }
 
       const portfolioData = {
+        id: editingPortfolioId || Date.now(),
         title: title.trim(),
         description: editor ? editor.getHTML() : '',
-        images: imageFields.filter(f => f.file || f.existing).map(field => ({
+        images: imageFields.filter(f => f.file || f.existing).map((field, idx) => ({
+          id: field.id || (idx + 1),
           file: field.file,
           name: field.file ? field.file.name : 'existing',
-          existing: field.existing,
+          existing: !!field.existing,
           url: field.preview
         })),
         videos: videoFields.filter(f => f.url.trim()).map(field => ({
+          id: field.id || Date.now(),
           url: field.url.trim()
-        }))
+        })),
+        createdAt: new Date().toISOString()
       };
 
-      // Replace with actual API call:
-      // const response = await fetch('/api/user/portfolio', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(portfolioData)
-      // });
-
-      // Simulate API call
+      // simulate API call (replace with real call)
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Update the portfolio in userData
-      const updatedPortfolio = {
-        id: userData.portfolio[0]?.id || Date.now(),
-        title: portfolioData.title,
-        description: portfolioData.description,
-        images: portfolioData.images.map((img, idx) => ({
-          id: idx + 1,
-          name: img.name,
-          url: img.file ? URL.createObjectURL(img.file) : img.url
-        })),
-        videos: portfolioData.videos,
-        createdAt: userData.portfolio[0]?.createdAt || new Date().toISOString()
-      };
+      setUserData(prev => {
+        const existing = prev?.portfolio || [];
 
-      setUserData(prev => ({
-        ...prev,
-        portfolio: [updatedPortfolio]
-      }));
+        // editing existing: replace the item
+        if (editingPortfolioId) {
+          const updated = existing.map(item => item.id === editingPortfolioId ? {
+            ...item,
+            title: portfolioData.title,
+            description: portfolioData.description,
+            images: portfolioData.images.map((img, idx) => ({
+              id: img.id || idx + 1,
+              name: img.name,
+              url: img.file ? URL.createObjectURL(img.file) : img.url
+            })),
+            videos: portfolioData.videos
+          } : item);
+          return { ...prev, portfolio: updated };
+        }
+
+        // otherwise append new item
+        const newItem = {
+          id: portfolioData.id,
+          title: portfolioData.title,
+          description: portfolioData.description,
+          images: portfolioData.images.map((img, idx) => ({
+            id: img.id || idx + 1,
+            name: img.name,
+            url: img.file ? URL.createObjectURL(img.file) : img.url
+          })),
+          videos: portfolioData.videos,
+          createdAt: portfolioData.createdAt
+        };
+        return { ...prev, portfolio: [...existing, newItem] };
+      });
+
+      setEditingPortfolioId(null);
       setCurrentView('dashboard');
-      
+
     } catch (error) {
       console.error('Error updating portfolio:', error);
       setError('Failed to update portfolio. Please try again.');
     } finally {
       setSubmitLoading(false);
     }
+  };
+
+
+  const startNewPortfolioItem = () => {
+    setEditingPortfolioId(null);
+    setTitle('');
+    setImageFields([{ id: Date.now(), file: null, preview: null }]);
+    setVideoFields([{ id: Date.now(), url: '' }]);
+    if (editor) editor.commands.setContent('<p>Enter your description here...</p>');
+    setError('');
+    setCurrentView('editPortfolio');
+  };
+
+  const startEditPortfolioItem = (idOrIndex) => {
+    const portfolio = Array.isArray(userData?.portfolio)
+      ? userData.portfolio.find(p => p.id === idOrIndex) || userData.portfolio[idOrIndex]
+      : null;
+
+    setEditingPortfolioId(portfolio?.id ?? null);
+    setTitle(portfolio?.title || '');
+    if (editor) editor.commands.setContent(portfolio?.description || '<p>Enter your description here...</p>');
+
+    const newImageFields = (portfolio?.images || []).map(img => ({
+      id: img.id || Date.now(),
+      file: null,
+      preview: img.url,
+      existing: true
+    }));
+    setImageFields(newImageFields.length ? newImageFields : [{ id: Date.now(), file: null, preview: null }]);
+
+    const newVideoFields = (portfolio?.videos || []).map(vid => ({ id: vid.id || Date.now(), url: vid.url }));
+    setVideoFields(newVideoFields.length ? newVideoFields : [{ id: Date.now(), url: '' }]);
+
+    setError('');
+    setCurrentView('editPortfolio');
   };
 
   // Initialize data fetch
@@ -286,7 +338,7 @@ const AdminContentForm = () => {
 
   // Handle video URL change
   const handleVideoUrlChange = (id, e) => {
-    const updatedFields = videoFields.map(field => 
+    const updatedFields = videoFields.map(field =>
       field.id === id ? { ...field, url: e.target.value } : field
     );
     setVideoFields(updatedFields);
@@ -347,7 +399,7 @@ const AdminContentForm = () => {
       if (editor) {
         editor.commands.setContent(portfolio.description);
       }
-      
+
       // Set up image fields
       const imageFields = portfolio.images.map(img => ({
         id: img.id,
@@ -388,9 +440,8 @@ const AdminContentForm = () => {
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-2 rounded hover:bg-gray-100 transition-colors ${
-        isActive ? 'bg-gray-200 text-blue-600' : 'text-gray-600'
-      }`}
+      className={`p-2 rounded hover:bg-gray-100 transition-colors ${isActive ? 'bg-gray-200 text-blue-600' : 'text-gray-600'
+        }`}
     >
       {children}
     </button>
@@ -507,9 +558,9 @@ const AdminContentForm = () => {
                         <label className="flex items-center justify-center px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
                           <FileImage className="w-4 h-4 mr-2" />
                           <span>Choose Image</span>
-                          <input 
-                            type="file" 
-                            className="hidden" 
+                          <input
+                            type="file"
+                            className="hidden"
                             onChange={(e) => handleImageChange(field.id, e)}
                             accept="image/*"
                           />
@@ -594,7 +645,7 @@ const AdminContentForm = () => {
                     >
                       <Bold className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleItalic().run()}
                       isActive={editor?.isActive('italic')}
@@ -602,7 +653,7 @@ const AdminContentForm = () => {
                     >
                       <Italic className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleStrike().run()}
                       isActive={editor?.isActive('strike')}
@@ -612,7 +663,7 @@ const AdminContentForm = () => {
                     </ToolbarButton>
 
                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleBulletList().run()}
                       isActive={editor?.isActive('bulletList')}
@@ -620,7 +671,7 @@ const AdminContentForm = () => {
                     >
                       <List className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleOrderedList().run()}
                       isActive={editor?.isActive('orderedList')}
@@ -630,7 +681,7 @@ const AdminContentForm = () => {
                     </ToolbarButton>
 
                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().setTextAlign('left').run()}
                       isActive={editor?.isActive({ textAlign: 'left' })}
@@ -638,7 +689,7 @@ const AdminContentForm = () => {
                     >
                       <AlignLeft className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().setTextAlign('center').run()}
                       isActive={editor?.isActive({ textAlign: 'center' })}
@@ -646,7 +697,7 @@ const AdminContentForm = () => {
                     >
                       <AlignCenter className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().setTextAlign('right').run()}
                       isActive={editor?.isActive({ textAlign: 'right' })}
@@ -656,7 +707,7 @@ const AdminContentForm = () => {
                     </ToolbarButton>
 
                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleBlockquote().run()}
                       isActive={editor?.isActive('blockquote')}
@@ -664,14 +715,14 @@ const AdminContentForm = () => {
                     >
                       <Quote className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().undo().run()}
                       title="Undo"
                     >
                       <Undo className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().redo().run()}
                       title="Redo"
@@ -679,7 +730,7 @@ const AdminContentForm = () => {
                       <Redo className="w-4 h-4" />
                     </ToolbarButton>
                   </div>
-                  
+
                   <EditorContent editor={editor} />
                 </div>
               </div>
@@ -756,29 +807,49 @@ const AdminContentForm = () => {
               <div className="border border-gray-200 rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium text-gray-900">Portfolio</h3>
-                  <button
-                    onClick={handleEditPortfolio}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={startNewPortfolioItem}
+                      className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Portfolio
+                    </button>
+                  </div>
                 </div>
-                
+
                 {userData.portfolio && userData.portfolio.length > 0 ? (
                   <div className="space-y-3">
-                    <h4 className="font-medium text-gray-900">{userData.portfolio[0].title}</h4>
-                    <div className="text-sm text-gray-600 line-clamp-3" 
-                         dangerouslySetInnerHTML={{ __html: userData.portfolio[0].description }} />
-                    <div className="flex gap-4 text-xs text-gray-500">
-                      <span>{userData.portfolio[0].images?.length || 0} images</span>
-                      <span>{userData.portfolio[0].videos?.length || 0} videos</span>
-                    </div>
+                    {userData.portfolio.map((item) => (
+                      <div key={item.id} className="p-3 border border-gray-200 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 pr-4">
+                            <h4 className="font-medium text-gray-900">{item.title}</h4>
+                            <div className="text-sm text-gray-600 line-clamp-3" dangerouslySetInnerHTML={{ __html: item.description }} />
+                            <div className="flex gap-4 text-xs text-gray-500 mt-2">
+                              <span>{item.images?.length || 0} images</span>
+                              <span>{item.videos?.length || 0} videos</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => startEditPortfolioItem(item.id)}
+                              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-gray-500">No portfolio items</div>
                 )}
               </div>
+
             </div>
           </div>
         </div>
@@ -786,7 +857,7 @@ const AdminContentForm = () => {
     );
   }
 
-    // Edit Skills View
+  // Edit Skills View
   if (currentView === 'editSkills') {
     return (
       <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -1054,7 +1125,7 @@ const AdminContentForm = () => {
                     >
                       <Bold className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleItalic().run()}
                       isActive={editor?.isActive('italic')}
@@ -1062,7 +1133,7 @@ const AdminContentForm = () => {
                     >
                       <Italic className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleStrike().run()}
                       isActive={editor?.isActive('strike')}
@@ -1072,7 +1143,7 @@ const AdminContentForm = () => {
                     </ToolbarButton>
 
                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleBulletList().run()}
                       isActive={editor?.isActive('bulletList')}
@@ -1080,7 +1151,7 @@ const AdminContentForm = () => {
                     >
                       <List className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleOrderedList().run()}
                       isActive={editor?.isActive('orderedList')}
@@ -1090,7 +1161,7 @@ const AdminContentForm = () => {
                     </ToolbarButton>
 
                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().setTextAlign('left').run()}
                       isActive={editor?.isActive({ textAlign: 'left' })}
@@ -1098,7 +1169,7 @@ const AdminContentForm = () => {
                     >
                       <AlignLeft className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().setTextAlign('center').run()}
                       isActive={editor?.isActive({ textAlign: 'center' })}
@@ -1106,7 +1177,7 @@ const AdminContentForm = () => {
                     >
                       <AlignCenter className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().setTextAlign('right').run()}
                       isActive={editor?.isActive({ textAlign: 'right' })}
@@ -1116,7 +1187,7 @@ const AdminContentForm = () => {
                     </ToolbarButton>
 
                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().toggleBlockquote().run()}
                       isActive={editor?.isActive('blockquote')}
@@ -1124,14 +1195,14 @@ const AdminContentForm = () => {
                     >
                       <Quote className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().undo().run()}
                       title="Undo"
                     >
                       <Undo className="w-4 h-4" />
                     </ToolbarButton>
-                    
+
                     <ToolbarButton
                       onClick={() => editor?.chain().focus().redo().run()}
                       title="Redo"
@@ -1139,7 +1210,7 @@ const AdminContentForm = () => {
                       <Redo className="w-4 h-4" />
                     </ToolbarButton>
                   </div>
-                  
+
                   <EditorContent editor={editor} />
                 </div>
               </div>
