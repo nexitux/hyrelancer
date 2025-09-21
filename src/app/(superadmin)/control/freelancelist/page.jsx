@@ -12,23 +12,15 @@ import {
   MdCancel,
   MdErrorOutline,
   MdPending,
-  MdBlock
+  MdBlock,
+  MdChevronLeft,
+  MdChevronRight
 } from 'react-icons/md';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
 import { message } from 'antd';
-
-// --- API Configuration ---
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+import adminApi from '@/config/adminApi';
 
 // --- Status Mapping Helper ---
 const getStatusInfo = (freelancer) => {
@@ -105,6 +97,10 @@ export default function ListFreelancerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   // --- Data Fetching ---
   useEffect(() => {
     const fetchFreelancers = async () => {
@@ -112,31 +108,15 @@ export default function ListFreelancerPage() {
       setError(null);
 
       try {
-        const token = TokenManager.getToken();
-        if (!token) {
-          throw new Error("Authentication token not found.");
-        }
-
-        const url = new URL(`${API_BASE_URL}/freelancers`);
+        const params = {};
         if (searchTerm) {
-          url.searchParams.append('search', searchTerm);
+          params.search = searchTerm;
         }
 
-        const response = await fetch(url.toString(), {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch freelancers: ${response.statusText}`);
-        }
-
-        const result = await response.json();
+        const response = await adminApi.get('/freelancers', { params });
         
         // Handle both direct array response and data property
-        const freelancersData = result.data || result;
+        const freelancersData = response.data.data || response.data;
         
         const processedData = freelancersData.map(freelancer => ({
           ...freelancer,
@@ -144,10 +124,14 @@ export default function ListFreelancerPage() {
         }));
 
         setAllFreelancers(processedData);
+        // Reset to first page when data changes
+        setCurrentPage(1);
 
       } catch (err) {
-        console.error(err);
-        setError(err.message);
+        console.error('Error fetching freelancers:', err);
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch freelancers';
+        setError(errorMessage);
+        message.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -168,6 +152,17 @@ export default function ListFreelancerPage() {
     });
   }, [allFreelancers, selectedStatus]);
 
+  // --- Pagination Logic ---
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredFreelancers.slice(startIndex, endIndex);
+  }, [filteredFreelancers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredFreelancers.length / itemsPerPage);
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, filteredFreelancers.length);
+
   // --- Statistics Calculation ---
   const stats = useMemo(() => {
     const total = allFreelancers.length;
@@ -185,30 +180,15 @@ export default function ListFreelancerPage() {
       return;
     }
 
-    const token = TokenManager.getToken();
-    if (!token) {
-      message.error("Authentication failed. Please log in again.");
-      return;
-    }
-
     let successCount = 0;
     for (const id of freelancerIds) {
       try {
         const encodedId = Base64.encode(id.toString());
-        const endpoint = action === 'deactivate' ? 'DELETE' : 'PATCH';
-        const response = await fetch(`${API_BASE_URL}/freelancers/${encodedId}`, {
-          method: endpoint,
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: action !== 'deactivate' ? JSON.stringify({ is_active: '1' }) : undefined
-        });
-
-        if (!response.ok) {
-          const result = await response.json();
-          throw new Error(result.error || `Failed to ${actionText} freelancer ID ${id}`);
+        
+        if (action === 'deactivate') {
+          await adminApi.delete(`/freelancers/${encodedId}`);
+        } else {
+          await adminApi.patch(`/freelancers/${encodedId}`, { is_active: '1' });
         }
 
         // Update local state
@@ -229,8 +209,9 @@ export default function ListFreelancerPage() {
         );
         successCount++;
       } catch (err) {
-        console.error(err);
-        message.error(err.message);
+        console.error(`Error ${actionText}ing freelancer ${id}:`, err);
+        const errorMessage = err.response?.data?.message || err.message || `Failed to ${actionText} freelancer ID ${id}`;
+        message.error(errorMessage);
       }
     }
     
@@ -249,11 +230,21 @@ export default function ListFreelancerPage() {
   };
 
   const handleSelectAll = () => {
-    if (selectedFreelancers.length === filteredFreelancers.length && filteredFreelancers.length > 0) {
-      setSelectedFreelancers([]);
+    const currentPageIds = paginatedData.map(f => f.id);
+    const allCurrentPageSelected = currentPageIds.every(id => selectedFreelancers.includes(id));
+    
+    if (allCurrentPageSelected && currentPageIds.length > 0) {
+      // Deselect all current page items
+      setSelectedFreelancers(prev => prev.filter(id => !currentPageIds.includes(id)));
     } else {
-      setSelectedFreelancers(filteredFreelancers.map(f => f.id));
+      // Select all current page items
+      setSelectedFreelancers(prev => [...new Set([...prev, ...currentPageIds])]);
     }
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelectedFreelancers([]); // Clear selections when changing page
   };
 
   // Get unique status options for filter dropdown
@@ -261,6 +252,12 @@ export default function ListFreelancerPage() {
     const uniqueStatuses = [...new Set(allFreelancers.map(f => f.statusInfo.status))];
     return uniqueStatuses.sort();
   }, [allFreelancers]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedFreelancers([]);
+  }, [selectedStatus]);
 
   return (
     <div className="p-6 min-h-screen bg-slate-50">
@@ -382,7 +379,7 @@ export default function ListFreelancerPage() {
             <label className="flex gap-2 items-center">
               <input
                 type="checkbox"
-                checked={selectedFreelancers.length === filteredFreelancers.length && filteredFreelancers.length > 0}
+                checked={paginatedData.length > 0 && paginatedData.every(f => selectedFreelancers.includes(f.id))}
                 onChange={handleSelectAll}
                 className="text-blue-600 rounded border-slate-300 focus:ring-blue-500"
               />
@@ -414,7 +411,7 @@ export default function ListFreelancerPage() {
             <thead className="border-b bg-slate-50 border-slate-200">
               <tr>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Name</th>
-                <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Username</th>
+                {/* <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Username</th> */}
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Email</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Mobile</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Registration</th>
@@ -427,8 +424,8 @@ export default function ListFreelancerPage() {
                 <tr><td colSpan="7" className="py-12 text-center">Loading...</td></tr>
               ) : error ? (
                 <tr><td colSpan="7" className="py-12 text-center text-red-500">{error}</td></tr>
-              ) : filteredFreelancers.length > 0 ? (
-                filteredFreelancers.map((freelancer) => (
+              ) : paginatedData.length > 0 ? (
+                paginatedData.map((freelancer) => (
                   <tr key={freelancer.id} className="transition-colors hover:bg-slate-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-3 items-center">
@@ -444,9 +441,9 @@ export default function ListFreelancerPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-slate-800">{freelancer.username}</p>
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-slate-800">{freelancer.email}</p>
                     </td>
@@ -518,6 +515,62 @@ export default function ListFreelancerPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filteredFreelancers.length > 0 && (
+          <div className="flex flex-col gap-4 items-center justify-between px-6 py-4 border-t border-slate-200 sm:flex-row">
+            <div className="text-sm text-slate-600">
+              Showing {startItem} to {endItem} of {filteredFreelancers.length} results
+            </div>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+              >
+                <MdChevronLeft size={20} />
+              </button>
+              
+              {/* Page Numbers */}
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+              >
+                <MdChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

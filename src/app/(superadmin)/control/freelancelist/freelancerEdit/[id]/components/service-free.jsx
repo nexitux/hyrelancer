@@ -533,7 +533,7 @@ export default function AdminServicePage() {
       let response;
       if (isUpdateOperation) {
         // Use PUT method for updates
-        response = await adminApi.put(apiEndpoint, formData, {
+        response = await adminApi.post(apiEndpoint, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           }
