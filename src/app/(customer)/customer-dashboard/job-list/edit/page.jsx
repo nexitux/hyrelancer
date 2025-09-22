@@ -1,15 +1,28 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useSelector, useDispatch } from 'react-redux';
 import Image from 'next/image';
 import api from '../../../../../config/api';
-import breadcrumb from '../../../../../../public/images/breadcrumb_service.webp';
 import { ArrowLeft, Upload, Camera, MapPin, User, Phone, Mail, DollarSign, Calendar, FileText } from 'lucide-react';
 import { Select } from 'antd';
+import { clearSelectedJob } from '../../../../../redux/slices/jobSlice';
 const { Option } = Select;
 
-const JobPostForm = () => {
+const EditJobPage = () => {
+  const router = useRouter();
+  const dispatch = useDispatch();
+  
+  // Get job ID and data from Redux state
+  const { selectedJobId, selectedJobData } = useSelector((state) => state.job);
+  const jobId = selectedJobId;
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState("");
+
   const [formData, setFormData] = useState({
     category: '',
     subcategory: '',
@@ -31,8 +44,8 @@ const JobPostForm = () => {
     email: ''
   });
 
-  const [uploadedPhotos, setUploadedPhotos] = useState([]);
-  const [activeLocationTab, setActiveLocationTab] = useState('list');
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImages, setNewImages] = useState([]);
   const [charCounts, setCharCounts] = useState({
     title: 0,
     description: 0,
@@ -40,21 +53,176 @@ const JobPostForm = () => {
   });
   const [hideContact, setHideContact] = useState(false);
   const [errors, setErrors] = useState({});
+  const [originalCategoryId, setOriginalCategoryId] = useState('');
+  const [originalSubcategoryId, setOriginalSubcategoryId] = useState('');
   const [languages, setLanguages] = useState([]);
   const [languagesLoading, setLanguagesLoading] = useState(false);
   const [cities, setCities] = useState([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
 
-  const categories = [
-    'Technology', 'Design', 'Business', 'Marketing', 'Sales', 
-    'Engineering', 'Healthcare', 'Education', 'Finance'
-  ];
-
-  const subcategories = {
-    Technology: ['Web Development', 'Mobile Apps', 'AI & Machine Learning', 'Cloud Computing', 'Cybersecurity'],
-    Design: ['UI/UX Design', 'Graphic Design', 'Branding', 'Web Design', 'Print Design'],
-    Business: ['Consulting', 'Management', 'Operations', 'Strategy', 'Analysis']
+  // Function to clean image URLs (split on -- and take first part)
+  const cleanImageUrl = (url) => {
+    if (!url) return null;
+    if (url.includes('--')) {
+      url = url.split('--')[0];
+    }
+    if (url.startsWith('http')) {
+      return url;
+    }
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://test.hyrelancer.in';
+    return `${baseUrl}/${url}`;
   };
+
+  // Redirect if no job ID is available
+  useEffect(() => {
+    if (!jobId) {
+      router.push('/customer-dashboard/job-list');
+      return;
+    }
+  }, [jobId, router]);
+
+  // Fetch job data - using the same approach as EditJobDetails
+  useEffect(() => {
+    const fetchJobData = async () => {
+      if (!jobId) return;
+      
+      try {
+        setLoading(true);
+        console.log('Fetching job data for ID:', jobId);
+        
+        // Fetch site data, jobs, languages, and cities in parallel
+        const [siteDataRes, jobsRes, languagesRes, citiesRes] = await Promise.all([
+          api.get('/getSiteData'),
+          api.get('/getJob'),
+          api.get('/getLanglist'),
+          api.get('/getStatelist')
+        ]);
+
+        const siteData = siteDataRes?.data || {};
+        const scList = Array.isArray(siteData.sc_list) ? siteData.sc_list : [];
+        const seList = Array.isArray(siteData.se_list) ? siteData.se_list : [];
+
+        // Build lookup maps
+        const categoryIdToName = {};
+        const subCategoryIdToName = {};
+        scList.forEach((sc) => {
+          if (sc?.get_ca_data?.ca_id != null && sc?.get_ca_data?.ca_name) {
+            categoryIdToName[sc.get_ca_data.ca_id] = sc.get_ca_data.ca_name;
+          }
+          if (sc?.sc_id != null && sc?.sc_name) {
+            subCategoryIdToName[sc.sc_id] = sc.sc_name;
+          }
+        });
+
+        const serviceIdToName = {};
+        seList.forEach((se) => {
+          if (se?.se_id != null && se?.se_name) {
+            serviceIdToName[se.se_id] = se.se_name;
+          }
+        });
+
+        // Process languages data
+        if (languagesRes.data && languagesRes.data.la_list) {
+          const formattedLanguages = languagesRes.data.la_list.map((lang) => ({
+            id: lang.la_id,
+            value: lang.la_language.toLowerCase(),
+            label: lang.la_language,
+          }));
+          setLanguages(formattedLanguages);
+        }
+
+        // Process cities data
+        if (citiesRes.data && citiesRes.data.city) {
+          const formattedCities = citiesRes.data.city.map((city) => ({
+            id: city.cit_id,
+            value: city.cit_name.toLowerCase(),
+            label: city.cit_name,
+          }));
+          setCities(formattedCities);
+        }
+
+        const raw = jobsRes?.data;
+        console.log('getJob raw response:', raw);
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw?.jobs)
+              ? raw.jobs
+              : Array.isArray(raw?.job_list)
+                ? raw.job_list
+                : raw?.job_list
+                  ? [raw.job_list]
+                  : [];
+
+        // Find the specific job
+        const jobData = list.find(job => job.cuj_id == jobId);
+        console.log('Found job data:', jobData);
+        
+        if (jobData) {
+          // Get category and subcategory names from lookup maps
+          const categoryId = jobData.cuj_sc_id || jobData.category;
+          const subcategoryId = jobData.cuj_se_id || jobData.service;
+          
+          const categoryName = subCategoryIdToName[categoryId] || jobData.subcategory_name || jobData.sc_name || '—';
+          const subcategoryName = serviceIdToName[subcategoryId] || jobData.service_name || jobData.service || jobData.job_type || '—';
+          
+          // Store original IDs for form submission
+          setOriginalCategoryId(categoryId || '');
+          setOriginalSubcategoryId(subcategoryId || '');
+          
+          // Map job data to form structure (same as EditJobDetails)
+          setFormData({
+            category: categoryName,
+            subcategory: subcategoryName,
+            year: jobData.cuj_location || '',
+            location: jobData.cuj_location || jobData.location || '',
+            experience: jobData.cuj_u_experience || jobData.u_experience || '',
+            title: jobData.cuj_title || jobData.title || '',
+            description: jobData.cuj_desc || jobData.desc || '',
+            workMode: jobData.cuj_work_mode || jobData.work_mode || '',
+            language: jobData.cuj_lang || jobData.language || '',
+            budgetFrom: String(jobData.cuj_salary_range_from || jobData.salary_range_from || ''),
+            budgetTo: String(jobData.cuj_salary_range_to || jobData.salary_range_to || ''),
+            state: '',
+            city: '',
+            district: '',
+            landmark: '',
+            name: jobData.cuj_contact_name || jobData.contact_name || '',
+            phone: jobData.cuj_contact_mobile || jobData.contact_mobile || '',
+            email: jobData.cuj_contact_email || jobData.contact_email || ''
+          });
+
+          setHideContact(jobData.hide_contact === '1' || jobData.hide_contact === 1);
+
+          // Set existing images with cleaned URLs
+          const images = [];
+          if (jobData.cuj_img1) images.push({ id: 1, url: cleanImageUrl(jobData.cuj_img1), file: null, isExisting: true });
+          if (jobData.cuj_img2) images.push({ id: 2, url: cleanImageUrl(jobData.cuj_img2), file: null, isExisting: true });
+          if (jobData.cuj_img3) images.push({ id: 3, url: cleanImageUrl(jobData.cuj_img3), file: null, isExisting: true });
+          setExistingImages(images);
+          setNewImages([]);
+
+          // Update character counts
+          setCharCounts({
+            title: (jobData.cuj_title || jobData.title || '').length,
+            description: (jobData.cuj_desc || jobData.desc || '').length,
+            name: (jobData.cuj_contact_name || jobData.contact_name || '').length
+          });
+        } else {
+          console.log('Job not found for ID:', jobId);
+          setError("Job not found");
+        }
+      } catch (err) {
+        console.error("Error fetching job data:", err);
+        setError(`Failed to load job data: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobData();
+  }, [jobId]);
 
   // Validation function
   const validateForm = () => {
@@ -87,13 +255,13 @@ const JobPostForm = () => {
       newErrors.location = 'Location is required for non-remote positions';
     }
 
-    if (!formData.budgetFrom || formData.budgetFrom.trim() === '') {
+    if (!formData.budgetFrom) {
       newErrors.budgetFrom = 'Budget from is required';
     } else if (parseInt(formData.budgetFrom) <= 0) {
       newErrors.budgetFrom = 'Budget must be greater than 0';
     }
 
-    if (!formData.budgetTo || formData.budgetTo.trim() === '') {
+    if (!formData.budgetTo) {
       newErrors.budgetTo = 'Budget to is required';
     } else if (parseInt(formData.budgetTo) <= 0) {
       newErrors.budgetTo = 'Budget must be greater than 0';
@@ -161,29 +329,33 @@ const JobPostForm = () => {
 
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    const totalImages = existingImages.length + newImages.length;
+    const availableSlots = 3 - totalImages;
     
-    const newPhotos = files.map(file => ({
-      id: Date.now() + Math.random(),
+    if (availableSlots <= 0) {
+      alert('Maximum 3 images allowed');
+      return;
+    }
+    
+    const filesToAdd = files.slice(0, availableSlots);
+    const newPhotos = filesToAdd.map((file, index) => ({
+      id: Date.now() + index,
       file,
-      url: URL.createObjectURL(file)
+      url: URL.createObjectURL(file),
+      isExisting: false
     }));
-    
-    setUploadedPhotos(prev => {
-      const remaining = Math.max(0, 3 - prev.length);
-      const toAdd = newPhotos.slice(0, remaining);
-      return [...prev, ...toAdd];
-    });
-    
-    // Clear the input value so the same file can be selected again
-    e.target.value = '';
+    setNewImages(prev => [...prev, ...newPhotos]);
   };
 
-  const removePhoto = (id) => {
-    setUploadedPhotos(prev => prev.filter(photo => photo.id !== id));
+  const removePhoto = (id, isExisting = false) => {
+    if (isExisting) {
+      setExistingImages(prev => prev.filter(photo => photo.id !== id));
+    } else {
+      setNewImages(prev => prev.filter(photo => photo.id !== id));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form before submission
@@ -196,75 +368,64 @@ const JobPostForm = () => {
       return;
     }
 
-    // Prepare multipart payload including cuj_img1..3
-    const payload = new FormData();
-    // Map: category = subcategory id (sc_id), service = service id (se_id)
-    const qpScId = searchParams?.get('category');
-    const qpSeId = searchParams?.get('service');
-    const scId = (qpScId && /^\d+$/.test(qpScId)) ? qpScId : (formData.category || '');
-    const seId = (qpSeId && /^\d+$/.test(qpSeId)) ? qpSeId : (formData.subcategory || '');
-    payload.append('category', scId);
-    payload.append('service', seId);
-    // Keep legacy key for compatibility
-    payload.append('subcategory', seId);
-    payload.append('year', formData.location);
-    // Plain key required by backend controller
-    payload.append('location', formData.location || '');
-    payload.append('experience', formData.experience);
-    payload.append('title', formData.title);
-    payload.append('description', formData.description);
-    payload.append('workMode', formData.workMode);
-    payload.append('language', formData.language || '');
-    // Backend plain field aliases
-    payload.append('desc', formData.description || '');
-    payload.append('work_mode', formData.workMode || '');
-    // Backend sometimes requires job_type even if UI removed
-    payload.append('job_type', 'Full-Time');
-    payload.append('budgetFrom', formData.budgetFrom);
-    payload.append('budgetTo', formData.budgetTo);
-    payload.append('salary_range_from', formData.budgetFrom);
-    payload.append('salary_range_to', formData.budgetTo);
-    payload.append('state', formData.state);
-    payload.append('city', formData.city);
-    payload.append('district', formData.district);
-    payload.append('landmark', formData.landmark);
-    payload.append('name', formData.name);
-    payload.append('phone', formData.phone);
-    payload.append('email', formData.email);
-    
-    // Always send contact details to database (for internal use)
-    payload.append('contact_name', formData.name || '');
-    payload.append('contact_email', formData.email || '');
-    payload.append('contact_mobile', formData.phone || '');
-    
-    // Send hide_contact flag to control public visibility
-    payload.append('hide_contact', hideContact ? '1' : '0');
+    setSaving(true);
+    setError(null);
 
-    // Map first 3 photos to keys expected by backend
-    if (uploadedPhotos[0]?.file) {
-      payload.append('cuj_img1', uploadedPhotos[0].file);
-      payload.append('uploadfile1', uploadedPhotos[0].file);
-    }
-    if (uploadedPhotos[1]?.file) {
-      payload.append('cuj_img2', uploadedPhotos[1].file);
-      payload.append('uploadfile2', uploadedPhotos[1].file);
-    }
-    if (uploadedPhotos[2]?.file) {
-      payload.append('cuj_img3', uploadedPhotos[2].file);
-      payload.append('uploadfile3', uploadedPhotos[2].file);
-    }
-
-    // Add cuj_* fields expected by backend
     try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-      const user = stored ? JSON.parse(stored) : null;
-      const userId = user?.id || user?.u_id || null;
-      const qpCatId = searchParams?.get('category'); // sc_id
-      const qpServId = searchParams?.get('service'); // se_id
-      if (userId) payload.append('cuj_u_id', String(userId));
-      payload.append('cuj_ca_id', '1'); // default category id per schema
-      if (qpCatId && /^\d+$/.test(qpCatId)) payload.append('cuj_sc_id', qpCatId);
-      if (qpServId && /^\d+$/.test(qpServId)) payload.append('cuj_se_id', qpServId);
+      // Prepare multipart payload including cuj_img1..3
+      const payload = new FormData();
+      
+      // Add all form fields
+      payload.append('year', formData.location);
+      payload.append('experience', formData.experience);
+      payload.append('title', formData.title);
+      payload.append('description', formData.description);
+      payload.append('workMode', formData.workMode);
+      payload.append('language', formData.language || '');
+      payload.append('budgetFrom', formData.budgetFrom);
+      payload.append('budgetTo', formData.budgetTo);
+      payload.append('state', formData.state);
+      payload.append('city', formData.city);
+      payload.append('district', formData.district);
+      payload.append('landmark', formData.landmark);
+      payload.append('name', formData.name);
+      payload.append('phone', formData.phone);
+      payload.append('email', formData.email);
+      payload.append('hide_contact', hideContact ? '1' : '0');
+
+      // Add plain field names for backend validation
+      payload.append('desc', formData.description || '');
+      payload.append('work_mode', formData.workMode || '');
+      payload.append('job_type', 'Full-Time');
+      payload.append('language', formData.language || '');
+      payload.append('salary_range_from', formData.budgetFrom);
+      payload.append('salary_range_to', formData.budgetTo);
+      payload.append('location', formData.location);
+      payload.append('contact_name', hideContact ? '' : (formData.name || ''));
+      payload.append('contact_email', hideContact ? '' : (formData.email || ''));
+      payload.append('contact_mobile', hideContact ? '' : (formData.phone || ''));
+
+      // Add new uploaded photos
+      newImages.forEach((photo, index) => {
+        if (photo.file) {
+          payload.append(`cuj_img${index + 1}`, photo.file);
+          payload.append(`uploadfile${index + 1}`, photo.file);
+        }
+      });
+
+      // Add cuj_* fields
+      payload.append('cuj_id', jobId);
+      try {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+        const user = stored ? JSON.parse(stored) : null;
+        const userId = user?.id || user?.u_id || null;
+        if (userId) payload.append('cuj_u_id', String(userId));
+      } catch {}
+      payload.append('cuj_ca_id', '1');
+      
+      // Use the stored original IDs
+      payload.append('cuj_sc_id', originalCategoryId);
+      payload.append('cuj_se_id', originalSubcategoryId);
       payload.append('cuj_u_experience', formData.experience || '');
       payload.append('cuj_location', formData.location || '');
       payload.append('cuj_title', formData.title || '');
@@ -274,200 +435,46 @@ const JobPostForm = () => {
       if (formData.language) payload.append('cuj_lang', formData.language);
       payload.append('cuj_salary_range_from', formData.budgetFrom || '');
       payload.append('cuj_salary_range_to', formData.budgetTo || '');
-      // Always send contact details to database (for internal use)
-      payload.append('cuj_contact_name', formData.name || '');
-      payload.append('cuj_contact_email', formData.email || '');
-      payload.append('cuj_contact_mobile', formData.phone || '');
-    } catch {}
+      payload.append('cuj_contact_name', hideContact ? '' : (formData.name || ''));
+      payload.append('cuj_contact_email', hideContact ? '' : (formData.email || ''));
+      payload.append('cuj_contact_mobile', hideContact ? '' : (formData.phone || ''));
 
-    // Submit to API
-    api.post('/storeJob', payload, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-      .then((res) => {
-        window.alert(res?.data?.message || 'Job submitted successfully');
-        try { window.location.href = '/customer-dashboard/job-list'; } catch {}
-      })
-      .catch((err) => {
-        const resp = err?.response?.data;
-        const details = resp?.errors ? `\n${Object.entries(resp.errors).map(([k,v]) => `${k}: ${(Array.isArray(v)?v.join(', '):v)}`).join('\n')}` : '';
-        const msg = (resp?.message || 'Failed to submit job') + details;
-        window.alert(msg);
-        console.error('Job submit error', err);
+      const response = await api.post('/updatejOB', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
+
+      if (response.data) {
+        setSuccess('Job updated successfully!');
+        dispatch(clearSelectedJob());
+        setTimeout(() => {
+          router.push('/customer-dashboard/job-list');
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Error updating job:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.errors) {
+        const firstError = Object.values(err.response.data.errors)[0];
+        setError(Array.isArray(firstError) ? firstError[0] : firstError);
+      } else {
+        setError('Failed to update job. Please try again.');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // Prefill category and service (subcategory) from query params if provided
-  const searchParams = useSearchParams();
-  useEffect(() => {
-    if (!searchParams) return;
-    const qpCategory = searchParams.get('categoryName') || searchParams.get('category') || '';
-    const qpService = searchParams.get('serviceName') || searchParams.get('service') || searchParams.get('subcategory') || '';
-    if (qpCategory || qpService) {
-      setFormData(prev => ({
-        ...prev,
-        category: qpCategory || prev.category,
-        subcategory: qpService || prev.subcategory,
-      }));
-    }
-  }, [searchParams]);
-
-  // If IDs are passed (e.g., category=sc_id, service=se_id), fetch names from API
-  useEffect(() => {
-    let isMounted = true;
-    const qpCat = searchParams?.get('category');
-    const qpServ = searchParams?.get('service');
-    const catIsId = qpCat && /^\d+$/.test(qpCat);
-    const servIsId = qpServ && /^\d+$/.test(qpServ);
-    if (!catIsId && !servIsId) return;
-    (async () => {
-      try {
-        const res = await api.get('/getSiteData');
-        const data = res?.data || {};
-        const scList = Array.isArray(data.sc_list) ? data.sc_list : [];
-        const seList = Array.isArray(data.se_list) ? data.se_list : [];
-        const scName = catIsId ? (scList.find(s => String(s.sc_id) === String(qpCat))?.sc_name || '') : (formData.category || '');
-        const seName = servIsId ? (seList.find(s => String(s.se_id) === String(qpServ))?.se_name || '') : (formData.subcategory || '');
-        if (!isMounted) return;
-        setFormData(prev => ({
-          ...prev,
-          category: scName || prev.category,
-          subcategory: seName || prev.subcategory,
-        }));
-      } catch {}
-    })();
-    return () => { isMounted = false; };
-  }, [searchParams]);
-
-  // Prefill contact info from localStorage user
-  useEffect(() => {
-    try {
-      if (typeof window === 'undefined') return;
-      const stored = localStorage.getItem('user');
-      if (!stored) return;
-      const user = JSON.parse(stored);
-      const rawPhone =
-        user?.mobile ??
-        user?.phone ??
-        user?.mobile_no ??
-        user?.contact_mobile ??
-        user?.mobileNumber ??
-        user?.phoneNumber ??
-        user?.u_mobile ??
-        user?.u_phone ?? '';
-      const qpPhone = searchParams?.get('phone') || '';
-      const normalizedPhone = String(rawPhone || qpPhone || '')
-        .toString()
-        .trim()
-        .replace(/[^0-9+]/g, '');
-      setFormData(prev => ({
-        ...prev,
-        name: prev.name || user?.name || '',
-        email: prev.email || user?.email || user?.contact_email || '',
-        phone: prev.phone || normalizedPhone
-      }));
-    } catch {}
-  }, [searchParams]);
-
-  // Fallback: fetch from /me if phone still empty
-  useEffect(() => {
-    if (formData.phone && formData.phone.length > 0) return;
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await api.get('/me');
-        const me = res?.data?.user || res?.data || null;
-        if (!me || !mounted) return;
-        const rawPhone =
-          me?.mobile;
-        const normalizedPhone = String(rawPhone || '')
-          .toString()
-          .trim()
-          .replace(/[^0-9+]/g, '');
-        setFormData(prev => ({
-          ...prev,
-          name: prev.name || me?.name || '',
-          email: prev.email || me?.email || me?.contact_email || '',
-          phone: prev.phone || normalizedPhone
-        }));
-      } catch {}
-    })();
-    return () => { mounted = false; };
-  }, [formData.phone]);
-
-  // Fetch languages from API
-  useEffect(() => {
-    const fetchLanguages = async () => {
-      try {
-        setLanguagesLoading(true);
-        const response = await api.get("/getLanglist");
-
-        if (response.data && response.data.la_list) {
-          const formattedLanguages = response.data.la_list.map((lang) => ({
-            id: lang.la_id,
-            value: lang.la_language.toLowerCase(),
-            label: lang.la_language,
-          }));
-          setLanguages(formattedLanguages);
-        }
-      } catch (error) {
-        console.error("Error fetching languages:", error);
-        // Fallback to default languages if API fails
-        const fallbackLanguages = [
-          { id: 1, value: "english", label: "English" },
-          { id: 2, value: "spanish", label: "Spanish" },
-          { id: 3, value: "french", label: "French" },
-          { id: 4, value: "german", label: "German" },
-          { id: 5, value: "chinese", label: "Chinese" },
-          { id: 6, value: "japanese", label: "Japanese" },
-          { id: 7, value: "italian", label: "Italian" },
-          { id: 8, value: "portuguese", label: "Portuguese" },
-        ];
-        setLanguages(fallbackLanguages);
-      } finally {
-        setLanguagesLoading(false);
-      }
-    };
-
-    fetchLanguages();
-  }, []);
-
-  // Fetch cities from API
-  useEffect(() => {
-    const fetchCities = async () => {
-      try {
-        setCitiesLoading(true);
-        const response = await api.get("/getStatelist");
-
-        if (response.data && response.data.city) {
-          const formattedCities = response.data.city.map((city) => ({
-            id: city.cit_id,
-            value: city.cit_name.toLowerCase(),
-            label: city.cit_name,
-          }));
-          setCities(formattedCities);
-        }
-      } catch (error) {
-        console.error("Error fetching cities:", error);
-        // Fallback to default cities if API fails
-        const fallbackCities = [
-          { id: 1, value: "mumbai", label: "Mumbai" },
-          { id: 2, value: "delhi", label: "Delhi" },
-          { id: 3, value: "bangalore", label: "Bangalore" },
-          { id: 4, value: "chennai", label: "Chennai" },
-          { id: 5, value: "kolkata", label: "Kolkata" },
-          { id: 6, value: "hyderabad", label: "Hyderabad" },
-          { id: 7, value: "pune", label: "Pune" },
-          { id: 8, value: "ahmedabad", label: "Ahmedabad" },
-        ];
-        setCities(fallbackCities);
-      } finally {
-        setCitiesLoading(false);
-      }
-    };
-
-    fetchCities();
-  }, []);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading job data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -475,17 +482,14 @@ const JobPostForm = () => {
       <div
         className="relative h-64 bg-cover bg-center overflow-hidden"
         style={{
-          backgroundImage: `url(${breadcrumb.src})`
+          backgroundImage: `url('/images/breadcrumb_service.webp')`
         }}
       >
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-white text-center">
-            <h1 className="text-4xl font-bold mb-4">Post Your Job Ad</h1>
+            <h1 className="text-4xl font-bold mb-4">Edit Your Job</h1>
             <div className="flex items-center justify-center gap-2 text-lg">
-              <span className="opacity-80">Category:</span>
-              <span className="font-semibold">Technology</span>
-              <span className="opacity-60">›</span>
-              <span className="font-semibold">Web Development</span>
+              <span className="opacity-80">Update your job posting</span>
             </div>
           </div>
         </div>
@@ -496,13 +500,31 @@ const JobPostForm = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Back Button */}
-        <button 
-          onClick={() => window.history.back()}
-          className="flex items-center gap-2 mb-8 text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          <ArrowLeft size={20} />
-          <span>Back to Categories</span>
-        </button>
+        <div className="flex items-center justify-between mb-8">
+          <button 
+            onClick={() => {
+              dispatch(clearSelectedJob());
+              router.push('/customer-dashboard/job-list');
+            }}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span>Back to Job List</span>
+          </button>
+        </div>
+
+        {/* Success/Error Messages */}
+        {success && (
+          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+            {success}
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-8">
           {/* Job Details Section */}
@@ -784,10 +806,10 @@ const JobPostForm = () => {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Budget From <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
+                </label>
+                <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₹</span>
-                <input
+                  <input
                     type="number"
                     name="budgetFrom"
                     value={formData.budgetFrom}
@@ -798,19 +820,19 @@ const JobPostForm = () => {
                     className={`w-full pl-8 pr-4 py-3 rounded-xl border ${
                       errors.budgetFrom ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500'
                     } focus:ring-2 focus:ring-green-500/20 transition-all duration-200`}
-                  required
-                />
-            </div>
+                    required
+                  />
+                </div>
                 {errors.budgetFrom && <p className="text-red-500 text-xs mt-1">{errors.budgetFrom}</p>}
-          </div>
+              </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Budget To <span className="text-red-500">*</span>
                 </label>
-              <div className="relative">
+                <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₹</span>
-                <input
+                  <input
                     type="number"
                     name="budgetTo"
                     value={formData.budgetTo}
@@ -835,43 +857,61 @@ const JobPostForm = () => {
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
                 <Camera size={20} className="text-white" />
               </div>
-              Upload Company Photos (Up to 3)
+              Job Photos
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {/* Upload button - only show if less than 3 photos */}
-              {uploadedPhotos.length < 3 && (
-                <div className="relative">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center hover:border-blue-400 transition-colors">
-                    <Upload size={24} className="text-blue-500 mb-2" />
-                    <span className="text-xs text-blue-600 font-medium">Add Photos</span>
-                  </div>
-                </div>
-              )}
 
-              {/* Display uploaded photos */}
-              {uploadedPhotos.map((photo, index) => (
-                <div key={photo.id} className="relative group">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {/* Display existing images */}
+              {existingImages.map((image) => (
+                <div key={image.id} className="relative group">
                   <img
-                    src={photo.url}
-                    alt={`Uploaded photo ${index + 1}`}
+                    src={image.url}
+                    alt={`Job image ${image.id}`}
                     className="w-full aspect-square object-cover rounded-lg border-2 border-gray-200"
                   />
                   <button
                     type="button"
-                    onClick={() => removePhoto(photo.id)}
+                    onClick={() => removePhoto(image.id, true)}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     ×
                   </button>
                 </div>
               ))}
+
+              {/* Display new images */}
+              {newImages.map((image) => (
+                <div key={image.id} className="relative group">
+                  <img
+                    src={image.url}
+                    alt={`New image ${image.id}`}
+                    className="w-full aspect-square object-cover rounded-lg border-2 border-green-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(image.id, false)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {/* Upload slot - only show if less than 3 images */}
+              {(existingImages.length + newImages.length) < 3 && (
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center hover:border-blue-400 transition-colors">
+                    <Upload size={24} className="text-blue-500 mb-2" />
+                    <span className="text-xs text-blue-600 font-medium">Add Photo</span>
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
@@ -917,8 +957,8 @@ const JobPostForm = () => {
                   <div className="flex justify-between items-center mt-1">
                     <div className="text-xs text-gray-500">{charCounts.name}/30</div>
                     {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
-            </div>
-          </div>
+                  </div>
+                </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -940,9 +980,9 @@ const JobPostForm = () => {
                       } focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200`}
                       required
                     />
-              </div>
+                  </div>
                   {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
-              </div>
+                </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -963,18 +1003,19 @@ const JobPostForm = () => {
               </div>
             )}
 
-              <button
+            <button
               type="button"
               onClick={handleSubmit}
+              disabled={saving}
               className="w-full mt-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Post Job Now
-              </button>
-            </div>
+              {saving ? 'Updating...' : 'Update Job'}
+            </button>
           </div>
         </div>
+      </div>
     </div>
   );
 };
 
-export default JobPostForm;
+export default EditJobPage;
