@@ -50,6 +50,7 @@ const AdminContentForm = () => {
 
   // Skills management
   const [skills, setSkills] = useState([]);
+  const [skillObjects, setSkillObjects] = useState([]);
   const [skillInput, setSkillInput] = useState("");
 
   const [editingPortfolioId, setEditingPortfolioId] = useState(null);
@@ -63,7 +64,7 @@ const AdminContentForm = () => {
           types: ["heading", "paragraph"],
         }),
       ],
-      content: "<p>Enter your description here...</p>",
+      content: "<p>Enter description here...</p>",
       editorProps: {
         attributes: {
           class:
@@ -85,6 +86,20 @@ const AdminContentForm = () => {
 
       // Normalize response data
       const { fe_skills, fe_porfolio, fe_po_img } = response.data;
+
+      const formatImageUrl = (url) => {
+        if (!url) return null;
+
+        // Clean the URL first (remove -- suffix if present)
+        const cleanUrl = url.split("--")[0];
+
+        // Convert to absolute URL if it's a relative path
+        if (!cleanUrl.startsWith('http')) {
+          return `https://test.hyrelancer.in/${cleanUrl.replace(/^\/+/, "")}`;
+        }
+
+        return cleanUrl;
+      };
 
       if (fe_porfolio?.length > 0 || fe_skills?.length > 0) {
         // Process portfolio data
@@ -109,11 +124,11 @@ const AdminContentForm = () => {
             id: portfolio.fpo_id,
             title: portfolio.fpo_title,
             description: portfolio.fpo_desc,
-            mainImage: portfolio.fpo_img,
+            mainImage: formatImageUrl(portfolio.fpo_img),
             images: portfolioImages.map((img) => ({
               id: img.fpoi_id,
               name: img.fpoi_path?.split("--")[1] || "image",
-              url: img.fpoi_path?.split("--")[0] || img.fpoi_path,
+              url: formatImageUrl(img.fpoi_path),
               fpoi_id: img.fpoi_id,
             })),
             videos: portfolioVideos.map((vid) => ({
@@ -125,12 +140,16 @@ const AdminContentForm = () => {
           };
         });
 
-        const processedSkills = fe_skills.map((skill) => skill.fs_skill);
+        const processedSkillObjs = fe_skills.map((s) => ({ id: s.fs_id, skill: s.fs_skill }));
+        const processedSkills = processedSkillObjs.map((s) => s.skill);
 
+        // Save both: skillObjects holds ids, userData.skills (and skills state) keep strings
+        setSkillObjects(processedSkillObjs);
         setUserData({
           portfolio: processedPortfolio,
           skills: processedSkills,
         });
+        setSkills(processedSkills);
         setCurrentView("dashboard");
       } else {
         setUserData(false);
@@ -251,17 +270,18 @@ const AdminContentForm = () => {
         return;
       }
 
-      // For updating skills, we might need a separate endpoint
-      // For now, using the existing portfolio update structure
-      const formData = new FormData();
-      formData.append("fp_u_id", userId);
-      formData.append("is_status", "update_skills");
+      // Add new skills that don't exist in original userData
+      const originalSkills = userData?.skills || [];
+      const newSkills = skills.filter(skill => !originalSkills.includes(skill));
 
-      skills.forEach((skill) => {
-        formData.append("skillinput[]", skill);
-      });
+      for (const skill of newSkills) {
+        const formData = new FormData();
+        formData.append("fp_u_id", userId);
+        formData.append("skillinput", skill);
+        formData.append("is_status", "update");
 
-      await adminApi.post("/updateFeUPortfolio", formData);
+        await adminApi.post("/storeFeUSkill", formData);
+      }
 
       // Update local state
       setUserData((prev) => ({ ...prev, skills }));
@@ -324,7 +344,20 @@ const AdminContentForm = () => {
         formData.append("video-upload[]", field.url.trim());
       });
 
-      const response = await adminApi.post("/updateFeUPortfolio", formData, {
+      let endpoint, successMessage;
+      if (editingPortfolioId) {
+        // Updating existing portfolio
+        formData.append("fpo_id", btoa(String(editingPortfolioId)));
+        endpoint = "/updateFeUPortfolio";
+        successMessage = "Portfolio updated successfully";
+      } else {
+        // Creating new portfolio  
+        formData.append("is_status", "update"); // or whatever status you need
+        endpoint = "/storeFeUPortfolio";
+        successMessage = "Portfolio created successfully";
+      }
+
+      const response = await adminApi.post(endpoint, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -359,7 +392,7 @@ const AdminContentForm = () => {
     setImageFields([{ id: Date.now(), file: null, preview: null }]);
     setVideoFields([{ id: Date.now(), url: "", fpoi_id: null }]);
     if (editor)
-      editor.commands.setContent("<p>Enter your description here...</p>");
+      editor.commands.setContent("<p>Enter description here...</p>");
     setError("");
     setCurrentView("editPortfolio");
   };
@@ -367,14 +400,14 @@ const AdminContentForm = () => {
   const startEditPortfolioItem = (idOrIndex) => {
     const portfolio = Array.isArray(userData?.portfolio)
       ? userData.portfolio.find((p) => p.id === idOrIndex) ||
-        userData.portfolio[idOrIndex]
+      userData.portfolio[idOrIndex]
       : null;
 
     setEditingPortfolioId(portfolio?.id ?? null);
     setTitle(portfolio?.title || "");
     if (editor)
       editor.commands.setContent(
-        portfolio?.description || "<p>Enter your description here...</p>"
+        portfolio?.description || "<p>Enter description here...</p>"
       );
 
     // Setup image fields with existing data
@@ -435,7 +468,7 @@ const AdminContentForm = () => {
     setImageFields([{ id: Date.now(), file: null, preview: null }]);
     setVideoFields([{ id: Date.now(), url: "", fpoi_id: null }]);
     if (editor) {
-      editor.commands.setContent("<p>Enter your description here...</p>");
+      editor.commands.setContent("<p>Enter description here...</p>");
     }
     setError("");
   };
@@ -478,13 +511,15 @@ const AdminContentForm = () => {
       setSkillInput("");
       return;
     }
-    setSkills((prev) => [...prev, val]);
-    setSkillInput("");
-  };
 
-  const removeSkill = (index) => {
-    if (skills.length <= 1) return;
-    setSkills((prev) => prev.filter((_, i) => i !== index));
+    // Add to plain string array (used by update logic/UI)
+    setSkills((prev) => [...prev, val]);
+
+    // Also add a placeholder in skillObjects so indices align with `skills`.
+    // New items have no server id yet (id: null).
+    setSkillObjects((prev) => [...prev, { id: null, skill: val }]);
+
+    setSkillInput("");
   };
 
   // Add/Remove fields
@@ -524,59 +559,61 @@ const AdminContentForm = () => {
     setCurrentView("editSkills");
   };
 
-  const handleEditPortfolio = () => {
-    const portfolio = userData.portfolio[0];
-    if (portfolio) {
-      setTitle(portfolio.title);
-      if (editor) {
-        editor.commands.setContent(portfolio.description);
+  const handleDeleteSkill = async (skillIndex, skillNameParam) => {
+    try {
+      setSubmitLoading(true);
+      setError("");
+
+      // Determine skill name (UI text) and skill id (from skillObjects)
+      const skillName = skillNameParam ?? skills[skillIndex];
+      const skillObj = skillObjects[skillIndex];
+      const skillId = skillObj?.id ?? null;
+
+      // Prevent removing last skill
+      const projectedSkills = skills.filter((_, idx) => idx !== skillIndex);
+      if (projectedSkills.length === 0) {
+        setError("You must have at least one skill");
+        return;
       }
 
-      // Set up image fields
-      const imageFields = [];
-
-      // Add main image
-      if (portfolio.mainImage) {
-        imageFields.push({
-          id: "main-" + Date.now(),
-          file: null,
-          preview: portfolio.mainImage.split("--")[0],
-          existing: true,
-        });
+      // If we have an ID for the skill, call backend to delete
+      if (skillId) {
+        try {
+          // Try DELETE endpoint first (replace if your API differs)
+          await adminApi.get(`/deleteFeUData/1/${btoa(String(skillId))}`);
+        } catch (deleteErr) {
+          // Fallback: call skill store endpoint with is_status=delete (if backend expects that)
+          try {
+            const formData = new FormData();
+            formData.append("fp_u_id", userId);
+            formData.append("fs_id", skillId);
+            formData.append("is_status", "delete");
+            await adminApi.post("/storeFeUSkill", formData);
+          } catch (postErr) {
+            console.error("Backend delete fallback failed:", postErr);
+            setError("Failed to delete skill on server. Try again.");
+            return;
+          }
+        }
+      } else {
+        // No skillId (newly added unsaved skill) — nothing to delete on server
+        // Proceed to update local state only.
       }
 
-      // Add additional images
-      if (portfolio.images) {
-        portfolio.images.forEach((img) => {
-          imageFields.push({
-            id: img.id,
-            file: null,
-            preview: img.url,
-            existing: true,
-            fpoi_id: img.fpoi_id,
-          });
-        });
-      }
+      // Update local UI state after successful server deletion (or local-only deletion)
+      const updatedSkillObjs = skillObjects.filter((_, idx) => idx !== skillIndex);
+      setSkillObjects(updatedSkillObjs);
 
-      if (imageFields.length === 0) {
-        imageFields.push({ id: Date.now(), file: null, preview: null });
-      }
-      setImageFields(imageFields);
-
-      // Set up video fields with fpoi_id
-      const videoFields = (portfolio.videos || []).map((vid) => ({
-        id: vid.id,
-        url: vid.url,
-        fpoi_id: vid.fpoi_id,
-      }));
-
-      if (videoFields.length === 0) {
-        videoFields.push({ id: Date.now(), url: "", fpoi_id: null });
-      }
-      setVideoFields(videoFields);
+      setSkills(projectedSkills);
+      setUserData((prev) => ({ ...prev, skills: projectedSkills }));
+    } catch (error) {
+      console.error("Error deleting skill:", error);
+      setError("Failed to delete skill. Please try again.");
+    } finally {
+      setSubmitLoading(false);
     }
-    setCurrentView("editPortfolio");
   };
+
 
   const goBack = () => {
     if (currentView === "editSkills") {
@@ -593,9 +630,8 @@ const AdminContentForm = () => {
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-2 rounded hover:bg-gray-100 transition-colors ${
-        isActive ? "bg-gray-200 text-blue-600" : "text-gray-600"
-      }`}
+      className={`p-2 rounded hover:bg-gray-100 transition-colors ${isActive ? "bg-gray-200 text-blue-600" : "text-gray-600"
+        }`}
     >
       {children}
     </button>
@@ -692,8 +728,8 @@ const AdminContentForm = () => {
                         {skills.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => removeSkill(idx)}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                            onClick={() => handleDeleteSkill(idx, skill)}
+                            className="p-1 text-red-500 hover:bg-red-100 rounded-full transition-colors"
                             title="Remove skill"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -950,7 +986,7 @@ const AdminContentForm = () => {
                   ) : (
                     <>
                       <User className="w-4 h-4" />
-                      Create Profile
+                      Create Portfolio
                     </>
                   )}
                 </button>
@@ -979,7 +1015,7 @@ const AdminContentForm = () => {
                     Portfolio Dashboard
                   </h1>
                   <p className="text-sm text-gray-500">
-                    Manage your portfolio and skills
+                    Manage portfolio and skills
                   </p>
                 </div>
               </div>
@@ -1037,7 +1073,7 @@ const AdminContentForm = () => {
                     >
                       {item.mainImage && (
                         <img
-                          src={item.mainImage.split("--")[0]}
+                          src={item.mainImage} // Now it's already properly formatted
                           alt={item.title}
                           className="w-full h-32 object-cover rounded-lg mb-3"
                         />
@@ -1107,7 +1143,7 @@ const AdminContentForm = () => {
                     Edit Skills
                   </h1>
                   <p className="text-sm text-gray-500">
-                    Update your skills and expertise
+                    Update skills and expertise
                   </p>
                 </div>
               </div>
@@ -1173,7 +1209,7 @@ const AdminContentForm = () => {
                         {skills.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => removeSkill(idx)}
+                            onClick={() => handleDeleteSkill(idx)}
                             className="p-1 text-red-500 hover:bg-red-100 rounded-full transition-colors"
                             title="Remove skill"
                           >
@@ -1252,7 +1288,7 @@ const AdminContentForm = () => {
                   </h1>
                   <p className="text-sm text-gray-500">
                     {editingPortfolioId
-                      ? "Update your portfolio item"
+                      ? "Update portfolio item"
                       : "Create a new portfolio item"}
                   </p>
                 </div>
@@ -1307,8 +1343,8 @@ const AdminContentForm = () => {
                           {field.file
                             ? field.file.name
                             : field.existing
-                            ? "Current image"
-                            : "No file chosen"}
+                              ? "Current image"
+                              : "No file chosen"}
                         </span>
                         {field.preview && (
                           <img
