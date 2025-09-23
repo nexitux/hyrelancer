@@ -1,139 +1,258 @@
 "use client";
-import { useState } from 'react';
-import { Eye, Check, X, Trash2, MapPin, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
+import { Edit, Trash2, ChevronLeft, ChevronRight, Eye, CheckCircle, XCircle } from 'lucide-react';
+import api from '../../../../config/api';
+import JobModal from './components/JobDetailsModal';
+import { setSelectedJobId, setSelectedJobData } from '../../../../redux/slices/jobSlice';
 
 const ServiceOrders = () => {
+  const router = useRouter();
+  const dispatch = useDispatch();
   const [currentPage, setCurrentPage] = useState(1);
-  const [orders, setOrders] = useState([
-    {
-      id: 1,
-      title: 'UI/UX Sales Page Design for Natural Skincare Brand',
-      company: 'PrimeEdge Solutions',
-      location: 'Las Vegas, USA',
-      date: 'Mar 12, 2024',
-      pricing: '$410',
-      status: 'Hired',
-      statusColor: 'bg-blue-100 text-blue-800'
-    },
-    {
-      id: 2,
-      title: 'High-quality video editing for your marketing campaign',
-      company: 'Bright Future',
-      location: 'Las Vegas, USA',
-      date: 'Mar 12, 2024',
-      pricing: '$410',
-      status: 'Pending',
-      statusColor: 'bg-yellow-100 text-yellow-800'
-    },
-    {
-      id: 3,
-      title: 'Professional voiceover services for your videos',
-      company: 'GlobalTech Partners',
-      location: 'Las Vegas, USA',
-      date: 'Mar 12, 2024',
-      pricing: '$410',
-      status: 'Cancelled',
-      statusColor: 'bg-red-100 text-red-800'
-    },
-    {
-      id: 4,
-      title: 'UI/UX Sales Page Design for Natural Skincare Brand',
-      company: 'Apex Innovations',
-      location: 'Las Vegas, USA',
-      date: 'Mar 12, 2024',
-      pricing: '$410',
-      status: 'Completed',
-      statusColor: 'bg-green-100 text-green-800'
-    },
-    {
-      id: 5,
-      title: 'I will do figma UI UX design for websites & landing page',
-      company: 'Innovations',
-      location: 'Las Vegas, USA',
-      date: 'Mar 12, 2024',
-      pricing: '$410',
-      status: 'Completed',
-      statusColor: 'bg-green-100 text-green-800'
-    },
-    {
-      id: 6,
-      title: 'Mobile App UI Design for E-commerce Platform',
-      company: 'TechFlow Inc',
-      location: 'New York, USA',
-      date: 'Mar 13, 2024',
-      pricing: '$520',
-      status: 'Pending',
-      statusColor: 'bg-yellow-100 text-yellow-800'
-    },
-    {
-      id: 7,
-      title: 'Brand Identity Design Package',
-      company: 'Creative Studios',
-      location: 'Los Angeles, USA',
-      date: 'Mar 13, 2024',
-      pricing: '$350',
-      status: 'Hired',
-      statusColor: 'bg-blue-100 text-blue-800'
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success"); // "success" or "error"
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // { orderId, action, newStatus }
+
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    if (showConfirmModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
-  ]);
+
+    // Cleanup on component unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showConfirmModal]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchJobs = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch site data (categories, subcategories, services) and jobs in parallel
+        const [siteDataRes, jobsRes] = await Promise.all([
+          api.get('/getSiteData'),
+          api.get('/getJob')
+        ]);
+
+        const siteData = siteDataRes?.data || {};
+        const scList = Array.isArray(siteData.sc_list) ? siteData.sc_list : [];
+        const seList = Array.isArray(siteData.se_list) ? siteData.se_list : [];
+
+        // Build lookup maps
+        const categoryIdToName = {};
+        const subCategoryIdToName = {};
+        scList.forEach((sc) => {
+          if (sc?.get_ca_data?.ca_id != null && sc?.get_ca_data?.ca_name) {
+            categoryIdToName[sc.get_ca_data.ca_id] = sc.get_ca_data.ca_name;
+          }
+          if (sc?.sc_id != null && sc?.sc_name) {
+            subCategoryIdToName[sc.sc_id] = sc.sc_name;
+          }
+        });
+
+        const serviceIdToName = {};
+        seList.forEach((se) => {
+          if (se?.se_id != null && se?.se_name) {
+            serviceIdToName[se.se_id] = se.se_name;
+          }
+        });
+
+        const raw = jobsRes?.data;
+        console.log('getJob raw response:', raw);
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw?.jobs)
+              ? raw.jobs
+              : Array.isArray(raw?.job_list)
+                ? raw.job_list
+                : raw?.job_list
+                  ? [raw.job_list]
+                  : [];
+
+        // Sort latest first by updated_at or created_at
+        const sorted = [...list].sort((a, b) => {
+          const aDate = new Date(a?.updated_at || a?.created_at || 0).getTime();
+          const bDate = new Date(b?.updated_at || b?.created_at || 0).getTime();
+          return bDate - aDate;
+        });
+
+        const mapped = sorted.map((job, index) => {
+          const updated = job.updated_at  || job.created_at ;
+          const postedOn = updated
+            ? new Date(updated).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : '';
+            
+            // Check active status
+            let isActive = false;
+            if (typeof job.cuj_is_active !== 'undefined') {
+              isActive = Number(job.cuj_is_active) === 1;
+            } 
+            
+            const status = isActive ? 'Active' : 'Inactive';
+
+          const subCategoryName = job.subcategory_name || job.sc_name || subCategoryIdToName[job.cuj_sc_id] || '—';
+          const serviceName = job.service_name || job.service || job.job_type || serviceIdToName[job.cuj_se_id] || '—';
+
+          return {
+            id: job.id ?? index + 1,
+            category: subCategoryName,
+            service: serviceName,
+            postedOn,
+            status,
+            statusColor: getStatusColor(status),
+            raw: job
+          };
+        });
+
+        if (isMounted) {
+          setOrders(mapped);
+        }
+      } catch (e) {
+        if (isMounted) setError(e?.response?.data?.message || 'Failed to load jobs');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchJobs();
+    return () => { isMounted = false; };
+  }, []);
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
 
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(orders.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentOrders = orders.slice(startIndex, endIndex);
+  const currentOrders = useMemo(() => orders.slice(startIndex, endIndex), [orders, startIndex, endIndex]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
     setOpenDropdownId(null); // Close any open dropdowns when changing pages
   };
 
-  const getCompanyIcon = (company) => {
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-orange-500',
-      'bg-pink-500',
-      'bg-indigo-500',
-      'bg-red-500'
-    ];
-    const colorIndex = company.length % colors.length;
-    return colors[colorIndex];
-  };
-
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Hired':
-        return 'bg-blue-100 text-blue-800';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'Completed':
+      case 'Active':
         return 'bg-green-100 text-green-800';
+      case 'Inactive':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const handleStatusChange = (orderId, newStatus) => {
-    setOrders(orders.map(order =>
-      order.id === orderId
-        ? { ...order, status: newStatus, statusColor: getStatusColor(newStatus) }
-        : order
-    ));
-    setOpenDropdownId(null);
-  };
-
   const handleDeleteOrder = (orderId) => {
-    setOrders(orders.filter(order => order.id !== orderId));
+    const job = orders.find(o => o.id === orderId);
+    if (!job) return;
+
+    // Determine the new active status based on current status
+    const newStatus = job.status === 'Active' ? 'Inactive' : 'Active';
+    const action = newStatus === 'Active' ? 'activate' : 'deactivate';
+
+    // Show confirmation modal
+    setPendingAction({ orderId, action, newStatus });
+    setShowConfirmModal(true);
   };
 
-  const toggleDropdown = (orderId) => {
-    setOpenDropdownId(openDropdownId === orderId ? null : orderId);
+  const confirmAction = async () => {
+    if (!pendingAction) return;
+
+    try {
+      const { orderId, newStatus } = pendingAction;
+      const job = orders.find(o => o.id === orderId);
+      if (!job) return;
+
+      const newIsActive = newStatus === 'Active' ? 1 : 0;
+      const jobId = job.raw.cuj_id || job.raw.id;
+      const encodedJobId = btoa(jobId.toString()); // Base64 encode the job ID
+      
+      console.log('Updating job:', jobId, 'encoded as:', encodedJobId, 'active status:', newIsActive);
+
+      // Call API to update job active status using GET method
+      const response = await api.get(`/rejectJob/${encodedJobId}?cuj_is_active=${newIsActive}`);
+
+      console.log('API Response:', response?.data);
+
+      // Update local state immediately regardless of response structure
+      // The API call succeeded if we got here without an error
+      setOrders(prevOrders => 
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { 
+                ...order, 
+                status: newStatus, 
+                statusColor: getStatusColor(newStatus),
+                raw: { ...order.raw, cuj_is_active: newIsActive }
+              }
+            : order
+        )
+      );
+
+      // Show success message
+      const actionText = newStatus === 'Active' ? 'activated' : 'deactivated';
+      setToastType("success");
+      setToastMessage(`Job ${actionText} successfully`);
+      setTimeout(() => setToastMessage(""), 3000);
+      console.log(`Job ${newStatus.toLowerCase()} successfully`);
+    } catch (error) {
+      console.error('Error updating job status:', error);
+      console.error('Error details:', error.response?.data);
+      
+      // Show error message
+      setToastType("error");
+      setToastMessage(`Failed to update job status: ${error.message}`);
+      setTimeout(() => setToastMessage(""), 5000);
+    } finally {
+      // Close modal and reset pending action
+      setShowConfirmModal(false);
+      setPendingAction(null);
+    }
+  };
+
+  const cancelAction = () => {
+    setShowConfirmModal(false);
+    setPendingAction(null);
+  };
+
+  const handleEditOrder = (orderId) => {
+    const job = orders.find(o => o.id === orderId);
+    if (job) {
+      const jobId = job.raw?.cuj_id || job.raw?.id || job.id;
+      if (jobId) {
+        // Store job ID and data in Redux state
+        dispatch(setSelectedJobId(jobId));
+        dispatch(setSelectedJobData(job));
+        // Navigate to edit page without ID in URL
+        router.push('/customer-dashboard/job-list/edit');
+      }
+    }
+  };
+
+  const handleViewOrder = (orderId) => {
+    const job = orders.find(o => o.id === orderId);
+    setSelectedJob(job || null);
+    setIsModalOpen(Boolean(job));
+  };
+  
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedJob(null);
   };
 
   return (
@@ -151,111 +270,93 @@ const ServiceOrders = () => {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Title
+                    categories
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date Orders
+                    Service
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pricing
+                    Posted On
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                   Job Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
+                    Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
+                {loading && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">Loading jobs...</td>
+                  </tr>
+                )}
+                {error && !loading && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-red-600">{error}</td>
+                  </tr>
+                )}
+                {!loading && !error && currentOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No jobs found</td>
+                  </tr>
+                )}
+                {!loading && !error && currentOrders.map((order) => (
+                  <tr key={order.id} className="group hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <div className="flex items-start space-x-3">
-                        <div className={`w-8 h-8 rounded-full ${getCompanyIcon(order.company)} flex items-center justify-center flex-shrink-0`}>
-                          <span className="text-white text-xs font-medium">
-                            {order.company.charAt(0)}
-                          </span>
-                        </div>
+                      <div className="flex items-start">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 mb-1">
-                            {order.title}
+                            {order.category}
                           </p>
-                          <div className="flex items-center text-xs text-gray-500">
-                            <span>{order.company}</span>
-                            <MapPin className="w-3 h-3 ml-2 mr-1" />
-                            <span>{order.location}</span>
-                          </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {order.date}
+                      {order.service}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {order.pricing}
+                      {order.postedOn}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="relative inline-block text-left">
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => toggleDropdown(order.id)}
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${order.statusColor} hover:bg-opacity-80 focus:outline-none`}
-                          >
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
                             {order.status}
-                            <ChevronDown className="ml-1 w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {openDropdownId === order.id && (
-                          <div className="origin-top-right absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white z-10">
-                            <div className="py-1">
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'Hired')}
-                                className="block w-full text-left px-4 py-2 text-xs text-blue-700 hover:bg-blue-50"
-                              >
-                                Hired
-                              </button>
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'Pending')}
-                                className="block w-full text-left px-4 py-2 text-xs text-yellow-700 hover:bg-yellow-50"
-                              >
-                                Pending
-                              </button>
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'Completed')}
-                                className="block w-full text-left px-4 py-2 text-xs text-green-700 hover:bg-green-50"
-                              >
-                                Completed
-                              </button>
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'Cancelled')}
-                                className="block w-full text-left px-4 py-2 text-xs text-red-700 hover:bg-red-50"
-                              >
-                                Cancelled
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
-                        <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
+                        <button
+                          onClick={() => handleViewOrder(order.id)}
+                          className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
+                          title="View"
+                          aria-label="View"
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded">
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
-                          <X className="w-4 h-4" />
+                        <button
+                          onClick={() => handleEditOrder(order.id)}
+                          className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                          title="Edit"
+                          aria-label="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteOrder(order.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                          className={`p-1.5 rounded-md border transition-colors ${
+                            order.status === 'Active'
+                              ? 'text-red-600 border-red-200 hover:bg-red-50'
+                              : 'text-green-600 border-green-200 hover:bg-green-50'
+                          }`}
+                          title={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
+                          aria-label={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {order.status === 'Active' ? (
+                            <XCircle className="w-4 h-4" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -270,94 +371,62 @@ const ServiceOrders = () => {
         <div className="lg:hidden space-y-4">
           {currentOrders.map((order) => (
             <div key={order.id} className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-start space-x-3 mb-3">
-                <div className={`w-10 h-10 rounded-full ${getCompanyIcon(order.company)} flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-white text-sm font-medium">
-                    {order.company.charAt(0)}
-                  </span>
-                </div>
+              <div className="flex items-start mb-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-gray-900 mb-1">
-                    {order.title}
+                    {order.category}
                   </h3>
                   <div className="flex items-center text-xs text-gray-500 mb-2">
-                    <span>{order.company}</span>
-                    <MapPin className="w-3 h-3 ml-2 mr-1" />
-                    <span>{order.location}</span>
+                    <span>{order.service}</span>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
                 <div>
-                  <span className="text-gray-500">Date:</span>
-                  <span className="ml-1 text-gray-900">{order.date}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Price:</span>
-                  <span className="ml-1 font-medium text-gray-900">{order.pricing}</span>
+                  <span className="text-gray-500">Posted On:</span>
+                  <span className="ml-1 text-gray-900">{order.postedOn}</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="relative inline-block text-left">
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => toggleDropdown(order.id)}
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${order.statusColor} hover:bg-opacity-80 focus:outline-none`}
-                    >
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
                       {order.status}
-                      <ChevronDown className="ml-1 w-3 h-3" />
-                    </button>
+                  </span>
                   </div>
-
-                  {openDropdownId === order.id && (
-                    <div className="origin-top-right absolute left-0 mt-2 w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                      <div className="py-1">
+                <div className="flex items-center space-x-2 opacity-100">
                         <button
-                          onClick={() => handleStatusChange(order.id, 'Hired')}
-                          className="block w-full text-left px-4 py-2 text-xs text-blue-700 hover:bg-blue-50"
+                    onClick={() => handleViewOrder(order.id)}
+                    className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
+                    title="View"
+                    aria-label="View"
                         >
-                          Hired
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(order.id, 'Pending')}
-                          className="block w-full text-left px-4 py-2 text-xs text-yellow-700 hover:bg-yellow-50"
-                        >
-                          Pending
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(order.id, 'Completed')}
-                          className="block w-full text-left px-4 py-2 text-xs text-green-700 hover:bg-green-50"
-                        >
-                          Completed
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(order.id, 'Cancelled')}
-                          className="block w-full text-left px-4 py-2 text-xs text-red-700 hover:bg-red-50"
-                        >
-                          Cancelled
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
                     <Eye className="w-4 h-4" />
-                  </button>
-                  <button className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded">
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
-                    <X className="w-4 h-4" />
+                        </button>
+                        <button
+                    onClick={() => handleEditOrder(order.id)}
+                    className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                    title="Edit"
+                    aria-label="Edit"
+                  >
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteOrder(order.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                    className={`p-1.5 rounded-md border transition-colors ${
+                      order.status === 'Active'
+                        ? 'text-red-600 border-red-200 hover:bg-red-50'
+                        : 'text-green-600 border-green-200 hover:bg-green-50'
+                    }`}
+                    title={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
+                    aria-label={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    {order.status === 'Active' ? (
+                      <XCircle className="w-4 h-4" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -429,7 +498,87 @@ const ServiceOrders = () => {
             </div>
           </div>
         </div>
+        
+        {/* Job Details Modal */}
+        <JobModal 
+          isOpen={isModalOpen} 
+          onClose={handleCloseModal} 
+          job={selectedJob} 
+        />
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && pendingAction && (
+          <div className="fixed inset-0 flex items-center justify-center z-[70] backdrop-blur-[1px]">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg border">
+              <div className="flex items-center mb-4">
+                <div className={`p-2 rounded-full mr-3 ${
+                  pendingAction.action === 'activate' 
+                    ? 'bg-green-100' 
+                    : 'bg-red-100'
+                }`}>
+                  {pendingAction.action === 'activate' ? (
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  ) : (
+                    <XCircle className="w-6 h-6 text-red-600" />
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {pendingAction.action === 'activate' ? 'Activate Job' : 'Deactivate Job'}
+                </h3>
+              </div>
+              
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to {pendingAction.action} this job? 
+                {pendingAction.action === 'activate' 
+                  ? ' This will make the job visible to job seekers.' 
+                  : ' This will hide the job from job seekers.'
+                }
+              </p>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={cancelAction}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmAction}
+                  className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                    pendingAction.action === 'activate'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {pendingAction.action === 'activate' ? 'Activate' : 'Deactivate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-[60]">
+          <div className={`flex items-center gap-2 rounded-xl border shadow-md px-4 py-2 text-sm ${
+            toastType === 'success' 
+              ? 'border-green-200 bg-green-50 text-green-800' 
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}>
+            {toastType === 'success' ? (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            )}
+            <span>{toastMessage}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

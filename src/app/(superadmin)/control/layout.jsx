@@ -28,7 +28,7 @@ export default function SuperAdminLayout({ children }) {
       <Sidebar />
 
       {/* Main content with header */}
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 overflow-x-scroll">
         <Header />
         <main className="">{children}</main>
       </div>
