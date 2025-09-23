@@ -1,4 +1,6 @@
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import Image from 'next/image'
 import {
   FaFacebookF,
@@ -11,8 +13,56 @@ import { FiArrowRight } from "react-icons/fi";
 import AppStore from '../../../../public/images/app_store.png';
 import GoogleStore from '../../../../public/images/gg_play.png'
 import Logo from '../../../../public/images/image.png'
+import api from '../../../config/api';
+import { showSuccessNotification, showErrorNotification } from '../../../utils/notificationService';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    
+    if (!email) {
+      showErrorNotification('Please enter your email address');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showErrorNotification('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await api.post('/subscribe', {
+        email: email
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        showSuccessNotification('Thank you for subscribing! You will now receive our latest updates and exclusive offers.');
+
+        setEmail(''); // Clear the input field
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      
+      if (error.response?.status === 422) {
+        const message = error.response.data?.message || 'Invalid email address';
+        showErrorNotification(message);
+      } else if (error.response?.status === 409) {
+        showErrorNotification('This email is already subscribed to our newsletter');
+      } else {
+        showErrorNotification('Failed to subscribe. Please try again later.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <footer className="px-6 pt-12 pb-6 text-white bg-black sm:px-8">
   <div className="mx-auto max-w-7xl">
@@ -82,16 +132,27 @@ const Footer = () => {
         {/* Subscribe */}
         <div className="mb-6 space-y-3">
           <h3 className="text-lg font-semibold text-white">Subscribe</h3>
-          <div className="flex flex-col sm:flex-row">
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row">
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
-              className="flex-1 px-4 py-2 placeholder-gray-400 text-white bg-gray-800 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 placeholder-gray-400 text-white bg-gray-800 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <button className="flex justify-center items-center px-4 py-2 mt-2 bg-blue-600 rounded-md transition-colors hover:bg-blue-700 sm:mt-0 sm:rounded-r-md sm:rounded-l-none">
-              <FiArrowRight size={20} />
+            <button 
+              type="submit"
+              disabled={isLoading}
+              className="flex justify-center items-center px-4 py-2 mt-2 bg-blue-600 rounded-md transition-colors hover:bg-blue-700 sm:mt-0 sm:rounded-r-md sm:rounded-l-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <FiArrowRight size={20} />
+              )}
             </button>
-          </div>
+          </form>
         </div>
 
         {/* App Download */}
