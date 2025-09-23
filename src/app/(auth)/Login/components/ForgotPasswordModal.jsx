@@ -3,12 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, ArrowLeft, Phone, Mail, Check, RefreshCcw } from 'lucide-react';
+import api from '@/config/api';
 
-// Define your API base URL here
-const API_BASE_URL = 'https://test.hyrelancer.in/api';
+const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
+    // Set initial step based on mode
+    const getInitialStep = () => {
+        return mode === 'signup' ? 'mobile-input' : 'choose-method';
+    };
 
-const ForgotPasswordModal = ({ isOpen, onClose }) => {
-    const [currentStep, setCurrentStep] = useState('choose-method');
+    const [currentStep, setCurrentStep] = useState(getInitialStep());
     const [mobileNumber, setMobileNumber] = useState('');
     const [email, setEmail] = useState('');
     const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
@@ -49,7 +52,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
-            setCurrentStep('choose-method');
+            setCurrentStep(getInitialStep());
             setMobileNumber('');
             setEmail('');
             setOtpValues(['', '', '', '', '', '']);
@@ -58,7 +61,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
             setOtpError('');
             setEmailError('');
         }
-    }, [isOpen]);
+    }, [isOpen, mode]);
 
     // Countdown timer for OTP resend
     useEffect(() => {
@@ -91,6 +94,16 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
     };
 
     const handleBack = () => {
+        if (mode === 'signup') {
+            // For signup, only allow going back from otp-input to mobile-input
+            if (currentStep === 'otp-input') {
+                setCurrentStep('mobile-input');
+                setOtpError('');
+            }
+            return;
+        }
+
+        // Original forgot password flow
         if (currentStep === 'mobile-input' || currentStep === 'email-input') {
             setCurrentStep('choose-method');
             setMobileError('');
@@ -115,17 +128,17 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/forgot-password/send-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mobile: payloadMobile }),
-            });
+            // Different API endpoints based on mode
+            const endpoint = mode === 'signup'
+                ? '/signup/send-otp'
+                : '/forgot-password/send-otp';
 
-            const data = await response.json();
-            console.log('forgot send-otp response ->', data);
+            const response = await api.post(endpoint, { mobile: payloadMobile });
+            const data = response.data;
+            console.log(`${mode} send-otp response ->`, data);
 
             // flexible success detection
-            if (response.ok && isBackendSuccess(data)) {
+            if (response.status === 200 && isBackendSuccess(data)) {
                 setCurrentStep('otp-input');
                 setCountdown(30);
                 // ensure phoneNumber is normalized for later steps
@@ -165,23 +178,37 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/forgot-password/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mobile: payloadMobile, otp: otpJoined }),
-            });
+            // Different API endpoints based on mode
+            const endpoint = mode === 'signup'
+                ? '/signup/verify-otp'
+                : '/forgot-password/verify';
 
-            const data = await response.json();
-            console.log('forgot verify-otp response ->', data);
+            const response = await api.post(endpoint, { mobile: payloadMobile, otp: otpJoined });
+            const data = response.data;
+            console.log(`${mode} verify-otp response ->`, data);
 
-            if (response.ok && isBackendSuccess(data)) {
-                // client-side navigation (no full reload)
-                // use router.replace(...) if you don't want this in browser history
-                router.push(`/reset-password?mobile=${encodeURIComponent(payloadMobile)}`);
-                return;
-            } else {
-                setOtpError(data.message || data.remark || 'Failed to verify OTP. Please try again.');
-            }
+            if (response.status === 200 && isBackendSuccess(data)) {
+    // store mobile in sessionStorage (per-tab, not in URL) and redirect without exposing mobile in query
+    try {
+        // For forgot-password flow we use the common key 'resetMobile'
+        sessionStorage.setItem('resetMobile', payloadMobile);
+        // If you also want signup flow to avoid query param, store under a separate key
+        if (mode === 'signup') sessionStorage.setItem('signupMobile', payloadMobile);
+    } catch (e) {
+        // sessionStorage may throw in some strict environments — ignore safely
+        console.warn('sessionStorage unavailable:', e);
+    }
+
+    // Redirect without mobile in the URL
+    if (mode === 'signup') {
+        router.push('/complete-signup');
+    } else {
+        router.push('/reset-password');
+    }
+    return;
+} else {
+    setOtpError(data.message || data.remark || 'Failed to verify OTP. Please try again.');
+}
         } catch (error) {
             console.error('handleOtpSubmit error', error);
             setOtpError('Network error. Please check your connection.');
@@ -196,20 +223,15 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
             setEmailError('Please enter a valid email address.');
             return;
         }
-    
+
         setEmailError('');
         setIsLoading(true);
-    
+
         try {
-            const response = await fetch(`${API_BASE_URL}/forgot-password/email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
-            });
-    
-            const data = await response.json();
-    
-            if (response.ok) {
+            const response = await api.post('/forgot-password/email', { email });
+            const data = response.data;
+
+            if (response.status === 200) {
                 // On success, move to the next step
                 setCurrentStep('email-sent');
             } else {
@@ -242,16 +264,16 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
         setOtpError('');
 
         try {
-            const response = await fetch(`${API_BASE_URL}/forgot-password/reset-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mobile: payloadMobile }),
-            });
+            // Different API endpoints based on mode
+            const endpoint = mode === 'signup'
+                ? '/signup/reset-otp'
+                : '/forgot-password/reset-otp';
 
-            const data = await response.json();
-            console.log('forgot reset-otp response ->', data);
+            const response = await api.post(endpoint, { mobile: payloadMobile });
+            const data = response.data;
+            console.log(`${mode} resend-otp response ->`, data);
 
-            if (response.ok && isBackendSuccess(data)) {
+            if (response.status === 200 && isBackendSuccess(data)) {
                 setCountdown(30);
                 setOtpValues(['', '', '', '', '', '']);
                 setTimeout(() => otpInputRefs.current[0]?.focus(), 80);
@@ -266,12 +288,10 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
         }
     };
 
-
     const handleResendEmail = async () => {
         // This function simply re-runs the email submission logic
         await handleEmailSubmit();
     };
-
 
     if (!isOpen) return null;
 
@@ -331,8 +351,15 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-50 rounded-xl flex items-center justify-center mx-auto">
                                 <Phone className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" />
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Enter Mobile Number</h2>
-                            <p className="text-sm sm:text-base text-gray-600">We'll send a verification code to your phone</p>
+                            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
+                                {mode === 'signup' ? 'Enter Your Mobile Number' : 'Enter Mobile Number'}
+                            </h2>
+                            <p className="text-sm sm:text-base text-gray-600">
+                                {mode === 'signup'
+                                    ? "We'll send a verification code to confirm your number"
+                                    : "We'll send a verification code to your phone"
+                                }
+                            </p>
                         </div>
 
                         <div className="space-y-4 sm:space-y-6">
@@ -365,7 +392,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                                         Sending OTP...
                                     </>
                                 ) : (
-                                    'Send Verification Code'
+                                    mode === 'signup' ? 'Send Verification Code' : 'Send Verification Code'
                                 )}
                             </button>
                         </div>
@@ -435,7 +462,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                                         Verifying...
                                     </>
                                 ) : (
-                                    'Verify & Reset Password'
+                                    mode === 'signup' ? 'Verify & Continue' : 'Verify & Reset Password'
                                 )}
                             </button>
                         </div>
@@ -544,7 +571,10 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                     <button
                         onClick={handleBack}
-                        className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${currentStep === 'choose-method' ? 'invisible' : 'visible'
+                        className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${(mode === 'signup' && currentStep === 'mobile-input') ||
+                                (mode === 'forgot-password' && currentStep === 'choose-method')
+                                ? 'invisible'
+                                : 'visible'
                             }`}
                     >
                         <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />

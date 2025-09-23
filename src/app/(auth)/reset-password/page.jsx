@@ -31,31 +31,31 @@ const usePasswordValidation = (password) => {
   }, [password]);
 
   const isValid = Object.values(validation).every(Boolean);
-  
+
   return { validation, isValid };
 };
 
 // Password Input Component (No changes needed)
-const PasswordInput = ({ 
-  id, 
-  label, 
-  value, 
-  onChange, 
-  placeholder, 
-  showPassword, 
-  onTogglePassword, 
-  error, 
-  success 
+const PasswordInput = ({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  showPassword,
+  onTogglePassword,
+  error,
+  success
 }) => {
-  const borderColor = error 
-    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-    : success 
-    ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
-    : 'border-gray-300 focus:ring-[#3a599c] focus:border-[#3a599c]';
+  const borderColor = error
+    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+    : success
+      ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+      : 'border-gray-300 focus:ring-[#3a599c] focus:border-[#3a599c]';
 
   return (
     <div className="space-y-1">
-      <label 
+      <label
         htmlFor={id}
         className="block text-sm font-medium text-gray-700"
       >
@@ -122,12 +122,13 @@ const ValidationChecklist = ({ validation }) => {
 
 // Main Reset Password Component - Now reads URL params
 function ResetPasswordForm() {
-  const router = useRouter(); 
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   // State for email/token from URL
   const [token, setToken] = useState(null);
   const [email, setEmail] = useState(null);
+  const [mobile, setMobile] = useState(null);
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
 
   // Existing state
@@ -139,7 +140,7 @@ function ResetPasswordForm() {
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [countdown, setCountdown] = useState(3);
-  
+
   const { validation, isValid: isNewPasswordValid } = usePasswordValidation(newPassword);
   const passwordsMatch = confirmPassword && newPassword === confirmPassword;
   const isFormValid = isNewPasswordValid && passwordsMatch;
@@ -148,16 +149,33 @@ function ResetPasswordForm() {
   useEffect(() => {
     const tokenFromUrl = searchParams.get('token');
     const emailFromUrl = searchParams.get('email');
+    const mobileFromUrl = searchParams.get('mobile');
 
     if (tokenFromUrl && emailFromUrl) {
+      // Email/token reset flow
       setToken(tokenFromUrl);
       setEmail(emailFromUrl);
     } else {
-      // This is not an email reset link.
-      // The page will proceed with its original (mobile/OTP) logic.
-      console.log("Token/email not found in URL. Assuming mobile/OTP flow.");
+      // Try reading mobile from sessionStorage first (set by modal)
+      let mobileFromSession = null;
+      try {
+        mobileFromSession = sessionStorage.getItem('resetMobile');
+      } catch (e) {
+        console.warn('sessionStorage unavailable:', e);
+      }
+
+      if (mobileFromSession) {
+        setMobile(mobileFromSession);
+      } else if (mobileFromUrl) {
+        // backward-compatibility if mobile was passed via URL (not recommended)
+        setMobile(mobileFromUrl);
+      } else {
+        // No token/email/mobile found — this page expects to be reached after OTP
+        console.log("Token/email/mobile not found. The user should start the forgot-password flow again.");
+      }
     }
   }, [searchParams]);
+
 
   const handleSubmit = async () => {
     if (!isFormValid) {
@@ -205,6 +223,12 @@ function ResetPasswordForm() {
     } else {
       // === ORIGINAL (MOBILE/OTP) FLOW ===
       // This logic is preserved exactly as it was.
+      if (!mobile) {
+        setSubmitError('Session expired or missing mobile number. Please request a new OTP.');
+        setIsSubmitting(false);
+        return;
+      }
+
       try {
         const response = await fetch(`${API_BASE_URL}/forgot-password/new-password`, {
           method: 'POST',
@@ -212,13 +236,20 @@ function ResetPasswordForm() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            mobile: mobile,           // <-- include mobile in body as backend expects
             password: newPassword,
           }),
         });
 
         const data = await response.json();
 
-        if (response.ok && data.status === 'success') {
+        if (response.ok && (data.status === 'success' || data.status === 'ok' || data.status === 1)) {
+          // clear stored mobile after success
+          try {
+            sessionStorage.removeItem('resetMobile');
+          } catch (e) {
+            console.warn('sessionStorage unavailable while clearing:', e);
+          }
           setSubmitSuccess(true);
         } else {
           setSubmitError(data.message || 'An unexpected error occurred.');
@@ -248,15 +279,15 @@ function ResetPasswordForm() {
       };
     }
   }, [submitSuccess, router]);
-  
-  const newPasswordError = newPassword && !isNewPasswordValid 
-    ? 'Password does not meet all requirements' 
+
+  const newPasswordError = newPassword && !isNewPasswordValid
+    ? 'Password does not meet all requirements'
     : '';
-  
-  const confirmPasswordError = confirmPassword && !passwordsMatch 
-    ? 'Passwords do not match' 
+
+  const confirmPasswordError = confirmPassword && !passwordsMatch
+    ? 'Passwords do not match'
     : '';
-    
+
   // Invalid Token Screen
   if (isTokenInvalid) {
     return (
@@ -312,14 +343,17 @@ function ResetPasswordForm() {
               />
             </div>
           </div>
-          
+
           <div className="w-2/5 flex justify-center">
             <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
               <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Create new password</h1>
                 <p className="text-gray-600">Please create a strong password for your account.</p>
-                 {email && <p className="text-sm text-blue-700 mt-2">Resetting password for: <span className="font-medium">{email}</span></p>}
-              </div>
+                {(email || mobile) && (
+                  <p className="text-sm text-blue-700 mt-2">
+                    Resetting password for: <span className="font-medium">{email ? email : `+91 ${mobile}`}</span>
+                  </p>
+                )}              </div>
 
               <div className="space-y-6">
                 <PasswordInput
@@ -391,7 +425,11 @@ function ResetPasswordForm() {
             <div className="mb-6">
               <h1 className="text-xl font-bold text-gray-900 mb-2">Create new password</h1>
               <p className="text-gray-600 text-sm">Please create a strong password for your account.</p>
-               {email && <p className="text-sm text-blue-700 mt-2">Resetting for: <span className="font-medium">{email}</span></p>}
+              {(email || mobile) && (
+                <p className="text-sm text-blue-900 mt-2">
+                  Resetting for: <span className="font-medium">{email ? email : `+91 ${mobile}`}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-5">
@@ -438,8 +476,8 @@ function ResetPasswordForm() {
         </div>
       </div>
 
-      <div 
-        aria-live="polite" 
+      <div
+        aria-live="polite"
         aria-atomic="true"
         className="sr-only"
       >
@@ -452,9 +490,9 @@ function ResetPasswordForm() {
 
 // Export a default component that includes the Suspense wrapper for convenience
 export default function ResetPasswordPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <ResetPasswordForm />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
+  )
 }

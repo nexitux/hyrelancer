@@ -80,7 +80,7 @@ export default function AdminServicePage() {
   const fetchDropdownData = async () => {
     try {
       setDropdownLoading(true);
-      
+
       const [stateResponse, categoryResponse] = await Promise.all([
         fetch('https://test.hyrelancer.in/api/getStatelist'),
         fetch('https://test.hyrelancer.in/api/getCategorylist')
@@ -104,7 +104,7 @@ export default function AdminServicePage() {
         setServiceTypes(categoryData.sc_list);
         setAllServices(categoryData.se_list);
       }
-      
+
     } catch (err) {
       console.error('Error fetching dropdown data:', err);
       message.error("Failed to load dropdown data");
@@ -116,28 +116,28 @@ export default function AdminServicePage() {
 
   // Check if user has meaningful data
   const hasValidData = (data) => {
-    const hasServices = data.se_sub_cate_list && 
-                       Array.isArray(data.se_sub_cate_list) && 
-                       data.se_sub_cate_list.length > 0 &&
-                       data.se_service_list && 
-                       Array.isArray(data.se_service_list) && 
-                       data.se_service_list.length > 0;
+    const hasServices = data.se_sub_cate_list &&
+      Array.isArray(data.se_sub_cate_list) &&
+      data.se_sub_cate_list.length > 0 &&
+      data.se_service_list &&
+      Array.isArray(data.se_service_list) &&
+      data.se_service_list.length > 0;
 
-    const hasAreas = data.se_state_list && 
-                     Array.isArray(data.se_state_list) && 
-                     data.se_state_list.length > 0;
+    const hasAreas = data.se_state_list &&
+      Array.isArray(data.se_state_list) &&
+      data.se_state_list.length > 0;
 
-    const hasProfile = data.u_profile && 
-                       typeof data.u_profile === 'object' && 
-                       (data.u_profile.fp_completing_time || 
-                        data.u_profile.fp_amount_for || 
-                        (data.u_profile.fp_amt_hour && data.u_profile.fp_amt_hour !== "0" && data.u_profile.fp_amt_hour !== 0));
+    const hasProfile = data.u_profile &&
+      typeof data.u_profile === 'object' &&
+      (data.u_profile.fp_completing_time ||
+        data.u_profile.fp_amount_for ||
+        (data.u_profile.fp_amt_hour && data.u_profile.fp_amt_hour !== "0" && data.u_profile.fp_amt_hour !== 0));
 
-    const hasIdProof = data.fe_idproof_data && 
-                       typeof data.fe_idproof_data === 'object' &&
-                       (data.fe_idproof_data.fi_type || 
-                        data.fe_idproof_data.fi_number || 
-                        data.fe_idproof_data.fi_img);
+    const hasIdProof = data.fe_idproof_data &&
+      typeof data.fe_idproof_data === 'object' &&
+      (data.fe_idproof_data.fi_type ||
+        data.fe_idproof_data.fi_number ||
+        data.fe_idproof_data.fi_img);
 
     return hasServices || hasAreas || hasProfile || hasIdProof;
   };
@@ -150,20 +150,20 @@ export default function AdminServicePage() {
       setDataLoading(true);
       const response = await adminApi.get(`/getFeUService/${userIdBase64}`);
       const data = response.data;
-      
+
       // Determine view mode based on data
       if (hasValidData(data)) {
         setHasExistingData(true);
         setListingData(data);
         setViewMode('listing');
-        
+
         // Also process data for form (in case user clicks edit)
         processDataForForm(data);
       } else {
         setHasExistingData(false);
         setViewMode('form');
       }
-      
+
     } catch (err) {
       console.error('Error fetching user service data:', err);
       setHasExistingData(false);
@@ -177,22 +177,22 @@ export default function AdminServicePage() {
   // Process data for form editing
   const processDataForForm = (data) => {
     // Process existing service data
-    if (data.se_sub_cate_list && Array.isArray(data.se_sub_cate_list) && 
-        data.se_service_list && Array.isArray(data.se_service_list)) {
-      
+    if (data.se_sub_cate_list && Array.isArray(data.se_sub_cate_list) &&
+      data.se_service_list && Array.isArray(data.se_service_list)) {
+
       const processedServiceData = [];
-      
+
       data.se_sub_cate_list.forEach(category => {
         if (category && category.frs_sc_id) {
           const categoryServices = data.se_service_list.filter(
             service => service && service.frs_sc_id === category.frs_sc_id
           );
-          
+
           if (categoryServices.length > 0) {
             processedServiceData.push({
               key: `${category.frs_sc_id}-${Date.now()}`,
               serviceType: category.frs_sc_id,
-              services: categoryServices.map(service => ({ 
+              services: categoryServices.map(service => ({
                 se_id: service.frs_se_id,
                 se_name: service.se_name
               }))
@@ -200,27 +200,27 @@ export default function AdminServicePage() {
           }
         }
       });
-      
+
       setServiceTableData(processedServiceData);
     }
 
     // Process existing area data
-    if (data.se_state_list && Array.isArray(data.se_state_list) && 
-        data.se_city_list && Array.isArray(data.se_city_list)) {
-      
+    if (data.se_state_list && Array.isArray(data.se_state_list) &&
+      data.se_city_list && Array.isArray(data.se_city_list)) {
+
       const processedAreaData = [];
-      
+
       data.se_state_list.forEach(state => {
         if (state && state.frc_s_id) {
           const stateCities = data.se_city_list.filter(
             city => city && city.frc_s_id === state.frc_s_id
           );
-          
+
           if (stateCities.length > 0) {
             processedAreaData.push({
               key: state.frc_s_id,
               state: state.frc_s_id,
-              cities: stateCities.map(city => ({ 
+              cities: stateCities.map(city => ({
                 cit_id: city.frc_cit_id,
                 cit_name: city.cit_name
               }))
@@ -228,7 +228,7 @@ export default function AdminServicePage() {
           }
         }
       });
-      
+
       setAreaTableData(processedAreaData);
     }
 
@@ -239,25 +239,25 @@ export default function AdminServicePage() {
         amountType: data.u_profile.fp_amount_for || '',
         amount: data.u_profile.fp_amt_hour || ''
       };
-      
+
       form.setFieldsValue(profileData);
     }
 
     // Process ID proof data
     if (data.fe_idproof_data && typeof data.fe_idproof_data === 'object') {
       setExistingIdProof(data.fe_idproof_data);
-      
+
       const idProofData = {
         idType: data.fe_idproof_data.fi_type || '',
         idNumber: data.fe_idproof_data.fi_number || ''
       };
-      
+
       form.setFieldsValue(idProofData);
 
       if (data.fe_idproof_data.fi_img) {
         const fileName = data.fe_idproof_data.fi_img.split('/').pop() || 'id_proof.jpg';
         let fileUrl;
-        
+
         if (data.fe_idproof_data.fi_img.includes('--')) {
           fileUrl = `https://test.hyrelancer.in/${data.fe_idproof_data.fi_img.split('--')[0]}`;
         } else if (data.fe_idproof_data.fi_img.startsWith('uploads/')) {
@@ -265,7 +265,7 @@ export default function AdminServicePage() {
         } else {
           fileUrl = `https://test.hyrelancer.in/uploads/${data.fe_idproof_data.fi_img}`;
         }
-        
+
         setFileList([{
           uid: '-1',
           name: fileName,
@@ -299,7 +299,7 @@ export default function AdminServicePage() {
     if (serviceData && serviceData.se_name) {
       return serviceData.se_name;
     }
-    
+
     const service = allServices.find(s => s.se_id == id);
     return service ? service.se_name : `Service #${id}`;
   };
@@ -313,7 +313,7 @@ export default function AdminServicePage() {
     if (cityData && cityData.cit_name) {
       return cityData.cit_name;
     }
-    
+
     const city = cities.find(c => c.cit_id == id);
     return city ? city.cit_name : `City #${id}`;
   };
@@ -467,7 +467,7 @@ export default function AdminServicePage() {
 
     const requiredFields = ['worktime', 'amountType', 'amount', 'idType', 'idNumber'];
     const missingFields = requiredFields.filter(field => !values[field] || values[field].toString().trim() === '');
-    
+
     if (missingFields.length > 0) {
       message.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       return;
@@ -483,9 +483,9 @@ export default function AdminServicePage() {
 
     try {
       const formData = new FormData();
-      
+
       formData.append('fp_u_id', userIdBase64);
-      
+
       const isUpdateOperation = !!existingIdProof;
       formData.append('is_status', isUpdateOperation ? 'update' : 'new');
 
@@ -519,17 +519,17 @@ export default function AdminServicePage() {
       }
 
       if (isUpdateOperation && existingIdProof && existingIdProof.fi_id) {
-          formData.append('fi_id', existingIdProof.fi_id);
+        formData.append('fi_id', existingIdProof.fi_id);
       }
 
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('idFile', fileList[0].originFileObj);
       } else if (isUpdateOperation && existingIdProof && existingIdProof.fi_img) {
-          formData.append('idFile', existingIdProof.fi_img);
+        formData.append('idFile', existingIdProof.fi_img);
       }
 
       const apiEndpoint = isUpdateOperation ? '/updateFeUService' : '/storeFeUService';
-      
+
       let response;
       if (isUpdateOperation) {
         // Use PUT method for updates
@@ -556,7 +556,7 @@ export default function AdminServicePage() {
       }
 
       message.success(result.message || "Service details saved successfully!");
-      
+
       // After successful save, refresh data and go back to listing
       await fetchUserServiceData();
 
@@ -583,6 +583,20 @@ export default function AdminServicePage() {
     const fileProgress = fileList.length > 0 ? 1 : 0;
 
     return Math.round(((filledFields.length + serviceProgress + areaProgress + fileProgress) / 10) * 100);
+  };
+
+  const formatImageUrl = (url) => {
+    if (!url) return null;
+
+    // Clean the URL first (remove -- suffix if present)
+    const cleanUrl = url.split("--")[0];
+
+    // Convert to absolute URL if it's a relative path
+    if (!cleanUrl.startsWith('http')) {
+      return `https://test.hyrelancer.in/${cleanUrl.replace(/^\/+/, "")}`;
+    }
+
+    return cleanUrl;
   };
 
   // Table columns for form
@@ -844,10 +858,8 @@ export default function AdminServicePage() {
                           <Text strong>ID Proof Document</Text>
                         </div>
                         <div className="mt-2">
-                          <img 
-                            src={listingData.fe_idproof_data.fi_img.includes('--') 
-                              ? `https://test.hyrelancer.in/${listingData.fe_idproof_data.fi_img.split('--')[0]}` 
-                              : `https://test.hyrelancer.in/uploads/${listingData.fe_idproof_data.fi_img}`}
+                          <img
+                            src={formatImageUrl(listingData.fe_idproof_data.fi_img)}
                             alt="ID Proof"
                             className="max-w-xs rounded-lg border"
                             style={{ maxHeight: '200px', objectFit: 'contain' }}
@@ -1205,4 +1217,4 @@ export default function AdminServicePage() {
       </div>
     </div>
   );
-}
+} 

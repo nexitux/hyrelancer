@@ -1,0 +1,229 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { User, Mail, Phone, Eye, EyeOff, ArrowLeft, RefreshCcw } from 'lucide-react';
+import api from '@/config/api';
+
+const CompleteSignupPage = () => {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const mobileNumber = searchParams.get('mobile');
+
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
+    const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Redirect back if no mobile number
+    useEffect(() => {
+        if (!mobileNumber) {
+            router.push('/login');
+        }
+    }, [mobileNumber, router]);
+
+    const validateForm = () => {
+        const newErrors = {};
+
+        // Name validation
+        if (!formData.name.trim()) {
+            newErrors.name = 'Name is required';
+        } else if (formData.name.trim().length < 2) {
+            newErrors.name = 'Name must be at least 2 characters';
+        }
+
+        // Email validation
+        if (!formData.email.trim()) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        // Password validation
+        if (!formData.password) {
+            newErrors.password = 'Password is required';
+        } else if (formData.password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters';
+        }
+
+        // Confirm password validation
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = 'Please confirm your password';
+        } else if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        return newErrors;
+    };
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        // Clear error when user starts typing
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        const formErrors = validateForm();
+        if (Object.keys(formErrors).length > 0) {
+            setErrors(formErrors);
+            return;
+        }
+
+        setIsLoading(true);
+        setErrors({});
+
+        try {
+            const response = await api.post('/signup/complete', {
+                mobile: mobileNumber,
+                name: formData.name.trim(),
+                email: formData.email.trim(),
+                password: formData.password
+            });
+
+            // Success - redirect to login or dashboard
+            router.push('/login?message=signup-success');
+            
+        } catch (error) {
+            console.error('Signup completion error:', error);
+            
+            if (error.response && error.response.data) {
+                const errorData = error.response.data;
+                
+                // Handle validation errors from backend
+                if (errorData.errors) {
+                    setErrors(errorData.errors);
+                } else {
+                    setErrors({ general: errorData.message || 'Failed to complete signup. Please try again.' });
+                }
+            } else {
+                setErrors({ general: 'Network error. Please check your connection and try again.' });
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (!mobileNumber) {
+        return null; // Will redirect via useEffect
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md">
+                {/* Header */}
+                <div className="text-center mb-8 flex justify-center items-center gap-4">
+                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-aut mb-">
+                        <User className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
+                        <p className="text-gray-600">Just a few more details to get you started</p>
+                    </div>
+                </div>
+
+                {/* Mobile Number Display */}
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <Phone className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-green-700 font-medium">Verified Mobile Number</p>
+                            <p className="text-green-800 font-semibold">+91 {mobileNumber}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Form */}
+                <div className="space-y-6">
+                    {/* General Error */}
+                    {errors.general && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                            <p className="text-red-600 text-sm">{errors.general}</p>
+                        </div>
+                    )}
+
+                    {/* Name Field */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <User className="w-5 h-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
+                                placeholder="Enter your full name"
+                                className={`w-full h-12 bg-gray-50 border ${errors.name ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-300 focus:ring-blue-100'} focus:ring-2 focus:bg-white rounded-xl pl-12 pr-4 text-gray-900 placeholder-gray-400 outline-none transition-all duration-200`}
+                            />
+                        </div>
+                        {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
+                    </div>
+
+                    {/* Email Field */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Mail className="w-5 h-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => handleInputChange('email', e.target.value)}
+                                placeholder="Enter your email address"
+                                className={`w-full h-12 bg-gray-50 border ${errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-300 focus:ring-blue-100'} focus:ring-2 focus:bg-white rounded-xl pl-12 pr-4 text-gray-900 placeholder-gray-400 outline-none transition-all duration-200`}
+                            />
+                        </div>
+                        {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
+                    </div>
+
+                    
+                    {/* Submit Button */}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isLoading}
+                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                        {isLoading ? (
+                            <>
+                                <RefreshCcw className="w-4 h-4 animate-spin" />
+                                Creating Account...
+                            </>
+                        ) : (
+                            'Complete Registration'
+                        )}
+                    </button>
+                </div>
+
+                {/* Back to Login */}
+                <div className="text-center mt-6">
+                    <button
+                        onClick={() => router.push('/Login')}
+                        className="text-gray-600 hover:text-gray-800 text-sm font-medium flex items-center gap-2 mx-auto transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Login
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default CompleteSignupPage;

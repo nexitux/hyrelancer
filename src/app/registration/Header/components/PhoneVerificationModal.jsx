@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Phone, Check, RefreshCcw } from 'lucide-react';
+import api from '@/config/api';
 
-// Define your API base URL here
-const API_BASE_URL = 'https://backend.hyrelancer.in/api';
-
-const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber = '9876543210' }) => {
+const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
   const [currentStep, setCurrentStep] = useState('otp-input');
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [otpError, setOtpError] = useState('');
+  const [guid, setGuid] = useState(''); // Store GUID from send-otp response
+  const [registeredMobile, setRegisteredMobile] = useState(''); // Store mobile from API response
   const otpInputRefs = useRef([]);
 
   // flexible backend success detection
@@ -33,17 +33,50 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber = '9876543210' })
     );
   };
 
-  // Reset state when modal opens
+  // Send initial OTP when modal opens
+  const sendInitialOtp = async () => {
+    if (!phoneNumber) return;
+
+    setIsLoading(true);
+    setOtpError('');
+
+    try {
+      const response = await api.post('/register/send-otp', {
+        mobile: phoneNumber
+      });
+
+      const data = response.data;
+      console.log('send otp response ->', data);
+
+      if (isBackendSuccess(data)) {
+        setGuid(data.guid || ''); // Store GUID for resend functionality
+        // Mobile is now in format "9539939981" without country code
+        setRegisteredMobile(data.mobile || phoneNumber); // Store mobile from response
+        setCountdown(30);
+        setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+      } else {
+        setOtpError(data.message || data.remark || 'Failed to send OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('sendInitialOtp error', error);
+      setOtpError(error.response?.data?.message || 'Network error. Please check your connection.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reset state when modal opens and send OTP
   useEffect(() => {
     if (isOpen) {
       setCurrentStep('otp-input');
       setOtpValues(['', '', '', '', '', '']);
       setCountdown(30);
       setOtpError('');
-      // Focus first input after short delay
-      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+      setGuid('');
+      setRegisteredMobile('');
+      sendInitialOtp();
     }
-  }, [isOpen]);
+  }, [isOpen, phoneNumber]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -87,23 +120,22 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber = '9876543210' })
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/verify-phone`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile: phoneNumber, otp: otpJoined }),
+      const response = await api.post('/register/verify-otp', {
+        mobile: registeredMobile || phoneNumber, // Use mobile from API response first
+        otp: otpJoined
       });
 
-      const data = await response.json();
-      console.log('phone verification response ->', data);
+      const data = response.data;
+      console.log('verify otp response ->', data);
 
-      if (response.ok && isBackendSuccess(data)) {
+      if (isBackendSuccess(data)) {
         setCurrentStep('success');
       } else {
         setOtpError(data.message || data.remark || 'Failed to verify OTP. Please try again.');
       }
     } catch (error) {
       console.error('handleOtpSubmit error', error);
-      setOtpError('Network error. Please check your connection.');
+      setOtpError(error.response?.data?.message || 'Failed to verify OTP. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -118,16 +150,15 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber = '9876543210' })
     setOtpError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/send-verification-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile: phoneNumber }),
+      const response = await api.post('/register/resend-otp', {
+        mobile: registeredMobile || phoneNumber, // Use mobile from API response first
+        ...(guid && { guid }) // Include GUID if available
       });
 
-      const data = await response.json();
+      const data = response.data;
       console.log('resend otp response ->', data);
 
-      if (response.ok && isBackendSuccess(data)) {
+      if (isBackendSuccess(data)) {
         setCountdown(30);
         setOtpValues(['', '', '', '', '', '']);
         setTimeout(() => otpInputRefs.current[0]?.focus(), 80);
@@ -136,7 +167,7 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber = '9876543210' })
       }
     } catch (error) {
       console.error('handleResendOtp error', error);
-      setOtpError('Network error. Please check your connection.');
+      setOtpError(error.response?.data?.message || 'Network error. Please check your connection.');
     } finally {
       setIsLoading(false);
     }

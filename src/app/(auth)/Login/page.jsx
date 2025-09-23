@@ -6,12 +6,11 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '@/redux/slices/authSlice';
 import api from '@/config/api';
-import { toast } from 'react-toastify';
 import ErrorModal from '../../../components/ErorrModal/page';
 import EmailVerificationModal from '../../../components/EmailModal/page';
 import { handleAuthErrors, handleRegistrationErrors, showSuccessNotification } from '../../../utils/notificationService';
 import ForgotPasswordModal from './components/ForgotPasswordModal'
-import { Check, X } from 'lucide-react';
+import { Check, X, Eye, EyeOff } from 'lucide-react';
 
 // Custom hook for password validation
 const usePasswordValidation = (password) => {
@@ -101,6 +100,7 @@ const AuthForm = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotModalMode, setForgotModalMode] = useState('forgot-password');
 
   const { validation: passwordValidation, isValid: isPasswordValid } = usePasswordValidation(formData.password || '');
 
@@ -112,6 +112,15 @@ const AuthForm = () => {
   const [isPhoneLoading, setIsPhoneLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [otpSuccessMessage, setOtpSuccessMessage] = useState(''); // New state for success message
+  const [showPasswordFields, setShowPasswordFields] = useState({
+    'signin-password': false,
+    password: false,
+    confirmPassword: false
+  });
+
+  const toggleShowPassword = (fieldKey) => {
+    setShowPasswordFields(prev => ({ ...prev, [fieldKey]: !prev[fieldKey] }));
+  };
 
   const slides = [
     {
@@ -151,55 +160,55 @@ const AuthForm = () => {
 
   // --- START of Google Login Integration ---
   useEffect(() => {
-  const handleGoogleLoginRedirect = async () => {
-    // Use window.location.search instead of location.search
-    const queryParams = new URLSearchParams(window.location.search);
-    const token = queryParams.get('token');
-    const googleId = queryParams.get('user_googleid');
-    const urlError = queryParams.get('error');
+    const handleGoogleLoginRedirect = async () => {
+      // Use window.location.search instead of location.search
+      const queryParams = new URLSearchParams(window.location.search);
+      const token = queryParams.get('token');
+      const googleId = queryParams.get('user_googleid');
+      const urlError = queryParams.get('error');
 
-    if (token && googleId) {
-      setIsLoading(true);
-      dispatch(loginStart());
-      try {
-        const backendUrl = 'http://test.hyrelancer.in/api';
-        const response = await api.get(
-          `${backendUrl}/getDatatByGoogleId?google_id=${googleId}`, 
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
+      if (token && googleId) {
+        setIsLoading(true);
+        dispatch(loginStart());
+        try {
+          const backendUrl = 'http://test.hyrelancer.in/api';
+          const response = await api.get(
+            `${backendUrl}/getDatatByGoogleId?google_id=${googleId}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
 
-        const data = response.data;
-        dispatch(loginSuccess({
-          user: data.user,
-          token: data.token,
-          userType: data.user.user_type,
-          slug: data.fp_slug
-        }));
+          const data = response.data;
+          dispatch(loginSuccess({
+            user: data.user,
+            token: data.token,
+            userType: data.user.user_type,
+            slug: data.fp_slug
+          }));
 
-        // REMOVED: Let AuthWrapper handle the redirect
-        // const redirectPath = getRedirectPath(data.user);
-        // router.push(redirectPath);
-        
-      } catch (apiError) {
-        const errorMessage = apiError.response?.data?.error || 'Failed to complete Google login.';
+          // REMOVED: Let AuthWrapper handle the redirect
+          // const redirectPath = getRedirectPath(data.user);
+          // router.push(redirectPath);
+
+        } catch (apiError) {
+          const errorMessage = apiError.response?.data?.error || 'Failed to complete Google login.';
+          dispatch(loginFailure(errorMessage));
+          setErrorModalContent(errorMessage);
+          setShowErrorModal(true);
+        } finally {
+          setIsLoading(false);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } else if (urlError) {
+        const errorMessage = decodeURIComponent(urlError);
         dispatch(loginFailure(errorMessage));
         setErrorModalContent(errorMessage);
         setShowErrorModal(true);
-      } finally {
-        setIsLoading(false);
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-    } else if (urlError) {
-      const errorMessage = decodeURIComponent(urlError);
-      dispatch(loginFailure(errorMessage));
-      setErrorModalContent(errorMessage);
-      setShowErrorModal(true);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  };
+    };
 
-  handleGoogleLoginRedirect();
-}, [dispatch]);
+    handleGoogleLoginRedirect();
+  }, [dispatch]);
   // --- END of Google Login Integration ---
 
   useEffect(() => {
@@ -819,8 +828,8 @@ const AuthForm = () => {
 
                   <div className="relative">
                     <input
-                      type="password"
-                      className={`w-full h-12 sm:h-14 bg-gray-50/80 border-2 rounded-xl px-4 sm:px-6 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
+                      type={showPasswordFields['signin-password'] ? 'text' : 'password'}
+                      className={`w-full h-12 sm:h-14 bg-gray-50/80 border-2 rounded-xl px-4 sm:px-6 pr-12 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
                         }`}
                       required
                       onFocus={() => handleFocus('signin-password')}
@@ -828,9 +837,20 @@ const AuthForm = () => {
                       onChange={(e) => handleInputChange('signin-password', e.target.value)}
                       placeholder=" "
                     />
-                    {!(focusedField === 'signin-password' || (formData && formData['signin-password'])) && (
-                      <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${isFieldActive('signin-password')
-                        ? 'top-3 text-xs text-gray-500 font-medium'
+
+                    {/* eye toggle */}
+                    <button
+                      type="button"
+                      aria-label={showPasswordFields['signin-password'] ? 'Hide password' : 'Show password'}
+                      onClick={() => toggleShowPassword('signin-password')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                    >
+                      {showPasswordFields['signin-password'] ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+
+                    {!(focusedField === 'signin-password' || (formData && formData['signin-username'])) && (
+                      <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${isFieldActive('signin-username')
+                        ? 'top-0 text-xs text-gray-500 font-medium'
                         : 'top-1/2 -translate-y-1/2 text-gray-400'
                         }`}>
                         Password
@@ -839,10 +859,14 @@ const AuthForm = () => {
                     {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password[0]}</p>}
                   </div>
 
+
                   <div className="text-right">
                     <button
                       type="button"
-                      onClick={() => setIsForgotModalOpen(true)}
+                      onClick={() => {
+                        setForgotModalMode('forgot-password'); // ensure correct mode
+                        setIsForgotModalOpen(true);
+                      }}
                       className="text-sm text-[#3a599c] hover:text-blue-800 font-medium hover:underline"
                     >
                       Forgot Password?
@@ -915,13 +939,13 @@ const AuthForm = () => {
               // Mobile Sign Up Form
               <div className="max-w-md mx-auto">
                 <div className="flex flex-col items-center justify-center mb-6">
-                  <div className="rounded-xl flex items-center justify-center mx-auto mb-4">
+                  {/* <div className="rounded-xl flex items-center justify-center mx-auto mb-4">
                     <img
                       src="/images/logo.jpg"
                       alt="Hyrelancer Logo"
                       className="w-8 h-8 object-contain"
                     />
-                  </div>
+                  </div> */}
                   <h2 className="text-xl sm:text-2xl font-semibold text-[#3a599c] mb-2">Get Started</h2>
                   <p className="text-gray-600 text-sm">Create your account to begin</p>
                 </div>
@@ -936,17 +960,43 @@ const AuthForm = () => {
                   ].map(({ field, label, type }) => (
                     <div key={field}>
                       <div className="relative">
-                        <input
-                          type={type}
-                          className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                            }`}
-                          required
-                          onFocus={() => handleFocus(field)}
-                          onBlur={handleBlur}
-                          onChange={(e) => handleInputChange(field, e.target.value)}
-                          value={formData[field] || ''}
-                          placeholder=" "
-                        />
+                        {(field === 'password' || field === 'confirmPassword') ? (
+                          <>
+                            <input
+                              type={showPasswordFields[field] ? 'text' : 'password'}
+                              className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                                }`}
+                              required
+                              onFocus={() => handleFocus(field)}
+                              onBlur={handleBlur}
+                              onChange={(e) => handleInputChange(field, e.target.value)}
+                              value={formData[field] || ''}
+                              placeholder=" "
+                            />
+
+                            <button
+                              type="button"
+                              aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
+                              onClick={() => toggleShowPassword(field)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                            >
+                              {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </>
+                        ) : (
+                          <input
+                            type={type}
+                            className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                              }`}
+                            required
+                            onFocus={() => handleFocus(field)}
+                            onBlur={handleBlur}
+                            onChange={(e) => handleInputChange(field, e.target.value)}
+                            value={formData[field] || ''}
+                            placeholder=" "
+                          />
+                        )}
+
                         {!(formData[field] && formData[field].length > 0) && (
                           <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
                             ? 'top-1.5 text-xs text-gray-500'
@@ -956,6 +1006,7 @@ const AuthForm = () => {
                           </label>
                         )}
                       </div>
+
                       {/* Conditionally render the checklist for the password field */}
                       {field === 'password' && formData.password && (
                         <div className="mt-2">
@@ -977,6 +1028,7 @@ const AuthForm = () => {
                     </div>
                   ))}
 
+
                   <button
                     type="submit"
                     disabled={isLoading}
@@ -985,7 +1037,25 @@ const AuthForm = () => {
                     {isLoading ? 'Creating Account...' : 'Create Account'}
                   </button>
 
-                  <p className="text-center text-gray-600 text-sm">
+                  {/* Sign up with Mobile -> open shared modal in signup mode */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotModalMode('signup');           // open modal in signup mode
+                      setIsForgotModalOpen(true);             // show modal
+                      // optionally prefill modal mobile input if user typed it in form
+                      if (formData.mobile) {
+                        // if your modal accepts initialMobile prop this will prefill it
+                        // (we pass initialMobile when rendering the modal below)
+                      }
+                    }}
+                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm mt-3"
+                  >
+                    <MailOutlined className="w-4 h-4 mr-3 text-gray-500" />
+                    Sign up with Mobile
+                  </button>
+
+                  <p className="text-center text-gray-600 text-sm mt-3">
                     Already have an account?{' '}
                     <button
                       type="button"
@@ -995,6 +1065,7 @@ const AuthForm = () => {
                       Sign in
                     </button>
                   </p>
+
                 </form>
               </div>
             )}
@@ -1043,8 +1114,8 @@ const AuthForm = () => {
 
                   <div className="relative">
                     <input
-                      type="password"
-                      className={`w-full h-14 bg-gray-50/80 border-2 rounded-2xl px-6 text-gray-900 text-lg focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
+                      type={showPasswordFields['signin-password'] ? 'text' : 'password'}
+                      className={`w-full h-14 bg-gray-50/80 border-2 rounded-2xl px-6 text-gray-900 text-lg focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm pr-12 ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
                         }`}
                       required
                       onFocus={() => handleFocus('signin-password')}
@@ -1052,6 +1123,16 @@ const AuthForm = () => {
                       onChange={(e) => handleInputChange('signin-password', e.target.value)}
                       placeholder=" "
                     />
+
+                    <button
+                      type="button"
+                      aria-label={showPasswordFields['signin-password'] ? 'Hide password' : 'Show password'}
+                      onClick={() => toggleShowPassword('signin-password')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1"
+                    >
+                      {showPasswordFields['signin-password'] ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+
                     {!(focusedField === 'signin-password' || (formData && formData['signin-password'])) && (
                       <label className={`absolute left-6 transition-all duration-300 pointer-events-none ${isFieldActive('signin-password')
                         ? 'top-3 text-sm text-gray-500 font-medium'
@@ -1063,10 +1144,14 @@ const AuthForm = () => {
                     {errors.password && <p className="text-red-500 text-sm mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>}
                   </div>
 
+
                   <div className="text-right">
                     <button
                       type="button"
-                      onClick={() => setIsForgotModalOpen(true)}
+                      onClick={() => {
+                        setForgotModalMode('forgot-password'); // ensure correct mode
+                        setIsForgotModalOpen(true);
+                      }}
                       className="text-sm text-[#3a599c] hover:text-blue-800 font-medium hover:underline"
                     >
                       Forgot Password?
@@ -1141,13 +1226,13 @@ const AuthForm = () => {
               }`}>
               <div className="h-full flex flex-col justify-center">
                 <div className="flex flex-col items-center justify-center mb-8">
-                  <div className=" to-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  {/* <div className=" to-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <img
                       src="/images/logo.jpg"
                       alt="Hyrelancer Logo"
                       className="w-14 h-14 object-contain"
                     />
-                  </div>
+                  </div> */}
                   <h2 className="text-2xl font-semibold text-[#3a599c] mb-2">Get Started</h2>
                   <p className="text-gray-600">Create your account to begin</p>
                 </div>
@@ -1162,17 +1247,43 @@ const AuthForm = () => {
                   ].map(({ field, label, type }) => (
                     <div key={field}>
                       <div className="relative">
-                        <input
-                          type={type}
-                          className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                            }`}
-                          required
-                          onFocus={() => handleFocus(field)}
-                          onBlur={handleBlur}
-                          onChange={(e) => handleInputChange(field, e.target.value)}
-                          value={formData[field] || ''}
-                          placeholder=" "
-                        />
+                        {(field === 'password' || field === 'confirmPassword') ? (
+                          <>
+                            <input
+                              type={showPasswordFields[field] ? 'text' : 'password'}
+                              className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                                }`}
+                              required
+                              onFocus={() => handleFocus(field)}
+                              onBlur={handleBlur}
+                              onChange={(e) => handleInputChange(field, e.target.value)}
+                              value={formData[field] || ''}
+                              placeholder=" "
+                            />
+
+                            <button
+                              type="button"
+                              aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
+                              onClick={() => toggleShowPassword(field)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                            >
+                              {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </>
+                        ) : (
+                          <input
+                            type={type}
+                            className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                              }`}
+                            required
+                            onFocus={() => handleFocus(field)}
+                            onBlur={handleBlur}
+                            onChange={(e) => handleInputChange(field, e.target.value)}
+                            value={formData[field] || ''}
+                            placeholder=" "
+                          />
+                        )}
+
                         {!(formData[field] && formData[field].length > 0) && (
                           <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
                             ? 'top-1.5 text-xs text-gray-500'
@@ -1182,6 +1293,7 @@ const AuthForm = () => {
                           </label>
                         )}
                       </div>
+
                       {/* Conditionally render the checklist for the password field */}
                       {field === 'password' && formData.password && (
                         <div className="mt-2">
@@ -1211,7 +1323,21 @@ const AuthForm = () => {
                     {isLoading ? 'Creating Account...' : 'Create Account'}
                   </button>
 
-                  <p className="text-center text-gray-600 text-sm">
+                  {/* Sign up with Mobile -> open shared modal in signup mode */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotModalMode('signup');
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm mt-4"
+                  >
+                    <MailOutlined className="w-4 h-4 mr-3 text-gray-500" />
+                    Sign up with Mobile
+                  </button>
+
+
+                  <p className="text-center text-gray-600 text-sm mt-3">
                     Already have an account?{' '}
                     <button
                       type="button"
@@ -1335,10 +1461,17 @@ const AuthForm = () => {
         onResendEmail={handleResendVerificationEmail}
       />
 
-      {/* Forgot Password Modal */}
+      {/* Forgot Password / Signup Modal (mode controlled by forgotModalMode) */}
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}
-        onClose={() => setIsForgotModalOpen(false)}
+        onClose={() => {
+          setIsForgotModalOpen(false);
+          // reset mode to default so next open is predictable
+          setForgotModalMode('forgot-password');
+        }}
+        mode={forgotModalMode}
+        // only prefill when modal is in signup mode (avoid accidental prefill for forgot-password)
+        initialMobile={forgotModalMode === 'signup' ? (formData.mobile || '') : ''}
       />
     </main>
   );
