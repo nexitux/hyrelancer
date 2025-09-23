@@ -9,13 +9,12 @@ const BadgesTable = () => {
   const [editingBadge, setEditingBadge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalLoading, setModalLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(null); // Track which badge is being deleted
+  const [deleteLoading, setDeleteLoading] = useState(null);
   const [form] = Form.useForm();
   const [badges, setBadges] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Fetch badges from API
   useEffect(() => {
     fetchBadges();
   }, []);
@@ -37,13 +36,11 @@ const BadgesTable = () => {
     }
   };
 
-  // Handle Delete with Popconfirm
   const handleDelete = async (badgeId, badgeName) => {
     try {
-      setDeleteLoading(badgeId); // Set loading for specific badge
+      setDeleteLoading(badgeId);
       console.log('Attempting to delete badge:', { badgeId, badgeName });
       
-      // Use Base64 encoded ID (the correct method)
       const encodedId = btoa(badgeId.toString());
       console.log('Deleting with encoded ID:', encodedId);
       
@@ -51,7 +48,6 @@ const BadgesTable = () => {
       console.log('Delete response:', deleteResponse);
 
       if (deleteResponse.status === 200 || deleteResponse.status === 204) {
-        // Remove from local state
         setBadges(prev => prev.filter(badge => badge.b_id !== badgeId));
         message.success(`Badge "${badgeName}" deleted successfully`);
       } else {
@@ -61,11 +57,10 @@ const BadgesTable = () => {
       console.error('Delete failed:', error);
       message.error(`Failed to delete badge: ${error.response?.data?.message || error.message}`);
     } finally {
-      setDeleteLoading(null); // Clear loading state
+      setDeleteLoading(null);
     }
   };
 
-  // Handle Edit button click
   const handleEdit = (badge) => {
     setEditingBadge(badge);
     setModalLoading(true);
@@ -146,7 +141,12 @@ const BadgesTable = () => {
       handleCancel();
     } catch (err) {
       console.error(err);
-      message.error('Failed to save badge');
+      // Check if the error is specifically about b_name validation
+      if (err.errorFields && err.errorFields.some(field => field.name[0] === 'b_name')) {
+        message.error('Please enter a valid badge name');
+      } else {
+        message.error('Failed to save badge');
+      }
     } finally {
       setModalLoading(false);
     }
@@ -159,6 +159,14 @@ const BadgesTable = () => {
         message.error('You can only upload image files!');
         return Upload.LIST_IGNORE;
       }
+      
+      // Check file size (limit to 2MB)
+      const isLt2M = file.size / 1024 / 1024 < 2;
+      if (!isLt2M) {
+        message.error('Image must be smaller than 2MB!');
+        return Upload.LIST_IGNORE;
+      }
+      
       setImageFile(file);
 
       const reader = new FileReader();
@@ -193,6 +201,9 @@ const BadgesTable = () => {
               src={imgUrl} 
               alt="Badge" 
               className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/64?text=No+Image';
+              }}
             />
           </div>
         )
@@ -209,7 +220,7 @@ const BadgesTable = () => {
       title: 'Description',
       dataIndex: 'b_desc',
       key: 'b_desc',
-      render: (text) => <span className="text-gray-600">{text}</span>
+      render: (text) => <span className="text-gray-600">{text || 'No description'}</span>
     },
     {
       title: 'Points',
@@ -227,7 +238,7 @@ const BadgesTable = () => {
       dataIndex: 'b_type',
       key: 'b_type',
       render: (type) => (
-        <Tag color="default" className="px-2 py-1 rounded-md">{type}</Tag>
+        <Tag color="default" className="px-2 py-1 rounded-md">{type || 'No type'}</Tag>
       )
     },
     {
@@ -373,7 +384,7 @@ const BadgesTable = () => {
                   )}
                 </Upload>
                 <div className="text-xs text-gray-500 mt-2">
-                  Click to upload a new image
+                  Click to upload a new image (max 2MB)
                 </div>
               </Form.Item>
               <div className="flex-1 space-y-4">
