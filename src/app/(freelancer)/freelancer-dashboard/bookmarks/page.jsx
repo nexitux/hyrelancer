@@ -1,301 +1,466 @@
 "use client";
-// components/Bookmarks.jsx
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import Projects from './components/Projects';
-import Jobs from './components/Jobs';
-// import Employers from './components/Employers';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, MapPin, Calendar, Star, Trash2, Briefcase, Clock, DollarSign, AlertCircle, Check, X, PaperPlaneTilt } from 'lucide-react';
+import axios from 'axios';
+import { message } from 'antd';
 
 const Bookmarks = () => {
     const [activeTab, setActiveTab] = useState('Projects');
     const [currentPage, setCurrentPage] = useState(1);
+    const [bookmarks, setBookmarks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [infoMessage, setInfoMessage] = useState({ text: '', type: '' });
+    
+    // Apply job states
+    const [applying, setApplying] = useState(false);
+    const [applyingId, setApplyingId] = useState(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successJob, setSuccessJob] = useState(null);
+
     const itemsPerPage = 6;
 
-    // Sample data
-    const projectsData = [
-        {
-            id: 1,
-            title: "Figma mockup needed for a new website for Electrical contractor business website",
-            postedDate: "2 days ago",
-            location: "Las Vegas, USA",
-            budget: "2.8K spent",
-            rating: 4,
-            description: "I am looking for a talented UX/UI Designer to create screens for my basic product idea. The project involves designing a web application with modern UI components and responsive layouts.",
-            tags: ["Graphic Design", "Website Design", "Figma"],
-            proposals: 50,
-            price: 170
-        },
-        {
-            id: 2,
-            title: "I need you to design a email confirming for a ticket buying in a beautiful modern way for mobile",
-            postedDate: "2 days ago",
-            location: "Las Vegas, USA",
-            budget: "2.8K spent",
-            rating: 5,
-            description: "I am looking for a talented UX/UI Designer to create screens for my basic product idea. The project involves designing a web application with email templates and mobile-first approach.",
-            tags: ["Graphic Design", "Website Design", "Figma"],
-            proposals: 50,
-            price: 170
-        },
-        {
-            id: 3,
-            title: "Website Design (Web & Responsive) for an Online Tutoring Website",
-            postedDate: "3 days ago",
-            location: "Las Vegas, USA",
-            budget: "2.8K spent",
-            rating: 4,
-            description: "Looking for an experienced web designer to create a comprehensive tutoring platform with user dashboard, booking system, and payment integration.",
-            tags: ["Website Design", "UX/UI", "Responsive Design"],
-            proposals: 35,
-            price: 250
-        },
-        {
-            id: 4,
-            title: "UX/UI Designer | Brander to Redesign the First Screen of the Main Page",
-            postedDate: "3 days ago",
-            location: "Las Vegas, USA",
-            budget: "2.8K spent",
-            rating: 5,
-            description: "Need a creative designer to redesign our landing page with focus on conversion optimization and modern design trends.",
-            tags: ["UX/UI", "Branding", "Landing Page"],
-            proposals: 42,
-            price: 180
-        },
-        {
-            id: 5,
-            title: "Mobile App Development for iOS and Android",
-            postedDate: "4 days ago",
-            location: "California, USA",
-            budget: "5.2K spent",
-            rating: 5,
-            description: "Looking for experienced mobile developers to build a cross-platform application with React Native framework.",
-            tags: ["Mobile Development", "React Native", "iOS", "Android"],
-            proposals: 28,
-            price: 320
-        },
-        {
-            id: 6,
-            title: "E-commerce Platform Development with Payment Integration",
-            postedDate: "5 days ago",
-            location: "New York, USA",
-            budget: "8.5K spent",
-            rating: 4,
-            description: "Need full-stack developers to build a complete e-commerce solution with modern payment gateways and inventory management.",
-            tags: ["E-commerce", "Full Stack", "Payment Gateway"],
-            proposals: 65,
-            price: 450
-        },
-        {
-            id: 7,
-            title: "Logo Design and Brand Identity Package",
-            postedDate: "1 week ago",
-            location: "Texas, USA",
-            budget: "1.5K spent",
-            rating: 5,
-            description: "Creative designer needed for complete brand identity including logo, business cards, letterhead, and brand guidelines.",
-            tags: ["Logo Design", "Branding", "Identity"],
-            proposals: 45,
-            price: 200
+    // Get token from localStorage
+    const getToken = () => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('token');
         }
-    ];
+        return null;
+    };
 
-    const jobsData = [
-        {
-            id: 1,
-            company: { name: "Rockstar Games New York", color: "#22c55e" },
-            title: "Full Stack Developer",
-            location: "Las Vegas, USA",
-            postedDate: "2 days ago",
-            tags: ["Parttime", "Brand"],
-            salary: "$100 - $120",
-            period: "hour"
-        },
-        {
-            id: 2,
-            company: { name: "GlobalTech Partners", color: "#3b82f6" },
-            title: "Senior DevOps Engineer",
-            location: "California, USA",
-            postedDate: "2 days ago",
-            tags: ["Parttime", "Brand"],
-            salary: "$60-$80",
-            period: "day"
-        },
-        {
-            id: 3,
-            company: { name: "PrimeEdge Solutions", color: "#ef4444" },
-            title: "Senior UI/UX Designer",
-            location: "California, USA",
-            postedDate: "2 days ago",
-            tags: ["Parttime", "UI/UX"],
-            salary: "$850 - $900",
-            period: "month"
-        },
-        {
-            id: 4,
-            company: { name: "Stellar Enterprises", color: "#8b5cf6" },
-            title: "Social Media Marketing",
-            location: "New York, USA",
-            postedDate: "2 days ago",
-            tags: ["Parttime", "UX/UI"],
-            salary: "$10 - $15",
-            period: "hour"
-        },
-        {
-            id: 5,
-            company: { name: "Rockstar Games New York", color: "#06b6d4" },
-            title: "Mobile App Developer",
-            location: "Las Vegas, USA",
-            postedDate: "2 days ago",
-            tags: ["Parttime", "UI/UX"],
-            salary: "$450 - $550",
-            period: "month"
-        },
-        {
-            id: 6,
-            company: { name: "PrimeEdge Solutions", color: "#10b981" },
-            title: "Digital Marketing",
-            location: "California, USA",
-            postedDate: "2 days ago",
-            tags: ["Parttime", "UX/UI"],
-            salary: "$10 - $15",
-            period: "hour"
-        },
-        {
-            id: 7,
-            company: { name: "TechFlow Industries", color: "#f59e0b" },
-            title: "Frontend Developer",
-            location: "Florida, USA",
-            postedDate: "3 days ago",
-            tags: ["Fulltime", "React"],
-            salary: "$4000 - $5000",
-            period: "month"
-        },
-        {
-            id: 8,
-            company: { name: "DataMind Corp", color: "#14b8a6" },
-            title: "Data Scientist",
-            location: "Washington, USA",
-            postedDate: "4 days ago",
-            tags: ["Fulltime", "Python"],
-            salary: "$80 - $100",
-            period: "hour"
+    // Check authentication
+    const isAuthenticated = () => {
+        const token = getToken();
+        if (!token) {
+            setError('Authentication required. Please log in.');
+            setLoading(false);
+            return false;
         }
-    ];
+        return true;
+    };
 
-    // const employersData = [
-    //     {
-    //         id: 1,
-    //         name: "Bright Future",
-    //         location: "Las Vegas, USA",
-    //         rating: 4,
-    //         color: "#3b82f6"
-    //     },
-    //     {
-    //         id: 2,
-    //         name: "Innovations",
-    //         location: "New York, USA",
-    //         rating: 5,
-    //         color: "#f59e0b"
-    //     },
-    //     {
-    //         id: 3,
-    //         name: "CoreTech",
-    //         location: "Texas, USA",
-    //         rating: 5,
-    //         color: "#22c55e"
-    //     },
-    //     {
-    //         id: 4,
-    //         name: "GlobalTech Partners",
-    //         location: "California, USA",
-    //         rating: 5,
-    //         color: "#3b82f6"
-    //     },
-    //     {
-    //         id: 5,
-    //         name: "PrimeEdge Solutions",
-    //         location: "Nevada, USA",
-    //         rating: 5,
-    //         color: "#8b5cf6"
-    //     },
-    //     {
-    //         id: 6,
-    //         name: "Stellar Enterprises",
-    //         location: "Georgia, USA",
-    //         rating: 4,
-    //         color: "#ef4444"
-    //     },
-    //     {
-    //         id: 7,
-    //         name: "EliteTech Solutions",
-    //         location: "Idaho, USA",
-    //         rating: 4,
-    //         color: "#f59e0b"
-    //     },
-    //     {
-    //         id: 8,
-    //         name: "Apex Innovations",
-    //         location: "New Mexico, USA",
-    //         rating: 5,
-    //         color: "#22c55e"
-    //     },
-    //     {
-    //         id: 9,
-    //         name: "Infinity Solutions",
-    //         location: "Colorado, USA",
-    //         rating: 4,
-    //         color: "#6366f1"
-    //     }
-    // ];
+    // Fetch bookmarks from API with token
+    const fetchBookmarks = async () => {
+        if (!isAuthenticated()) return;
+
+        try {
+            setLoading(true);
+            setError(null);
+            const token = getToken();
+            
+            const response = await axios.get('https://test.hyrelancer.in/api/getBookmark', {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.data.data) {
+                setBookmarks(response.data.data);
+            } else {
+                setBookmarks([]);
+                setInfoMessage({ text: 'No bookmarks found', type: 'info' });
+            }
+        } catch (err) {
+            console.error('Error fetching bookmarks:', err);
+            
+            if (err.response?.status === 401) {
+                setError('Unauthorized. Please log in again.');
+            } else if (err.response?.status === 500) {
+                setError('Server error. Please try again later.');
+            } else {
+                setError('Failed to fetch bookmarks. Please check your connection.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Apply for job function (same as JobListingsPage)
+    const applyForJob = async (jobId, jobTitle) => {
+        const token = getToken();
+        if (!token) {
+            message.error('Please login to apply for this job');
+            return;
+        }
+        
+        setApplying(true);
+        setApplyingId(jobId);
+        
+        try {
+            const encodedId = typeof window !== 'undefined' ? window.btoa(String(jobId)) : Buffer.from(String(jobId)).toString('base64');
+            const response = await fetch(`https://test.hyrelancer.in/api/sendRequestForJob/${encodedId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Find the applied job from bookmarks
+                const appliedBookmark = bookmarks.find(bookmark => bookmark.customer_job?.cuj_id === jobId);
+                if (appliedBookmark) {
+                    setSuccessJob({
+                        id: appliedBookmark.customer_job.cuj_id,
+                        title: appliedBookmark.customer_job.cuj_title || jobTitle,
+                        employer: {
+                            name: appliedBookmark.customer_job.cuj_contact_name || 'Hyrelancer Client'
+                        },
+                        location: appliedBookmark.customer_job.cuj_location || 'Remote',
+                        price: appliedBookmark.customer_job.cuj_salary_range_from ? 
+                            `$${appliedBookmark.customer_job.cuj_salary_range_from}` : 'Negotiable'
+                    });
+                }
+                setShowSuccessModal(true);
+                message.success('Application submitted successfully!');
+            } else {
+                message.error('Failed to apply: ' + (data.message || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Error applying for job:', err);
+            message.error('Error applying for job. Please try again.');
+        } finally {
+            setApplying(false);
+            setApplyingId(null);
+        }
+    };
+
+    // Close success modal
+    const closeSuccessModal = () => {
+        setShowSuccessModal(false);
+        setSuccessJob(null);
+    };
+
+    // Handle overlay click to close modal
+    const handleOverlayClick = (e) => {
+        if (e.target === e.currentTarget) {
+            closeSuccessModal();
+        }
+    };
+
+    // Success Modal Component
+    const SuccessModal = () => {
+        if (!showSuccessModal) return null;
+
+        return (
+            <div 
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                onClick={handleOverlayClick}
+            >
+                <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto">
+                    <button
+                        onClick={closeSuccessModal}
+                        className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                    >
+                        <X size={20} />
+                    </button>
+        
+                    <div className="text-center pt-8 pb-6 px-6">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-green-50 rounded-full flex items-center justify-center">
+                            <Check size={32} className="text-green-600" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Application Submitted</h2>
+                        <p className="text-gray-600">Your application has been sent successfully</p>
+                    </div>
+        
+                    {successJob && (
+                        <div className="px-6 pb-6">
+                            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Briefcase size={24} className="text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-medium text-gray-900 text-sm mb-1 truncate">{successJob.title}</h3>
+                                        <p className="text-gray-600 text-sm mb-2">{successJob.employer?.name || 'Hyrelancer Client'}</p>
+                                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                                            <span className="flex items-center gap-1">
+                                                <MapPin size={12} />
+                                                {successJob.location}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <DollarSign size={12} />
+                                                {successJob.price}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={closeSuccessModal}
+                                    className="flex-1 py-2.5 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                >
+                                    Continue Browsing
+                                </button>
+                            </div>
+        
+                            <p className="text-xs text-gray-500 text-center mt-4">
+                                You'll be notified when the client reviews your application
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // Delete bookmark with token
+    const deleteBookmark = async (jobId) => {
+        if (!isAuthenticated()) return;
+    
+        try {
+            const token = getToken();
+            const response = await axios.get(`https://test.hyrelancer.in/api/deleteBookmark/${jobId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.status === 200) {
+                // Remove from local state using job ID
+                setBookmarks(prev => prev.filter(bookmark => bookmark.customer_job.cuj_id !== jobId));
+                message.success('Bookmark removed successfully');
+            } else {
+                throw new Error('Failed to delete bookmark');
+            }
+        } catch (err) {
+            console.error('Error deleting bookmark:', err);
+            
+            if (err.response?.status === 401) {
+                setError('Unauthorized. Please log in again.');
+            } else {
+                message.error('Failed to remove bookmark');
+            }
+        }
+    };
+
+    // Confirm before deleting
+    const confirmDelete = (jobId, jobTitle) => {
+        if (window.confirm(`Are you sure you want to remove "${jobTitle}" from bookmarks?`)) {
+            deleteBookmark(jobId);
+        }
+    };
+
+    // Format date to relative time
+    const formatRelativeTime = (dateString) => {
+        if (!dateString) return 'Recently';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+        return date.toLocaleDateString();
+    };
+
+    // Format salary range
+    const formatSalary = (from, to) => {
+        if (!from && !to) return 'Salary not specified';
+        if (!from) return `Up to $${to}`;
+        if (!to) return `From $${from}`;
+        return `$${from} - $${to}`;
+    };
+
+    useEffect(() => {
+        fetchBookmarks();
+    }, []);
+
+    // Handle retry after error
+    const handleRetry = () => {
+        setError(null);
+        setInfoMessage({ text: '', type: '' });
+        fetchBookmarks();
+    };
+
+    // Handle login redirect
+    const handleLoginRedirect = () => {
+        window.location.href = '/login';
+    };
+
+    // Projects Component with API data integration
+    const Projects = ({ projects }) => {
+        if (projects.length === 0 && !loading) {
+            return (
+                <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                        <Briefcase className="w-16 h-16 mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No bookmarked jobs</h3>
+                    <p className="text-gray-600">You haven't bookmarked any jobs yet.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="grid gap-6 md:grid-cols-2">
+                {projects.map((bookmark) => {
+                    const job = bookmark.customer_job;
+                    const jobTitle = job.cuj_title || 'Untitled Job';
+                    const jobId = job.cuj_id;
+                    
+                    return (
+                        <div key={bookmark.jb_id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-[0_0_25px_rgba(0,0,0,0.15)] transition-all duration-300 hover:border-blue-200 relative">
+                            {/* Remove Bookmark Button */}
+                            <button 
+                                onClick={() => confirmDelete(jobId, jobTitle)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 p-2 border rounded-full hover:border-red-200 transition-colors bg-white"
+                                title="Remove bookmark"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                            
+                            <div className="pr-8">
+                                <h3 className="text-lg font-semibold text-gray-900 leading-tight mb-4">
+                                    {jobTitle}
+                                </h3>
+                                
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
+                                    <div className="flex items-center">
+                                        <Clock className="w-4 h-4 mr-1" />
+                                        {formatRelativeTime(job.created_at)}
+                                    </div>
+                                    
+                                    {job.cuj_location && (
+                                        <div className="flex items-center">
+                                            <MapPin className="w-4 h-4 mr-1" />
+                                            {job.cuj_location}
+                                        </div>
+                                    )}
+                                    
+                                    <div className="flex items-center text-green-600 font-medium">
+                                        <DollarSign className="w-4 h-4 mr-1" />
+                                        {formatSalary(job.cuj_salary_range_from, job.cuj_salary_range_to)}
+                                    </div>
+                                    
+                                    <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                        {job.cuj_job_type || 'Not specified'}
+                                    </div>
+                                </div>
+                                
+                                <p className="text-gray-700 mb-4 text-sm line-clamp-3">
+                                    {job.cuj_desc || 'No description provided.'}
+                                </p>
+                                
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {job.cuj_work_mode && (
+                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                                            {job.cuj_work_mode}
+                                        </span>
+                                    )}
+                                    
+                                    {job.cuj_lang && job.cuj_lang.split(',').map((language, index) => (
+                                        <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                                            {language.trim()}
+                                        </span>
+                                    ))}
+                                    
+                                    {job.cuj_u_experience && (
+                                        <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
+                                            {job.cuj_u_experience}
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                    <div className="text-sm text-gray-600">
+                                        Contact: {job.cuj_contact_name || 'Not specified'}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        {job.cuj_contact_email || 'No email'}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => applyForJob(jobId, jobTitle)}
+                                disabled={applying && applyingId === jobId}
+                                className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-600 py-2.5 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 hover:scale-[1.02] transition-all duration-200 font-medium disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {applying && applyingId === jobId ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Applying...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Star size={16} />
+                                        Apply Now
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
 
     const getCurrentData = () => {
-        let data;
-        switch (activeTab) {
-            case 'Projects':
-                data = projectsData;
-                break;
-            case 'Jobs':
-                data = jobsData;
-                break;
-            // case 'Employers':
-            //     data = employersData;
-            //     break;
-            default:
-                data = [];
-        }
-
         const startIndex = (currentPage - 1) * itemsPerPage;
-        return data.slice(startIndex, startIndex + itemsPerPage);
+        return bookmarks.slice(startIndex, startIndex + itemsPerPage);
     };
 
     const getTotalPages = () => {
-        let totalItems;
-        switch (activeTab) {
-            case 'Projects':
-                totalItems = projectsData.length;
-                break;
-            case 'Jobs':
-                totalItems = jobsData.length;
-                break;
-            // case 'Employers':
-            //     totalItems = employersData.length;
-            //     break;
-            default:
-                totalItems = 0;
-        }
-        return Math.ceil(totalItems / itemsPerPage);
+        return Math.ceil(bookmarks.length / itemsPerPage);
     };
 
     const renderTabContent = () => {
+        // Show authentication error
+        if (error && error.includes('Authentication')) {
+            return (
+                <div className="text-center py-12">
+                    <div className="text-red-400 mb-4">
+                        <AlertCircle className="w-16 h-16 mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Required</h3>
+                    <p className="text-gray-600 mb-4">{error}</p>
+                    <button 
+                        onClick={handleLoginRedirect}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Go to Login
+                    </button>
+                </div>
+            );
+        }
+
+        if (loading) {
+            return (
+                <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="text-center py-12">
+                    <div className="text-red-400 mb-4">
+                        <Briefcase className="w-16 h-16 mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading bookmarks</h3>
+                    <p className="text-gray-600 mb-4">{error}</p>
+                    <button 
+                        onClick={handleRetry}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            );
+        }
+
         const currentData = getCurrentData();
 
         switch (activeTab) {
             case 'Projects':
                 return <Projects projects={currentData} />;
-            case 'Jobs':
-                return <Jobs jobs={currentData} />;
-            // case 'Employers':
-            //     return <Employers employers={currentData} />;
             default:
                 return null;
         }
@@ -347,18 +512,29 @@ const Bookmarks = () => {
 
     return (
         <div className="min-h-screen bg-gray-100">
+            {/* Success Modal */}
+            <SuccessModal />
+
             {/* Header outside the card */}
             <div className="max-w-[1600px] mx-auto px-4 pt-8 pb-6">
                 <h1 className="text-3xl font-bold text-gray-900">My Bookmarks</h1>
+                <p className="text-gray-600 mt-2">Manage your saved job listings</p>
             </div>
 
             <div className="max-w-[1600px] mx-auto px-4 pb-8">
+                {/* Message Alert */}
+                {infoMessage.text && (
+                    <div className={`mb-4 px-4 py-3 rounded-lg ${infoMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {infoMessage.text}
+                    </div>
+                )}
+
                 {/* Main Card Container */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     {/* Tabs */}
                     <div className="border-b border-gray-200">
                         <nav className="flex px-6">
-                            {['Projects', 'Jobs'].map((tab) => (
+                            {['Projects'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => {
@@ -370,7 +546,7 @@ const Bookmarks = () => {
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
-                                    {tab}
+                                    {tab} {bookmarks.length > 0 && `(${bookmarks.length})`}
                                 </button>
                             ))}
                         </nav>
@@ -382,9 +558,11 @@ const Bookmarks = () => {
                     </div>
 
                     {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
-                        <Pagination />
-                    </div>
+                    {!loading && bookmarks.length > itemsPerPage && (
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                            <Pagination />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

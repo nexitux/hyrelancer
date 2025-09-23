@@ -1,121 +1,355 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { Send, Paperclip, Smile, MoreVertical, Search, Phone, Video } from 'lucide-react';
 
 export default function MessageBox() {
     const [message, setMessage] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedUser, setSelectedUser] = useState(1);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [messages, setMessages] = useState({});
+    const [loading, setLoading] = useState(false);
+    const messagesEndRef = useRef(null);
+    const refreshIntervalRef = useRef(null);
+    const lastMessageIds = useRef({});
 
-    const [users] = useState([
-        {
-            id: 1,
-            name: 'Alex Johnson',
-            lastMessage: 'Same here! Want to collaborate on something cool?',
-            timestamp: '2:35 PM',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-            unreadCount: 0,
-            online: true
-        },
-        {
-            id: 2,
-            name: 'Sarah Chen',
-            lastMessage: 'Thanks for the feedback on the design!',
-            timestamp: '1:20 PM',
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=40&h=40&fit=crop&crop=face',
-            unreadCount: 2,
-            online: false
-        },
-        {
-            id: 3,
-            name: 'Michael Brown',
-            lastMessage: 'The meeting is scheduled for tomorrow',
-            timestamp: '11:45 AM',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
-            unreadCount: 0,
-            online: true
-        },
-        {
-            id: 4,
-            name: 'Emily Davis',
-            lastMessage: 'Can you send me the project files?',
-            timestamp: 'Yesterday',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face',
-            unreadCount: 1,
-            online: false
-        },
-        {
-            id: 5,
-            name: 'Team Alpha',
-            lastMessage: 'Great work everyone! 🎉',
-            timestamp: 'Yesterday',
-            avatar: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=40&h=40&fit=crop&crop=face',
-            unreadCount: 0,
-            online: false
+    // Get authentication data from Redux store
+    const { user, token, isAuthenticated } = useSelector((state) => state.auth);
+    const currentUserId = user?.id;
+    const authToken = token;
+
+
+    // Get auth token 
+    const getAuthToken = () => {
+        if (!authToken) {
+            console.error('No authentication token found');
+            return null;
         }
-    ]);
+        return authToken;
+    };
 
-    const [messages, setMessages] = useState({
-        1: [
-            {
-                id: 1,
-                text: "Hey! How's your day going?",
-                sender: 'other',
-                timestamp: '2:30 PM'
-            },
-            {
-                id: 2,
-                text: "Pretty good! Just working on some new designs. What about you?",
-                sender: 'me',
-                timestamp: '2:32 PM'
-            },
-            {
-                id: 3,
-                text: "Same here! Want to collaborate on something cool?",
-                sender: 'other',
-                timestamp: '2:35 PM'
-            }
-        ],
-        2: [
-            {
-                id: 1,
-                text: "I've reviewed your latest design mockups",
-                sender: 'other',
-                timestamp: '1:15 PM'
-            },
-            {
-                id: 2,
-                text: "Thanks for the feedback on the design!",
-                sender: 'other',
-                timestamp: '1:20 PM'
-            }
-        ]
-    });
+    const getCurrentUserId = () => {
+        if (!currentUserId) {
+            console.error('No current user ID found');
+            return null;
+        }
+        return currentUserId;
+    };
 
-    const selectedUserData = users.find(user => user.id === selectedUser);
-    const currentMessages = messages[selectedUser] || [];
-
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const handleSendMessage = () => {
-        if (message.trim()) {
-            const newMessage = {
-                id: (currentMessages.length || 0) + 1,
-                text: message,
-                sender: 'me',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-
-            setMessages(prev => ({
-                ...prev,
-                [selectedUser]: [...(prev[selectedUser] || []), newMessage]
-            }));
-            setMessage('');
+    // Format timestamp for inbox list
+    const formatInboxTimestamp = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        
+        if (messageDate.getTime() === today.getTime()) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (messageDate.getTime() === yesterday.getTime()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
         }
     };
 
+    // Format time for individual messages
+    const formatMessageTime = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // Fetch inbox (users list) with auto-refresh
+    const fetchInbox = async (showLoading = false) => {
+        if (showLoading) setLoading(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.error('Cannot fetch inbox: No authentication token');
+                return;
+            }
+
+            const response = await fetch('https://test.hyrelancer.in/api/inbox', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Inbox API Response:', data); // Debug log
+            
+            if (data.status && data.data && Array.isArray(data.data)) {
+                const userMap = new Map();
+                const currentUserId = getCurrentUserId();
+                
+                data.data.forEach(chat => {
+                    // Determine the other user (not the current user)
+                    const otherUser = chat.uc_sender_id === currentUserId ? chat.receiver : chat.sender;
+                    const userId = otherUser.id;
+                    
+                    // If user doesn't exist in map or this message is newer, update the user
+                    if (!userMap.has(userId) || new Date(chat.created_at) > new Date(userMap.get(userId).latestMessageTime)) {
+                        userMap.set(userId, {
+                            id: otherUser.id,
+                            name: otherUser.name,
+                            lastMessage: chat.uc_message,
+                            timestamp: chat.created_at,
+                            latestMessageTime: chat.created_at,
+                            avatar: otherUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser.name)}&background=random`,
+                            unreadCount: chat.is_read === 0 && chat.uc_sender_id !== currentUserId ? 1 : 0,
+                            online: Math.random() > 0.7, // Random online status for demo
+                            userType: otherUser.user_type || 'User',
+                            email: otherUser.email
+                        });
+                    } else {
+                        // If user exists, only update unread count if needed
+                        const existingUser = userMap.get(userId);
+                        if (chat.is_read === 0 && chat.uc_sender_id !== currentUserId) {
+                            existingUser.unreadCount += 1;
+                        }
+                    }
+                });
+                
+                // Convert map to array and sort by latest message time
+                const transformedUsers = Array.from(userMap.values())
+                    .sort((a, b) => new Date(b.latestMessageTime) - new Date(a.latestMessageTime))
+                    .map(user => ({
+                        ...user,
+                        timestamp: formatInboxTimestamp(user.timestamp)
+                    }));
+                
+                setUsers(transformedUsers);
+                
+                // Auto-select first user if none selected and we have users
+                if (transformedUsers.length > 0 && !selectedUser) {
+                    setSelectedUser(transformedUsers[0].id);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching inbox:', error);
+        } finally {
+            if (showLoading) setLoading(false);
+        }
+    };
+
+    // Fetch conversation with a specific user
+    const fetchConversation = async (userId, showLoading = false) => {
+        if (!userId) return;
+        
+        if (showLoading) setLoading(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.error('Cannot fetch conversation: No authentication token');
+                return;
+            }
+
+            const response = await fetch(`https://test.hyrelancer.in/api/conversation/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Conversation API Response:', data); // Debug log
+            
+            if (data.status && data.data && Array.isArray(data.data)) {
+                const currentUserId = getCurrentUserId();
+                
+                const transformedMessages = data.data.map(msg => ({
+                    id: msg.uc_id,
+                    text: msg.uc_message,
+                    sender: msg.uc_sender_id === currentUserId ? 'me' : 'other',
+                    timestamp: formatMessageTime(msg.created_at),
+                    rawTimestamp: msg.created_at,
+                    isRead: msg.is_read
+                }));
+                
+                // Sort messages by creation time (ascending)
+                transformedMessages.sort((a, b) => new Date(a.rawTimestamp) - new Date(b.rawTimestamp));
+                
+                // Check if we have new messages
+                const lastKnownMessageId = lastMessageIds.current[userId] || 0;
+                const newestMessageId = transformedMessages.length > 0 ? 
+                    Math.max(...transformedMessages.map(m => m.id)) : 0;
+                
+                if (newestMessageId > lastKnownMessageId) {
+                    lastMessageIds.current[userId] = newestMessageId;
+                }
+                
+                setMessages(prev => ({
+                    ...prev,
+                    [userId]: transformedMessages
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching conversation:', error);
+        } finally {
+            if (showLoading) setLoading(false);
+        }
+    };
+
+    // Send message
+    const sendMessage = async (receiverId, messageText) => {
+        if (!messageText.trim()) return;
+        
+        const token = getAuthToken();
+        if (!token) {
+            console.error('Cannot send message: No authentication token');
+            return false;
+        }
+        
+        // Optimistically add message to UI immediately
+        const tempMessage = {
+            id: `temp-${Date.now()}`,
+            text: messageText,
+            sender: 'me',
+            timestamp: formatMessageTime(new Date()),
+            rawTimestamp: new Date().toISOString(),
+            isRead: 0,
+            sending: true
+        };
+
+        setMessages(prev => ({
+            ...prev,
+            [receiverId]: [...(prev[receiverId] || []), tempMessage]
+        }));
+        
+        try {
+            const response = await fetch('https://test.hyrelancer.in/api/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    receiver_id: receiverId,
+                    message: messageText
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Send Message API Response:', data); // Debug log
+            
+            if (data.status && data.data) {
+                // Replace optimistic message with real message from server
+                const realMessage = {
+                    id: data.data.uc_id,
+                    text: messageText,
+                    sender: 'me',
+                    timestamp: formatMessageTime(data.data.created_at),
+                    rawTimestamp: data.data.created_at,
+                    isRead: data.data.is_read,
+                    sending: false
+                };
+
+                setMessages(prev => ({
+                    ...prev,
+                    [receiverId]: prev[receiverId].map(msg => 
+                        msg.id === tempMessage.id ? realMessage : msg
+                    )
+                }));
+                
+                // Update last message ID
+                lastMessageIds.current[receiverId] = data.data.uc_id;
+                
+                // Update the user's last message in the sidebar
+                setUsers(prevUsers => {
+                    return prevUsers.map(user => {
+                        if (user.id === receiverId) {
+                            return {
+                                ...user,
+                                lastMessage: messageText,
+                                timestamp: formatInboxTimestamp(data.data.created_at),
+                                latestMessageTime: data.data.created_at
+                            };
+                        }
+                        return user;
+                    }).sort((a, b) => new Date(b.latestMessageTime) - new Date(a.latestMessageTime));
+                });
+                
+                return true;
+            } else {
+                // Remove optimistic message if send failed
+                setMessages(prev => ({
+                    ...prev,
+                    [receiverId]: prev[receiverId].filter(msg => msg.id !== tempMessage.id)
+                }));
+                console.error('Failed to send message:', data);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            // Remove optimistic message if send failed
+            setMessages(prev => ({
+                ...prev,
+                [receiverId]: prev[receiverId].filter(msg => msg.id !== tempMessage.id)
+            }));
+            return false;
+        }
+    };
+
+    // Group messages by date
+    const groupMessagesByDate = (messages) => {
+        if (!messages || messages.length === 0) return {};
+        
+        const groups = {};
+        messages.forEach(msg => {
+            const date = new Date(msg.rawTimestamp);
+            const dateKey = date.toDateString();
+            
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+            }
+            groups[dateKey].push(msg);
+        });
+        
+        return groups;
+    };
+
+    // Format date header
+    const formatDateHeader = (dateString) => {
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+    };
+
+    // Handle send message
+    const handleSendMessage = async () => {
+        if (!message.trim() || !selectedUser) return;
+        
+        const messageText = message.trim();
+        setMessage('');
+        await sendMessage(selectedUser, messageText);
+    };
+
+    // Handle key press (Enter to send)
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -123,17 +357,96 @@ export default function MessageBox() {
         }
     };
 
+    // Auto-resize textarea
+    const handleTextareaChange = (e) => {
+        setMessage(e.target.value);
+        e.target.style.height = 'auto';
+        e.target.style.height = e.target.scrollHeight + 'px';
+    };
+
+    // Setup auto-refresh (every 15 seconds)
+    useEffect(() => {
+        // Initial load
+        fetchInbox(true);
+
+        // Setup auto-refresh interval
+        refreshIntervalRef.current = setInterval(() => {
+            fetchInbox(false); // Don't show loading for auto-refresh
+            if (selectedUser) {
+                fetchConversation(selectedUser, false);
+            }
+        }, 15000); // 15 seconds
+
+        return () => {
+            if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current);
+            }
+        };
+    }, []);
+
+    // Fetch conversation when user is selected
+    useEffect(() => {
+        if (selectedUser) {
+            fetchConversation(selectedUser, true);
+        }
+    }, [selectedUser]);
+
+    // Refresh current conversation more frequently
+    useEffect(() => {
+        let conversationInterval;
+        
+        if (selectedUser) {
+            conversationInterval = setInterval(() => {
+                fetchConversation(selectedUser, false);
+            }, 5000); // Check for new messages every 5 seconds for active conversation
+        }
+
+        return () => {
+            if (conversationInterval) {
+                clearInterval(conversationInterval);
+            }
+        };
+    }, [selectedUser]);
+
+    const selectedUserData = users.find(user => user.id === selectedUser);
+    const currentMessages = messages[selectedUser] || [];
+    const groupedMessages = groupMessagesByDate(currentMessages);
+    const filteredUsers = users.filter(user =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Show loading if not authenticated or missing user data
+    if (!isAuthenticated || !user || !currentUserId || !authToken) {
+        return (
+            <div className="w-full max-w-[1600px] mx-auto">
+                <div className="flex-shrink-0 p-4 sm:p-6">
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Messages</h1>
+                    <p className="text-sm text-slate-600 mt-1">Loading authentication...</p>
+                </div>
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-4 sm:mx-6" style={{ height: 'calc(100vh - 200px)' }}>
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading messages...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
-
         <div className="w-full max-w-[1600px] mx-auto">
-
             {/* Messages Header */}
             <div className="flex-shrink-0 p-4 sm:p-6">
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Messages</h1>
+                <p className="text-sm text-slate-600 mt-1">
+                    Welcome, {user?.name || 'User'}
+                </p>
             </div>
 
             {/* Messages Container */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-4 sm:mx-6" style={{ height: 'calc(100vh - 180px)' }}>
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-4 sm:mx-6" style={{ height: 'calc(100vh - 200px)' }}>
                 <div className="flex h-full flex-col sm:flex-row">
                     {/* Users Sidebar */}
                     <div className={`${selectedUser ? 'hidden sm:flex' : 'flex'} w-full sm:w-1/3 lg:w-1/4 bg-slate-50 border-r border-slate-200 flex-col`}>
@@ -153,142 +466,208 @@ export default function MessageBox() {
 
                         {/* Users List */}
                         <div className="flex-1 overflow-y-auto">
-                            {filteredUsers.map((user) => (
-                                <div
-                                    key={user.id}
-                                    onClick={() => setSelectedUser(user.id)}
-                                    className={`flex items-center p-3 hover:bg-slate-100 cursor-pointer border-b border-slate-100 transition-colors ${selectedUser === user.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
-                                        }`}
-                                >
-                                    <div className="relative">
-                                        <img
-                                            src={user.avatar}
-                                            alt={user.name}
-                                            className="w-10 h-10 rounded-full object-cover"
-                                        />
-                                        {user.online && (
-                                            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full ring-2 ring-white"></div>
+                            {loading && users.length === 0 ? (
+                                <div className="flex justify-center items-center p-4">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                                </div>
+                            ) : filteredUsers.length > 0 ? (
+                                filteredUsers.map((user) => (
+                                    <div
+                                        key={user.id}
+                                        onClick={() => setSelectedUser(user.id)}
+                                        className={`flex items-center p-3 hover:bg-slate-100 cursor-pointer border-b border-slate-100 transition-colors ${selectedUser === user.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                                            }`}
+                                    >
+                                        <div className="relative">
+                                            <img
+                                                src={user.avatar}
+                                                alt={user.name}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+                                                }}
+                                            />
+                                            {user.online && (
+                                                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full ring-2 ring-white"></div>
+                                            )}
+                                        </div>
+                                        <div className="ml-3 flex-1 min-w-0">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-sm font-medium text-slate-900 truncate">
+                                                    {user.name}
+                                                </h3>
+                                                <span className="text-xs text-slate-500">{user.timestamp}</span>
+                                            </div>
+                                          
+                                            <p className="text-xs text-blue-500 truncate">
+                                                {user.userType}
+                                            </p>
+                                        </div>
+                                        {user.unreadCount > 0 && (
+                                            <div className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                                {user.unreadCount}
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="ml-3 flex-1 min-w-0">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-medium text-slate-900 truncate">{user.name}</h3>
-                                            <span className="text-xs text-slate-500">{user.timestamp}</span>
-                                        </div>
-                                        <p className="text-xs text-slate-600 truncate mt-0.5">{user.lastMessage}</p>
-                                    </div>
-                                    {user.unreadCount > 0 && (
-                                        <div className="ml-2 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                                            {user.unreadCount}
-                                        </div>
+                                ))
+                            ) : (
+                                <div className="flex flex-col justify-center items-center p-8 text-slate-500">
+                                    <p className="mb-2">No conversations found</p>
+                                    {users.length === 0 && !loading && (
+                                        <button 
+                                            onClick={() => fetchInbox(true)}
+                                            className="text-blue-500 hover:text-blue-700 text-sm"
+                                        >
+                                            Retry Loading
+                                        </button>
                                     )}
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
 
                     {/* Chat Area */}
-                    <div className={`${selectedUser ? 'flex' : 'hidden sm:flex'} flex-1 flex-col bg-slate-25`}>
-                        {/* Chat Header */}
-                        <div className="flex-shrink-0 bg-blue-50 px-3 sm:px-4 py-3 flex items-center justify-between">
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                                <button
-                                    onClick={() => setSelectedUser(null)}
-                                    className="sm:hidden p-1 hover:bg-blue-700 rounded-full transition-colors mr-2"
-                                >
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </button>
-                                <div className="relative">
-                                    <img
-                                        src={selectedUserData?.avatar}
-                                        alt={selectedUserData?.name}
-                                        className="w-8 sm:w-9 h-8 sm:h-9 rounded-full object-cover ring-2 ring-blue-300"
-                                    />
-                                    {selectedUserData?.online && (
-                                        <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-400 rounded-full ring ring-blue-600"></div>
-                                    )}
-                                </div>
-                                <div>
-                                    <h2 className="text-sm sm:text-base font-semibold text-gray-600">{selectedUserData?.name}</h2>
-                                    <p className="text-xs text-blue-500 hidden sm:block">
-                                        {selectedUserData?.online ? 'Online' : 'Last seen recently'}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                                {/* <button className="p-1.5 hover:bg-blue-700 rounded-full transition-colors hidden sm:block">
-                                    <Video className="w-4 h-4 text-white" />
-                                </button>
-                                <button className="p-1.5 hover:bg-blue-700 rounded-full transition-colors">
-                                    <Phone className="w-4 h-4 text-white" />
-                                </button> */}
-                                <button className="p-1.5 hover:bg-blue-200 rounded-full transition-colors hover:text-white">
-                                    <MoreVertical className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-2 sm:p-3 bg-slate-50">
-                            <div className="space-y-2 sm:space-y-3">
-                                {currentMessages.map((msg) => (
-                                    <div
-                                        key={msg.id}
-                                        className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                        <div className={`max-w-[280px] sm:max-w-xs lg:max-w-md ${msg.sender === 'me' ? 'order-1' : 'order-2'}`}>
-                                            <div
-                                                className={`px-3 py-2 rounded-lg shadow-sm text-sm ${msg.sender === 'me'
-                                                    ? 'bg-blue-500 text-white rounded-br-sm'
-                                                    : 'bg-white text-slate-900 rounded-bl-sm border border-slate-200'
-                                                    }`}
-                                            >
-                                                <p className="leading-relaxed">{msg.text}</p>
-                                                <p className={`text-xs mt-1 ${msg.sender === 'me' ? 'text-green-100' : 'text-slate-500'}`}>
-                                                    {msg.timestamp}
-                                                </p>
-                                            </div>
+                    <div className={`${selectedUser ? 'flex' : 'hidden sm:flex'} flex-1 flex-col bg-white`}>
+                        {selectedUserData ? (
+                            <>
+                                {/* Chat Header */}
+                                <div className="flex-shrink-0 bg-blue-50 px-4 py-3 flex items-center justify-between border-b border-blue-100">
+                                    <div className="flex items-center space-x-3">
+                                        <button
+                                            onClick={() => setSelectedUser(null)}
+                                            className="sm:hidden p-2 hover:bg-blue-200 rounded-full transition-colors"
+                                        >
+                                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <div className="relative">
+                                            <img
+                                                src={selectedUserData.avatar}
+                                                alt={selectedUserData.name}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUserData.name)}&background=random`;
+                                                }}
+                                            />
+                                            {selectedUserData.online && (
+                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full ring-2 ring-white"></div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h2 className="text-base font-semibold text-gray-800">{selectedUserData.name}</h2>
+                                            <p className="text-xs text-blue-600">
+                                                {selectedUserData.userType} • {selectedUserData.online ? 'Online' : 'Last seen recently'}
+                                            </p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Message Input */}
-                        <div className="flex-shrink-0 bg-white border-t border-slate-200 p-2 sm:p-3">
-                            <div className="flex items-center justify-center space-x-2">
-                                {/* <button className="p-2 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0 hidden sm:block">
-                                    <Paperclip className="w-4 h-4 text-slate-600" />
-                                </button> */}
-
-                                <div className="flex-1">
-                                    <textarea
-                                        value={message}
-                                        onChange={(e) => setMessage(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        placeholder="Type a message..."
-                                        className="w-full px-3 py-2 pr-8 bg-slate-100 border border-slate-200 rounded-full focus:outline-none focus:ring focus:ring-blue-500 focus:border-blue-500 resize-none transition-all max-h-16 min-h-[36px] text-sm"
-                                        rows={1}
-                                    />
-                                    {/* <button className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-slate-200 rounded-full transition-colors">
-                                        <Smile className="w-4 h-4 text-slate-500" />
-                                    </button> */}
+                                   
                                 </div>
 
-                                <button
-                                    onClick={handleSendMessage}
-                                    disabled={!message.trim()}
-                                    className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0 cursor-pointer"
-                                >
-                                    <Send className="w-4 h-4" />
-                                </button>
+                                {/* Messages Area */}
+                                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                                    {loading && currentMessages.length === 0 ? (
+                                        <div className="flex justify-center items-center h-full">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                        </div>
+                                    ) : currentMessages.length === 0 ? (
+                                        <div className="flex flex-col justify-center items-center h-full text-gray-500">
+                                            <p className="mb-4">No messages yet. Start a conversation!</p>
+                                            <button 
+                                                onClick={() => fetchConversation(selectedUser, true)}
+                                                className="text-blue-500 hover:text-blue-700 text-sm"
+                                            >
+                                                Refresh Conversation
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {Object.entries(groupedMessages).map(([dateKey, dateMessages]) => (
+                                                <div key={dateKey}>
+                                                    {/* Date Header */}
+                                                    <div className="flex justify-center mb-4">
+                                                        <div className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700 font-medium">
+                                                            {formatDateHeader(dateKey)}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Messages for this date */}
+                                                    <div className="space-y-3">
+                                                        {dateMessages.map((msg) => (
+                                                            <div
+                                                                key={msg.id}
+                                                                className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
+                                                            >
+                                                                <div className={`max-w-[70%] ${msg.sender === 'me' ? 'ml-auto' : 'mr-auto'}`}>
+                                                                    <div
+                                                                        className={`px-4 py-2 rounded-2xl shadow-sm relative ${msg.sender === 'me'
+                                                                            ? 'bg-blue-500 text-white rounded-br-md'
+                                                                            : 'bg-white text-gray-800 rounded-bl-md border border-gray-200'
+                                                                            }`}
+                                                                    >
+                                                                        <p className="text-sm leading-relaxed break-words">{msg.text}</p>
+                                                                        <div className={`flex items-center justify-between mt-1 ${msg.sender === 'me' ? 'text-blue-100' : 'text-gray-500'}`}>
+                                                                            <span className="text-xs">
+                                                                                {msg.timestamp}
+                                                                            </span>
+                                                                            {msg.sending && (
+                                                                                <div className="ml-2">
+                                                                                    <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <div ref={messagesEndRef} />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Message Input */}
+                                <div className="flex-shrink-0 bg-white border-t border-gray-200 p-3">
+                                    <div className="flex items-end space-x-2">
+                                     
+                                        
+                                        <div className="flex-1 relative">
+                                            <textarea
+                                                value={message}
+                                                onChange={handleTextareaChange}
+                                                onKeyPress={handleKeyPress}
+                                                placeholder={`Message ${selectedUserData.name}...`}
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all max-h-32 min-h-[44px] text-sm"
+                                                rows={1}
+                                                style={{ height: 'auto' }}
+                                            />
+                                         
+                                        </div>
+
+                                        <button
+                                            onClick={handleSendMessage}
+                                            disabled={!message.trim() || !selectedUser}
+                                            className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
+                                        >
+                                            <Send className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            // No user selected state
+                            <div className="flex-1 flex items-center justify-center bg-gray-50">
+                                <div className="text-center text-gray-500">
+                                    <h3 className="text-lg font-medium mb-2">Welcome to Messages</h3>
+                                    <p className="text-sm">Select a conversation to start messaging</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
         </div>
     );
-}   
+}

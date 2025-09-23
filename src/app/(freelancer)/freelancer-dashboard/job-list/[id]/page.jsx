@@ -31,7 +31,7 @@ import {
   InstagramFilled,
   PinterestFilled
 } from '@ant-design/icons';
-import { Button, Modal } from 'antd';
+import { Button, Modal, message } from 'antd';
 import Image from "next/image";
 import { useParams, useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -43,17 +43,18 @@ const JobDetailPage = () => {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [relatedJobs, setRelatedJobs] = useState([]);
-  
+  const [bookmarkId, setBookmarkId] = useState(null);
+
   const params = useParams();
   const router = useRouter();
   const token = useSelector((state) => state.auth.token);
   const jobId = params.id;
 
-  const toggleWishlist = () => setIsWishlist(!isWishlist);
   const toggleShare = () => setIsShareOpen(!isShareOpen);
   const showApplyModal = () => setIsApplyModalOpen(true);
   const handleApplyOk = () => setIsApplyModalOpen(false);
@@ -62,15 +63,157 @@ const JobDetailPage = () => {
   // Format date to "X days ago"
   const formatDate = (dateString) => {
     if (!dateString) return 'Recently';
-    
+
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     return `${diffDays} days ago`;
+  };
+
+  // Check if job is bookmarked (sets bookmarkId when found)
+  const checkBookmarkStatus = async () => {
+    if (!token || !jobId) return;
+
+    try {
+      const response = await fetch('https://test.hyrelancer.in/api/getBookmark', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data && Array.isArray(data.data)) {
+          const existingBookmark = data.data.find(
+            bookmark => bookmark.customer_job?.cuj_id == jobId
+          );
+          if (existingBookmark) {
+            setIsWishlist(true);
+            setBookmarkId(existingBookmark.jb_id);
+          } else {
+            setIsWishlist(false);
+            setBookmarkId(null);
+          }
+        }
+      } else {
+        // If unauthorized, do nothing here; higher-level fetch handles it
+      }
+    } catch (err) {
+      console.error('Error checking bookmark status:', err);
+    }
+  };
+
+  // Add to bookmarks
+  const addToBookmarks = async () => {
+    if (!token) {
+      message.error('Please login to bookmark this job');
+      return;
+    }
+
+    if (!jobId) {
+      message.error('Job ID not found');
+      return;
+    }
+
+    setBookmarkLoading(true);
+    try {
+      const response = await fetch('https://test.hyrelancer.in/api/storeBookmark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          job_id: parseInt(jobId)
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsWishlist(true);
+        if (data.data && data.data.jb_id) {
+          setBookmarkId(data.data.jb_id);
+        } else {
+          // If API returns no jb_id, re-check bookmarks to obtain it
+          await checkBookmarkStatus();
+        }
+        message.success('Job added to bookmarks successfully!');
+      } else {
+        message.error(data.message || 'Failed to add bookmark');
+      }
+    } catch (err) {
+      console.error('Error adding bookmark:', err);
+      message.error('Error adding bookmark. Please try again.');
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+
+  // Remove from bookmarks (improved: confirm, lookup if necessary, graceful errors)
+  const removeFromBookmarks = async () => {
+    if (!token) {
+      message.error('Please login to remove bookmark');
+      return;
+    }
+  
+    const ok = window.confirm('Are you sure you want to remove this job from bookmarks?');
+    if (!ok) return;
+  
+    setBookmarkLoading(true);
+  
+    try {
+      // Use the job ID from the job state
+      const jobIdToDelete = job.id;
+  
+      if (!jobIdToDelete) {
+        message.error('Job ID not found');
+        return;
+      }
+  
+      const deleteResponse = await fetch(`https://test.hyrelancer.in/api/deleteBookmark/${jobIdToDelete}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+  
+      if (deleteResponse.ok) {
+        setIsWishlist(false);
+        setBookmarkId(null);
+        message.success('Job removed from bookmarks');
+      } else {
+        if (deleteResponse.status === 401) {
+          message.error('Unauthorized. Please log in again.');
+        } else {
+          let errMsg = 'Failed to remove bookmark';
+          try {
+            const errBody = await deleteResponse.json();
+            if (errBody && errBody.message) errMsg = errBody.message;
+          } catch (e) { /* ignore */ }
+          message.error(errMsg);
+        }
+      }
+    } catch (err) {
+      console.error('Error removing bookmark:', err);
+      message.error('Error removing bookmark. Please try again.');
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+
+  // Toggle bookmark (calls add or remove)
+  const toggleWishlist = async () => {
+    if (isWishlist) {
+      await removeFromBookmarks();
+    } else {
+      await addToBookmarks();
+    }
   };
 
   // Fetch job details from API
@@ -78,34 +221,34 @@ const JobDetailPage = () => {
     const fetchJobDetails = async () => {
       try {
         setLoading(true);
-        
+
         // Check if we have a token
         if (!token) {
           setError('Authentication required. Please log in.');
           setLoading(false);
           return;
         }
-        
+
         const response = await fetch('https://test.hyrelancer.in/api/getAllJobs', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-        
+
         // Check for unauthorized response
         if (response.status === 401) {
           setError('Authentication failed. Please log in again.');
           setLoading(false);
           return;
         }
-        
+
         const data = await response.json();
-        
+
         if (data.job_list && Array.isArray(data.job_list)) {
           // Find the specific job by ID
           const foundJob = data.job_list.find(j => j.cuj_id == jobId);
-          
+
           if (foundJob) {
             // Format the job data
             const formattedJob = {
@@ -137,9 +280,9 @@ const JobDetailPage = () => {
                 since: foundJob.created_at ? new Date(foundJob.created_at).getFullYear() : '2020'
               }
             };
-            
+
             setJob(formattedJob);
-            
+
             // Get related jobs (filter by same category or type)
             const related = data.job_list
               .filter(j => j.cuj_id != jobId && j.cuj_job_type === foundJob.cuj_job_type)
@@ -154,8 +297,11 @@ const JobDetailPage = () => {
                 description: job.cuj_desc ? job.cuj_desc.substring(0, 100) + '...' : 'No description available',
                 tags: [job.cuj_job_type, job.cuj_work_mode].filter(Boolean)
               }));
-              
+
             setRelatedJobs(related);
+
+            // Check bookmark status after job is loaded
+            await checkBookmarkStatus();
           } else {
             setError('Job not found');
           }
@@ -177,12 +323,12 @@ const JobDetailPage = () => {
 
   const applyForJob = async () => {
     if (!token) {
-      alert('Please login to apply for this job');
+      message.error('Please login to apply for this job');
       return;
     }
-    
+
     setApplying(true);
-    
+
     try {
       const response = await fetch(`https://test.hyrelancer.in/api/sendRequestForJob/${btoa(jobId)}`, {
         method: 'GET',
@@ -190,18 +336,18 @@ const JobDetailPage = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
-        alert('Job application submitted successfully!');
+        message.success('Job application submitted successfully!');
         setIsApplyModalOpen(false);
       } else {
-        alert('Failed to apply: ' + (data.message || 'Unknown error'));
+        message.error('Failed to apply: ' + (data.message || 'Unknown error'));
       }
     } catch (err) {
       console.error('Error applying for job:', err);
-      alert('Error applying for job. Please try again.');
+      message.error('Error applying for job. Please try again.');
     } finally {
       setApplying(false);
     }
@@ -307,10 +453,18 @@ const JobDetailPage = () => {
                 )}
               </button>
               <button
-                className="add_wishlist_btn w-12 h-12 flex items-center justify-center border border-gray-300 rounded-full bg-white duration-300 hover:border-[#3d5999]"
+                className={`add_wishlist_btn w-12 h-12 flex items-center justify-center border rounded-full bg-white duration-300 ${
+                  bookmarkLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#3d5999]'
+                } ${
+                  isWishlist ? 'border-red-500' : 'border-gray-300'
+                }`}
                 onClick={toggleWishlist}
+                disabled={bookmarkLoading}
+                title={isWishlist ? 'Remove from bookmarks' : 'Add to bookmarks'}
               >
-                {isWishlist ? (
+                {bookmarkLoading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#3d5999]"></div>
+                ) : isWishlist ? (
                   <FaHeart size={20} weight="fill" className="text-red-500" />
                 ) : (
                   <FaHeart size={20} className="duration-300 hover:text-[#3d5999]" />
@@ -521,6 +675,29 @@ const JobDetailPage = () => {
                   Apply Now
                 </button>
               </div>
+
+              {/* Bookmark Status */}
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Bookmark Status:</span>
+                  <span className={`text-sm font-medium ${
+                    isWishlist ? 'text-green-600' : 'text-gray-600'
+                  }`}>
+                    {isWishlist ? '✓ Bookmarked' : 'Not bookmarked'}
+                  </span>
+                </div>
+                <button
+                  onClick={toggleWishlist}
+                  disabled={bookmarkLoading}
+                  className={`w-full mt-2 py-2 rounded-lg font-medium text-sm ${
+                    isWishlist 
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                  } ${bookmarkLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {bookmarkLoading ? 'Processing...' : isWishlist ? 'Remove Bookmark' : 'Add to Bookmarks'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -562,16 +739,6 @@ const JobDetailPage = () => {
                         </div>
                         <div className="line flex-shrink-0 w-px h-full bg-gray-300 max-sm:hidden"></div>
                         <div className="project_more_info flex flex-shrink-0 max-sm:flex-wrap sm:flex-col sm:items-end items-start sm:gap-7 gap-4 max-sm:w-full sm:h-full">
-                          <button
-                            className="add_wishlist_btn w-10 h-10 flex items-center justify-center border border-gray-300 rounded-full max-sm:order-1 hover:border-[#3d5999]"
-                            onClick={toggleWishlist}
-                          >
-                            {isWishlist ? (
-                              <FaHeart size={18} weight="fill" className="text-red-500" />
-                            ) : (
-                              <FaHeart size={18} className="hover:text-[#3d5999]" />
-                            )}
-                          </button>
                           <div className="max-sm:w-full max-sm:order-[-1]">
                             <div className="project_price sm:text-end mt-1">
                               <span className="price text-black font-bold">{relatedJob.budget}</span>
