@@ -185,7 +185,7 @@ const ServiceOrders = () => {
       console.log('Updating job:', jobId, 'encoded as:', encodedJobId, 'active status:', newIsActive);
 
       // Call API to update job active status using GET method
-      const response = await api.get(`/rejectJob/${encodedJobId}?cuj_is_active=${newIsActive}`);
+      const response = await api.get(`/inactiveJob/${encodedJobId}?cuj_is_active=${newIsActive}`);
 
       console.log('API Response:', response?.data);
 

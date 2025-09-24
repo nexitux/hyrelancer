@@ -15,6 +15,7 @@ export const customerMenu = [
     subItems: [
       { name: "New Job", path: "/customer-dashboard/job-post" },
       { name: "Manage Jobs", path: "/customer-dashboard/job-list" },
+      { name: "Freelancers Request", path: "/customer-dashboard/work-request" },
     ],
   },
   {

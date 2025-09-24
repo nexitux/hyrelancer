@@ -15,12 +15,12 @@ import {
     Users,
     RocketLaunch,
     Building,
-    Calendar
+    Calendar,
+    WarningCircle
 } from '@phosphor-icons/react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useSelector } from 'react-redux';
-import { message } from 'antd';
 
 const JobListingsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -32,29 +32,25 @@ const JobListingsPage = () => {
     const [error, setError] = useState(null);
     const [applying, setApplying] = useState(false);
     const [applyingId, setApplyingId] = useState(null);
-    
+
     // Success modal state
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successJob, setSuccessJob] = useState(null);
 
+    // Error modal state
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorModalMessage, setErrorModalMessage] = useState('');
+
     // Get token from Redux store
     const token = useSelector((state) => state.auth.token);
-
-    // Primary color scheme
-    const primaryColor = '#2563eb';
-    const primaryHover = '#1d4ed8';
-    const gradientFrom = '#2563eb';
-    const gradientTo = '#1e40af';
 
     // Format date to "X days ago"
     const formatDate = (dateString) => {
         if (!dateString) return 'Recently';
-        
         const date = new Date(dateString);
         const now = new Date();
         const diffTime = Math.abs(now - date);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
         if (diffDays === 0) return 'Today';
         if (diffDays === 1) return 'Yesterday';
         if (diffDays < 7) return `${diffDays} days ago`;
@@ -67,34 +63,31 @@ const JobListingsPage = () => {
         const fetchJobs = async () => {
             try {
                 setLoading(true);
-                
+
                 if (!token) {
                     setError('Authentication required. Please log in.');
                     setLoading(false);
                     return;
                 }
-                
+
                 const response = await fetch('https://test.hyrelancer.in/api/getAllJobs', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
-                
+
                 if (response.status === 401) {
                     setError('Authentication failed. Please log in again.');
                     setLoading(false);
                     return;
                 }
-                
+
                 const data = await response.json();
-                console.log('API Response:', data);
-                
                 if (data.job_list && Array.isArray(data.job_list)) {
                     const formattedJobs = data.job_list.map(job => {
                         const salaryFrom = job.cuj_salary_range_from ? parseInt(job.cuj_salary_range_from) : 0;
                         const salaryTo = job.cuj_salary_range_to ? parseInt(job.cuj_salary_range_to) : 0;
-                        
                         return {
                             id: job.cuj_id || job.id || Math.random().toString(36).substr(2, 9),
                             title: job.cuj_title || 'Untitled Job',
@@ -120,7 +113,6 @@ const JobListingsPage = () => {
                             applications: Math.floor(Math.random() * 50) + 1 // Random application count
                         };
                     });
-                    
                     setJobs(formattedJobs);
                 } else {
                     setJobs([]);
@@ -148,13 +140,14 @@ const JobListingsPage = () => {
 
     const applyForJob = async (jobId) => {
         if (!token) {
-            message.error('Please login to apply for this job');
+            setErrorModalMessage('Please login to apply for this job');
+            setShowErrorModal(true);
             return;
         }
-        
+
         setApplying(true);
         setApplyingId(jobId);
-        
+
         try {
             const encodedId = typeof window !== 'undefined' ? window.btoa(String(jobId)) : Buffer.from(String(jobId)).toString('base64');
             const response = await fetch(`https://test.hyrelancer.in/api/sendRequestForJob/${encodedId}`, {
@@ -163,20 +156,22 @@ const JobListingsPage = () => {
                     'Authorization': `Bearer ${token}`,
                 },
             });
-            
+
             const data = await response.json();
-            
-            if (response.ok) {
+
+            if (response.ok && (!data.error || data.status === true)) {
                 const appliedJob = jobs.find(job => job.id === jobId);
                 setSuccessJob(appliedJob);
                 setShowSuccessModal(true);
-                message.success('Application submitted successfully!');
             } else {
-                message.error('Failed to apply: ' + (data.message || 'Unknown error'));
+                // Show backend error in modal
+                setErrorModalMessage(data.message || data.error || 'Failed to apply for this job. Please try again.');
+                setShowErrorModal(true);
             }
         } catch (err) {
             console.error('Error applying for job:', err);
-            message.error('Error applying for job. Please try again.');
+            setErrorModalMessage('Error applying for job. Please try again.');
+            setShowErrorModal(true);
         } finally {
             setApplying(false);
             setApplyingId(null);
@@ -189,10 +184,17 @@ const JobListingsPage = () => {
         setSuccessJob(null);
     };
 
+    // Close error modal
+    const closeErrorModal = () => {
+        setShowErrorModal(false);
+        setErrorModalMessage('');
+    };
+
     // Handle overlay click to close modal
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
             closeSuccessModal();
+            closeErrorModal();
         }
     };
 
@@ -225,7 +227,7 @@ const JobListingsPage = () => {
         .sort((a, b) => {
             const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
             const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
-            
+
             if (sortOption === 'latest') {
                 return dateB - dateA;
             } else {
@@ -258,7 +260,7 @@ const JobListingsPage = () => {
         if (!showSuccessModal) return null;
 
         return (
-            <div 
+            <div
                 className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                 onClick={handleOverlayClick}
             >
@@ -268,12 +270,12 @@ const JobListingsPage = () => {
                             <CheckCircle size={24} weight="fill" className="text-white" />
                         </div>
                     </div>
-        
+
                     <div className="text-center pt-12 pb-8 px-6">
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Sent!</h2>
                         <p className="text-gray-600">Your application has been submitted successfully</p>
                     </div>
-        
+
                     {successJob && (
                         <div className="px-6 pb-6">
                             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
@@ -297,7 +299,7 @@ const JobListingsPage = () => {
                                     </div>
                                 </div>
                             </div>
-        
+
                             <div className="flex gap-3">
                                 <button
                                     onClick={closeSuccessModal}
@@ -306,12 +308,44 @@ const JobListingsPage = () => {
                                     Continue Browsing
                                 </button>
                             </div>
-        
+
                             <p className="text-xs text-gray-500 text-center mt-4">
                                 You'll be notified when the client reviews your application
                             </p>
                         </div>
                     )}
+                </div>
+            </div>
+        );
+    };
+
+    // Error Modal Component
+    const ErrorModal = () => {
+        if (!showErrorModal) return null;
+
+        return (
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                onClick={handleOverlayClick}
+            >
+                <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto border border-red-200">
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-rose-600 rounded-full flex items-center justify-center shadow-lg">
+                            <WarningCircle size={28} weight="fill" className="text-white" />
+                        </div>
+                    </div>
+                    <div className="text-center pt-12 pb-8 px-6">
+                        <h2 className="text-2xl font-bold text-red-700 mb-2">Application Failed</h2>
+                        <p className="text-gray-600">{errorModalMessage}</p>
+                    </div>
+                    <div className="flex gap-3 px-6 pb-6">
+                        <button
+                            onClick={closeErrorModal}
+                            className="flex-1 py-3 px-4 bg-gradient-to-r from-red-600 to-rose-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-rose-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+                        >
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -324,8 +358,6 @@ const JobListingsPage = () => {
                 <meta name="description" content="Browse professional job listings on Hyrelancer" />
                 <link rel="icon" href="/assets/images/fav.png" />
             </Head>
-
-           
 
             {/* Main Content */}
             <div className="container mx-auto px-4 py-8 lg:py-12">
@@ -342,7 +374,7 @@ const JobListingsPage = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between">
                             <div>
@@ -354,7 +386,7 @@ const JobListingsPage = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between">
                             <div>
@@ -366,7 +398,7 @@ const JobListingsPage = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between">
                             <div>
@@ -386,7 +418,7 @@ const JobListingsPage = () => {
                         <div className="flex items-center gap-4 flex-wrap">
                             <div className="flex items-center gap-3">
                                 <span className="text-sm font-semibold text-gray-700">Sort by:</span>
-                                <select 
+                                <select
                                     value={sortOption}
                                     onChange={(e) => setSortOption(e.target.value)}
                                     className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
@@ -395,7 +427,7 @@ const JobListingsPage = () => {
                                     <option value="earliest">Earliest First</option>
                                 </select>
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
                                 <span className="text-sm font-semibold text-gray-700">Salary Range:</span>
                                 <div className="flex items-center gap-2">
@@ -427,7 +459,7 @@ const JobListingsPage = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="text-sm text-gray-600">
                             Showing {currentJobs.length} of {filteredJobs.length} jobs
                         </div>
@@ -592,7 +624,7 @@ const JobListingsPage = () => {
                                             <p className="text-gray-500 max-w-md mx-auto mb-6">
                                                 Try adjusting your salary range or check back later for new opportunities.
                                             </p>
-                                            <button 
+                                            <button
                                                 onClick={() => setSalaryRange({ min: 0, max: 3000 })}
                                                 className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                                             >
@@ -609,7 +641,7 @@ const JobListingsPage = () => {
                                     <div className="text-sm text-gray-600">
                                         Page {currentPage} of {totalPages} • {filteredJobs.length} total jobs
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={prevPage}
@@ -619,7 +651,7 @@ const JobListingsPage = () => {
                                             <CaretUp size={16} className="rotate-90" />
                                             Previous
                                         </button>
-                                        
+
                                         <div className="flex items-center gap-1">
                                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                                 let pageNumber;
@@ -632,14 +664,14 @@ const JobListingsPage = () => {
                                                 } else {
                                                     pageNumber = currentPage - 2 + i;
                                                 }
-                                                
+
                                                 return (
                                                     <button
                                                         key={pageNumber}
                                                         onClick={() => paginate(pageNumber)}
                                                         className={`min-w-[40px] h-10 rounded-xl font-semibold transition-all duration-200 ${
-                                                            currentPage === pageNumber 
-                                                                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' 
+                                                            currentPage === pageNumber
+                                                                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
                                                                 : 'text-gray-700 hover:bg-gray-100'
                                                         }`}
                                                     >
@@ -648,7 +680,7 @@ const JobListingsPage = () => {
                                                 );
                                             })}
                                         </div>
-                                        
+
                                         <button
                                             onClick={nextPage}
                                             disabled={currentPage === totalPages}
@@ -667,6 +699,9 @@ const JobListingsPage = () => {
 
             {/* Success Modal */}
             <SuccessModal />
+
+            {/* Error Modal */}
+            <ErrorModal />
 
             {/* Enhanced Scroll to Top Button */}
             <button

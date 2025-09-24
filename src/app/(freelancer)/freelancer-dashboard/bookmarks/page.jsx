@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, MapPin, Calendar, Star, Trash2, Briefcase, Clock, DollarSign, AlertCircle, Check, X, PaperPlaneTilt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Calendar, Star, Trash2, Briefcase, Clock, DollarSign, AlertCircle, Check, X, PaperPlaneTilt, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { message } from 'antd';
 
@@ -11,12 +11,21 @@ const Bookmarks = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [infoMessage, setInfoMessage] = useState({ text: '', type: '' });
-    
+
     // Apply job states
     const [applying, setApplying] = useState(false);
     const [applyingId, setApplyingId] = useState(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successJob, setSuccessJob] = useState(null);
+
+    // Modal for backend error messages (e.g., already applied)
+    const [showBackendModal, setShowBackendModal] = useState(false);
+    const [backendModal, setBackendModal] = useState({
+        title: '',
+        message: '',
+        icon: null,
+        type: 'info', // 'info', 'error', 'warning'
+    });
 
     const itemsPerPage = 6;
 
@@ -47,14 +56,14 @@ const Bookmarks = () => {
             setLoading(true);
             setError(null);
             const token = getToken();
-            
+
             const response = await axios.get('https://test.hyrelancer.in/api/getBookmark', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             });
-            
+
             if (response.data.data) {
                 setBookmarks(response.data.data);
             } else {
@@ -63,7 +72,7 @@ const Bookmarks = () => {
             }
         } catch (err) {
             console.error('Error fetching bookmarks:', err);
-            
+
             if (err.response?.status === 401) {
                 setError('Unauthorized. Please log in again.');
             } else if (err.response?.status === 500) {
@@ -76,17 +85,17 @@ const Bookmarks = () => {
         }
     };
 
-    // Apply for job function (same as JobListingsPage)
+    // Apply for job function (with backend message modal)
     const applyForJob = async (jobId, jobTitle) => {
         const token = getToken();
         if (!token) {
             message.error('Please login to apply for this job');
             return;
         }
-        
+
         setApplying(true);
         setApplyingId(jobId);
-        
+
         try {
             const encodedId = typeof window !== 'undefined' ? window.btoa(String(jobId)) : Buffer.from(String(jobId)).toString('base64');
             const response = await fetch(`https://test.hyrelancer.in/api/sendRequestForJob/${encodedId}`, {
@@ -95,11 +104,11 @@ const Bookmarks = () => {
                     'Authorization': `Bearer ${token}`,
                 },
             });
-            
+
             const data = await response.json();
-            
-            if (response.ok) {
-                // Find the applied job from bookmarks
+
+            if (response.ok && data.status) {
+                // Success
                 const appliedBookmark = bookmarks.find(bookmark => bookmark.customer_job?.cuj_id === jobId);
                 if (appliedBookmark) {
                     setSuccessJob({
@@ -109,18 +118,55 @@ const Bookmarks = () => {
                             name: appliedBookmark.customer_job.cuj_contact_name || 'Hyrelancer Client'
                         },
                         location: appliedBookmark.customer_job.cuj_location || 'Remote',
-                        price: appliedBookmark.customer_job.cuj_salary_range_from ? 
+                        price: appliedBookmark.customer_job.cuj_salary_range_from ?
                             `$${appliedBookmark.customer_job.cuj_salary_range_from}` : 'Negotiable'
                     });
                 }
                 setShowSuccessModal(true);
-                message.success('Application submitted successfully!');
+                // message.success('Application submitted successfully!'); // Now handled by modal
             } else {
-                message.error('Failed to apply: ' + (data.message || 'Unknown error'));
+                // Show backend message in modal (e.g., already applied, etc.)
+                let modalType = 'error';
+                let icon = <AlertTriangle size={32} className="text-yellow-500" />;
+                let title = 'Application Failed';
+                let msg = data.message || 'Unknown error occurred.';
+
+                // Try to detect "already applied" or similar
+                if (
+                    typeof data.message === 'string' &&
+                    (data.message.toLowerCase().includes('already applied') ||
+                        data.message.toLowerCase().includes('already sent') ||
+                        data.message.toLowerCase().includes('already') ||
+                        data.message.toLowerCase().includes('duplicate'))
+                ) {
+                    modalType = 'warning';
+                    icon = <AlertTriangle size={32} className="text-yellow-500" />;
+                    title = 'Already Applied';
+                    msg = data.message;
+                } else if (data.message) {
+                    modalType = 'error';
+                    icon = <X size={32} className="text-red-500" />;
+                    title = 'Application Failed';
+                    msg = data.message;
+                }
+
+                setBackendModal({
+                    title,
+                    message: msg,
+                    icon,
+                    type: modalType,
+                });
+                setShowBackendModal(true);
             }
         } catch (err) {
             console.error('Error applying for job:', err);
-            message.error('Error applying for job. Please try again.');
+            setBackendModal({
+                title: 'Error',
+                message: 'Error applying for job. Please try again.',
+                icon: <X size={32} className="text-red-500" />,
+                type: 'error',
+            });
+            setShowBackendModal(true);
         } finally {
             setApplying(false);
             setApplyingId(null);
@@ -133,10 +179,28 @@ const Bookmarks = () => {
         setSuccessJob(null);
     };
 
+    // Close backend modal
+    const closeBackendModal = () => {
+        setShowBackendModal(false);
+        setBackendModal({
+            title: '',
+            message: '',
+            icon: null,
+            type: 'info',
+        });
+    };
+
     // Handle overlay click to close modal
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
             closeSuccessModal();
+        }
+    };
+
+    // Handle overlay click to close backend modal
+    const handleBackendOverlayClick = (e) => {
+        if (e.target === e.currentTarget) {
+            closeBackendModal();
         }
     };
 
@@ -145,7 +209,7 @@ const Bookmarks = () => {
         if (!showSuccessModal) return null;
 
         return (
-            <div 
+            <div
                 className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                 onClick={handleOverlayClick}
             >
@@ -156,7 +220,7 @@ const Bookmarks = () => {
                     >
                         <X size={20} />
                     </button>
-        
+
                     <div className="text-center pt-8 pb-6 px-6">
                         <div className="w-16 h-16 mx-auto mb-4 bg-green-50 rounded-full flex items-center justify-center">
                             <Check size={32} className="text-green-600" />
@@ -164,7 +228,7 @@ const Bookmarks = () => {
                         <h2 className="text-xl font-semibold text-gray-900 mb-2">Application Submitted</h2>
                         <p className="text-gray-600">Your application has been sent successfully</p>
                     </div>
-        
+
                     {successJob && (
                         <div className="px-6 pb-6">
                             <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -188,7 +252,7 @@ const Bookmarks = () => {
                                     </div>
                                 </div>
                             </div>
-        
+
                             <div className="flex gap-3">
                                 <button
                                     onClick={closeSuccessModal}
@@ -197,7 +261,7 @@ const Bookmarks = () => {
                                     Continue Browsing
                                 </button>
                             </div>
-        
+
                             <p className="text-xs text-gray-500 text-center mt-4">
                                 You'll be notified when the client reviews your application
                             </p>
@@ -208,10 +272,58 @@ const Bookmarks = () => {
         );
     };
 
+    // Backend Message Modal Component
+    const BackendMessageModal = () => {
+        if (!showBackendModal) return null;
+
+        let iconBg = 'bg-yellow-50';
+        let iconRing = 'ring-yellow-100';
+        let icon = backendModal.icon;
+        if (backendModal.type === 'error') {
+            iconBg = 'bg-red-50';
+            iconRing = 'ring-red-100';
+        } else if (backendModal.type === 'info') {
+            iconBg = 'bg-blue-50';
+            iconRing = 'ring-blue-100';
+        }
+
+        return (
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                onClick={handleBackendOverlayClick}
+            >
+                <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto">
+                    <button
+                        onClick={closeBackendModal}
+                        className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                        aria-label="Close"
+                    >
+                        <X size={20} />
+                    </button>
+                    <div className="text-center pt-8 pb-6 px-6">
+                        <div className={`w-16 h-16 mx-auto mb-4 ${iconBg} rounded-full flex items-center justify-center ring-4 ${iconRing}`}>
+                            {icon}
+                        </div>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">{backendModal.title}</h2>
+                        <p className="text-gray-600">{backendModal.message}</p>
+                    </div>
+                    <div className="px-6 pb-6">
+                        <button
+                            onClick={closeBackendModal}
+                            className="w-full py-2.5 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // Delete bookmark with token
     const deleteBookmark = async (jobId) => {
         if (!isAuthenticated()) return;
-    
+
         try {
             const token = getToken();
             const response = await axios.get(`https://test.hyrelancer.in/api/deleteBookmark/${jobId}`, {
@@ -219,7 +331,7 @@ const Bookmarks = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            
+
             if (response.status === 200) {
                 // Remove from local state using job ID
                 setBookmarks(prev => prev.filter(bookmark => bookmark.customer_job.cuj_id !== jobId));
@@ -229,7 +341,7 @@ const Bookmarks = () => {
             }
         } catch (err) {
             console.error('Error deleting bookmark:', err);
-            
+
             if (err.response?.status === 401) {
                 setError('Unauthorized. Please log in again.');
             } else {
@@ -251,7 +363,7 @@ const Bookmarks = () => {
         const date = new Date(dateString);
         const now = new Date();
         const diffInSeconds = Math.floor((now - date) / 1000);
-        
+
         if (diffInSeconds < 60) return 'Just now';
         if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
@@ -303,70 +415,70 @@ const Bookmarks = () => {
                     const job = bookmark.customer_job;
                     const jobTitle = job.cuj_title || 'Untitled Job';
                     const jobId = job.cuj_id;
-                    
+
                     return (
                         <div key={bookmark.jb_id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-[0_0_25px_rgba(0,0,0,0.15)] transition-all duration-300 hover:border-blue-200 relative">
                             {/* Remove Bookmark Button */}
-                            <button 
+                            <button
                                 onClick={() => confirmDelete(jobId, jobTitle)}
                                 className="absolute top-4 right-4 text-gray-400 hover:text-red-500 p-2 border rounded-full hover:border-red-200 transition-colors bg-white"
                                 title="Remove bookmark"
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
-                            
+
                             <div className="pr-8">
                                 <h3 className="text-lg font-semibold text-gray-900 leading-tight mb-4">
                                     {jobTitle}
                                 </h3>
-                                
+
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
                                     <div className="flex items-center">
                                         <Clock className="w-4 h-4 mr-1" />
                                         {formatRelativeTime(job.created_at)}
                                     </div>
-                                    
+
                                     {job.cuj_location && (
                                         <div className="flex items-center">
                                             <MapPin className="w-4 h-4 mr-1" />
                                             {job.cuj_location}
                                         </div>
                                     )}
-                                    
+
                                     <div className="flex items-center text-green-600 font-medium">
                                         <DollarSign className="w-4 h-4 mr-1" />
                                         {formatSalary(job.cuj_salary_range_from, job.cuj_salary_range_to)}
                                     </div>
-                                    
+
                                     <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                         {job.cuj_job_type || 'Not specified'}
                                     </div>
                                 </div>
-                                
+
                                 <p className="text-gray-700 mb-4 text-sm line-clamp-3">
                                     {job.cuj_desc || 'No description provided.'}
                                 </p>
-                                
+
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {job.cuj_work_mode && (
                                         <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
                                             {job.cuj_work_mode}
                                         </span>
                                     )}
-                                    
+
                                     {job.cuj_lang && job.cuj_lang.split(',').map((language, index) => (
                                         <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
                                             {language.trim()}
                                         </span>
                                     ))}
-                                    
+
                                     {job.cuj_u_experience && (
                                         <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
                                             {job.cuj_u_experience}
                                         </span>
                                     )}
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                                     <div className="text-sm text-gray-600">
                                         Contact: {job.cuj_contact_name || 'Not specified'}
@@ -376,8 +488,8 @@ const Bookmarks = () => {
                                     </div>
                                 </div>
                             </div>
-                            
-                            <button 
+
+                            <button
                                 onClick={() => applyForJob(jobId, jobTitle)}
                                 disabled={applying && applyingId === jobId}
                                 className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-600 py-2.5 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 hover:scale-[1.02] transition-all duration-200 font-medium disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -420,7 +532,7 @@ const Bookmarks = () => {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Required</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
-                    <button 
+                    <button
                         onClick={handleLoginRedirect}
                         className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
@@ -446,7 +558,7 @@ const Bookmarks = () => {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading bookmarks</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
-                    <button 
+                    <button
                         onClick={handleRetry}
                         className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
@@ -489,8 +601,8 @@ const Bookmarks = () => {
                             key={pageNumber}
                             onClick={() => setCurrentPage(pageNumber)}
                             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === pageNumber
-                                    ? 'text-white bg-blue-600 border border-blue-600'
-                                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                ? 'text-white bg-blue-600 border border-blue-600'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                                 }`}
                         >
                             {pageNumber}
@@ -514,6 +626,8 @@ const Bookmarks = () => {
         <div className="min-h-screen bg-gray-100">
             {/* Success Modal */}
             <SuccessModal />
+            {/* Backend Message Modal */}
+            <BackendMessageModal />
 
             {/* Header outside the card */}
             <div className="max-w-[1600px] mx-auto px-4 pt-8 pb-6">
@@ -542,8 +656,8 @@ const Bookmarks = () => {
                                         setCurrentPage(1);
                                     }}
                                     className={`py-4 px-6 border-b-2 font-medium text-sm transition-colors ${activeTab === tab
-                                            ? 'border-blue-500 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     {tab} {bookmarks.length > 0 && `(${bookmarks.length})`}
