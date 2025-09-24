@@ -21,7 +21,7 @@ export default function AccountStatusPage() {
 
   // JWT token
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const backendUrl = "http://test.hyrelancer.in/api/account/status";
+  const backendUrl = "https://test.hyrelancer.in/api/account/status";
 
   // Fetch current status from backend
   const fetchStatus = async () => {

@@ -2,61 +2,68 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { User, Mail, Phone, Eye, EyeOff, ArrowLeft, RefreshCcw } from 'lucide-react';
+import { User, Mail, Phone, ArrowLeft, RefreshCcw } from 'lucide-react';
 import api from '@/config/api';
 
 const CompleteSignupPage = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const mobileNumber = searchParams.get('mobile');
+    
+    const getMobileNumber = () => {
+        try {
+            const sessionMobile = sessionStorage.getItem('signupMobile');
+            if (sessionMobile) {
+                return sessionMobile;
+            }
+        } catch (e) {
+            console.warn('sessionStorage unavailable:', e);
+        }
+        return searchParams.get('mobile');
+    };
+    
+    const mobileNumber = getMobileNumber();
 
     const [formData, setFormData] = useState({
         name: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
+        email: ''
     });
     const [errors, setErrors] = useState({});
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Redirect back if no mobile number
+    // Redirect back if no mobile number - but only check once on mount
     useEffect(() => {
         if (!mobileNumber) {
-            router.push('/login');
+            router.push('/Login');
         }
-    }, [mobileNumber, router]);
+    }, []); // Remove mobileNumber and router from dependencies
+
+    // Clear sessionStorage when component unmounts or after successful registration
+    useEffect(() => {
+        return () => {
+            // Only clear if registration was not successful
+            if (!formData.name && !formData.email) {
+                try {
+                    sessionStorage.removeItem('signupMobile');
+                } catch (e) {
+                    console.warn('sessionStorage unavailable:', e);
+                }
+            }
+        };
+    }, [formData.name, formData.email]);
 
     const validateForm = () => {
         const newErrors = {};
 
-        // Name validation
         if (!formData.name.trim()) {
             newErrors.name = 'Name is required';
         } else if (formData.name.trim().length < 2) {
             newErrors.name = 'Name must be at least 2 characters';
         }
 
-        // Email validation
         if (!formData.email.trim()) {
             newErrors.email = 'Email is required';
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = 'Please enter a valid email address';
-        }
-
-        // Password validation
-        if (!formData.password) {
-            newErrors.password = 'Password is required';
-        } else if (formData.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
-        }
-
-        // Confirm password validation
-        if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
-        } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
         }
 
         return newErrors;
@@ -64,7 +71,6 @@ const CompleteSignupPage = () => {
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-        // Clear error when user starts typing
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: '' }));
         }
@@ -83,27 +89,44 @@ const CompleteSignupPage = () => {
         setErrors({});
 
         try {
-            const response = await api.post('/signup/complete', {
+            const response = await api.post('/signup/register', {
                 mobile: mobileNumber,
                 name: formData.name.trim(),
-                email: formData.email.trim(),
-                password: formData.password
+                email: formData.email.trim()
             });
 
-            // Success - redirect to login or dashboard
-            router.push('/login?message=signup-success');
+            // Store token if provided
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+            }
+
+            // Clear sessionStorage after successful registration
+            try {
+                sessionStorage.removeItem('signupMobile');
+            } catch (e) {
+                console.warn('sessionStorage unavailable:', e);
+            }
+
+            // Success - redirect to dashboard
+            router.push('/dashboard?message=registration-complete');
             
         } catch (error) {
-            console.error('Signup completion error:', error);
+            console.error('Registration error:', error);
             
             if (error.response && error.response.data) {
                 const errorData = error.response.data;
                 
-                // Handle validation errors from backend
-                if (errorData.errors) {
-                    setErrors(errorData.errors);
+                if (errorData.status === 'error') {
+                    setErrors({ general: errorData.message });
+                } else if (errorData.errors) {
+                    const backendErrors = {};
+                    Object.keys(errorData.errors).forEach(key => {
+                        backendErrors[key] = errorData.errors[key][0];
+                    });
+                    setErrors(backendErrors);
                 } else {
-                    setErrors({ general: errorData.message || 'Failed to complete signup. Please try again.' });
+                    setErrors({ general: errorData.message || 'Failed to complete registration. Please try again.' });
                 }
             } else {
                 setErrors({ general: 'Network error. Please check your connection and try again.' });
@@ -121,14 +144,12 @@ const CompleteSignupPage = () => {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
                 {/* Header */}
-                <div className="text-center mb-8 flex justify-center items-center gap-4">
-                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-aut mb-">
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <User className="w-8 h-8 text-white" />
                     </div>
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
-                        <p className="text-gray-600">Just a few more details to get you started</p>
-                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
+                    <p className="text-gray-600">Just a few more details to get you started</p>
                 </div>
 
                 {/* Mobile Number Display */}
@@ -146,7 +167,6 @@ const CompleteSignupPage = () => {
 
                 {/* Form */}
                 <div className="space-y-6">
-                    {/* General Error */}
                     {errors.general && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                             <p className="text-red-600 text-sm">{errors.general}</p>
@@ -193,7 +213,6 @@ const CompleteSignupPage = () => {
                         {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
                     </div>
 
-                    
                     {/* Submit Button */}
                     <button
                         onClick={handleSubmit}
