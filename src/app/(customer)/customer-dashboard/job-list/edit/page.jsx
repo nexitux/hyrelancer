@@ -339,10 +339,10 @@ const EditJobPage = () => {
     
     const filesToAdd = files.slice(0, availableSlots);
     const newPhotos = filesToAdd.map((file, index) => ({
-      id: Date.now() + index,
-      file,
-      url: URL.createObjectURL(file),
-      isExisting: false
+        id: Date.now() + index,
+        file,
+        url: URL.createObjectURL(file),
+        isExisting: false
     }));
     setNewImages(prev => [...prev, ...newPhotos]);
   };
@@ -367,10 +367,10 @@ const EditJobPage = () => {
       }
       return;
     }
-
+  
     setSaving(true);
     setError(null);
-
+  
     try {
       // Prepare multipart payload including cuj_img1..3
       const payload = new FormData();
@@ -442,7 +442,7 @@ const EditJobPage = () => {
       const response = await api.post('/updatejOB', payload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-
+  
       if (response.data) {
         setSuccess('Job updated successfully!');
         dispatch(clearSelectedJob());
