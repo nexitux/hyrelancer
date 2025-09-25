@@ -4,17 +4,17 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Phone, Check, RefreshCcw } from 'lucide-react';
 import api from '@/config/api';
 
-const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
+const PhoneVerificationModal = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState('otp-input');
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [otpError, setOtpError] = useState('');
-  const [guid, setGuid] = useState(''); // Store GUID from send-otp response
-  const [registeredMobile, setRegisteredMobile] = useState(''); // Store mobile from API response
+  const [guid, setGuid] = useState('');
+  const [mobileNumber, setMobileNumber] = useState(''); // Will be set from API response
   const otpInputRefs = useRef([]);
 
-  // flexible backend success detection
+  // Flexible backend success detection
   const isBackendSuccess = (data) => {
     if (!data) return false;
     const s = data.status;
@@ -35,23 +35,19 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
 
   // Send initial OTP when modal opens
   const sendInitialOtp = async () => {
-    if (!phoneNumber) return;
-
     setIsLoading(true);
     setOtpError('');
 
     try {
-      const response = await api.post('/register/send-otp', {
-        mobile: phoneNumber
-      });
-
+      // Send empty object since backend gets mobile from authenticated user
+      const response = await api.post('/register/send-otp', {});
+      
       const data = response.data;
       console.log('send otp response ->', data);
 
       if (isBackendSuccess(data)) {
-        setGuid(data.guid || ''); // Store GUID for resend functionality
-        // Mobile is now in format "9539939981" without country code
-        setRegisteredMobile(data.mobile || phoneNumber); // Store mobile from response
+        setGuid(data.guid || '');
+        setMobileNumber(data.mobile || ''); // Store mobile from API response
         setCountdown(30);
         setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
       } else {
@@ -59,7 +55,18 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
       }
     } catch (error) {
       console.error('sendInitialOtp error', error);
-      setOtpError(error.response?.data?.message || 'Network error. Please check your connection.');
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error ||
+                          'Network error. Please check your connection.';
+      setOtpError(errorMessage);
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        setOtpError('Please log in to verify your phone number.');
+      } else if (error.response?.data?.message?.includes('already verified')) {
+        setOtpError('This phone number is already verified.');
+        setCurrentStep('success');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -73,10 +80,10 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
       setCountdown(30);
       setOtpError('');
       setGuid('');
-      setRegisteredMobile('');
+      setMobileNumber('');
       sendInitialOtp();
     }
-  }, [isOpen, phoneNumber]);
+  }, [isOpen]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -116,12 +123,18 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
       return;
     }
 
+    if (!mobileNumber) {
+      setOtpError('Mobile number not available. Please try again.');
+      return;
+    }
+
     setOtpError('');
     setIsLoading(true);
 
     try {
+      // Use the mobile number received from send-OTP API response
       const response = await api.post('/register/verify-otp', {
-        mobile: registeredMobile || phoneNumber, // Use mobile from API response first
+        mobile: mobileNumber, // Use mobile from API response
         otp: otpJoined
       });
 
@@ -135,7 +148,10 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
       }
     } catch (error) {
       console.error('handleOtpSubmit error', error);
-      setOtpError(error.response?.data?.message || 'Failed to verify OTP. Please try again.');
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error ||
+                          'Failed to verify OTP. Please try again.';
+      setOtpError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -150,15 +166,16 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
     setOtpError('');
 
     try {
-      const response = await api.post('/register/resend-otp', {
-        mobile: registeredMobile || phoneNumber, // Use mobile from API response first
-        ...(guid && { guid }) // Include GUID if available
-      });
+      // Send GUID if available, backend will handle mobile number
+      const requestBody = guid ? { guid } : {};
+      const response = await api.post('/register/resend-otp', requestBody);
 
       const data = response.data;
       console.log('resend otp response ->', data);
 
       if (isBackendSuccess(data)) {
+        setGuid(data.guid || guid); // Update GUID if new one provided
+        setMobileNumber(data.mobile || mobileNumber); // Update mobile if provided
         setCountdown(30);
         setOtpValues(['', '', '', '', '', '']);
         setTimeout(() => otpInputRefs.current[0]?.focus(), 80);
@@ -167,7 +184,10 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
       }
     } catch (error) {
       console.error('handleResendOtp error', error);
-      setOtpError(error.response?.data?.message || 'Network error. Please check your connection.');
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error ||
+                          'Network error. Please check your connection.';
+      setOtpError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -191,10 +211,17 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
               </div>
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Verify Your Phone</h2>
               <div className="space-y-1">
-                <p className="text-sm sm:text-base text-gray-600">Enter the 6-digit code sent to</p>
-                <p className="text-sm sm:text-base text-gray-900 font-medium">
-                  {phoneNumber ? `+91 ${phoneNumber}` : 'your mobile number'}
+                <p className="text-sm sm:text-base text-gray-600">
+                  {mobileNumber 
+                    ? `Enter the 6-digit code sent to your number`
+                    : 'Sending verification code...'
+                  }
                 </p>
+                {mobileNumber && (
+                  <p className="text-sm sm:text-base text-gray-900 font-medium">
+                    +91 {mobileNumber}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -211,32 +238,37 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
                     className="w-10 h-10 sm:w-12 sm:h-12 text-center text-lg font-semibold text-gray-800 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-lg bg-gray-50 focus:bg-white outline-none transition-all duration-200"
                     maxLength={1}
                     inputMode="numeric"
+                    disabled={isLoading || !mobileNumber}
                   />
                 ))}
               </div>
+              
               {otpError && <p className="text-sm text-red-600 text-center -mt-2">{otpError}</p>}
 
               <div className="text-center">
                 <button
                   onClick={handleResendOtp}
-                  disabled={countdown > 0 || isLoading}
-                  className={`text-xs sm:text-sm font-medium transition-colors ${countdown > 0 || isLoading
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-blue-600 hover:text-blue-700'
-                    }`}
+                  disabled={countdown > 0 || isLoading || !mobileNumber}
+                  className={`text-xs sm:text-sm font-medium transition-colors ${
+                    countdown > 0 || isLoading || !mobileNumber
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-blue-600 hover:text-blue-700'
+                  }`}
                 >
                   {countdown > 0
                     ? `Resend code in ${countdown}s`
                     : isLoading
-                      ? 'Sending...'
-                      : 'Resend verification code'
+                    ? 'Sending...'
+                    : !mobileNumber
+                    ? 'Preparing to resend...'
+                    : 'Resend verification code'
                   }
                 </button>
               </div>
 
               <button
                 onClick={handleOtpSubmit}
-                disabled={!otpValues.every(value => value !== '') || isLoading}
+                disabled={!otpValues.every(value => value !== '') || isLoading || !mobileNumber}
                 className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-sm sm:text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
               >
                 {isLoading ? (
@@ -266,6 +298,11 @@ const PhoneVerificationModal = ({ isOpen, onClose, phoneNumber }) => {
               <div className="space-y-2">
                 <p className="text-sm sm:text-base text-gray-600">Your phone number has been successfully verified.</p>
                 <p className="text-sm sm:text-base text-gray-600">You now have access to all platform features!</p>
+                {mobileNumber && (
+                  <div className="flex items-center justify-center gap-2 mt-2 p-2 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Verified: +91 {mobileNumber}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-center gap-2 mt-4 p-3 bg-green-50 rounded-lg">
                   <Check className="w-5 h-5 text-green-600" />
                   <span className="text-sm font-medium text-green-800">Verification Badge Earned</span>

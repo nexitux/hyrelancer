@@ -171,7 +171,7 @@ const AuthForm = () => {
         setIsLoading(true);
         dispatch(loginStart());
         try {
-          const backendUrl = 'http://test.hyrelancer.in/api';
+          const backendUrl = 'https://test.hyrelancer.in/api';
           const response = await api.get(
             `${backendUrl}/getDatatByGoogleId?google_id=${googleId}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
@@ -414,7 +414,7 @@ const AuthForm = () => {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = 'http://test.hyrelancer.in/api/google/login';
+    window.location.href = 'https://test.hyrelancer.in/api/google/login';
   };
 
   // Phone OTP functions

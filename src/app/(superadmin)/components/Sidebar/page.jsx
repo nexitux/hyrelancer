@@ -84,6 +84,15 @@ export default function Sidebar() {
       ]
     },
     { 
+      id: 'jobs', 
+      label: 'Jobs', 
+      icon: MdMiscellaneousServices, 
+      href: '/superadmin/services',
+      subLinks: [
+        { id: 'jobslist', label: 'Jobs List', href: '/control/joblist' }
+      ]
+    },
+    { 
       id: 'freelancers', 
       label: 'Freelancers', 
       icon: MdWork, 
