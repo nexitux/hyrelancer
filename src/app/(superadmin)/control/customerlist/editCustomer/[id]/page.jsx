@@ -49,7 +49,7 @@ export default function EditCustomer({ params }) {
       setInitialDataLoading(false);
       return;
     }
-    
+
     try {
       const token = TokenManager.getToken();
       if (!token) throw new Error('Authentication token not found.');
@@ -134,7 +134,7 @@ export default function EditCustomer({ params }) {
       </div>
     );
   }
-  
+
   return (
     <div className="p-8">
       <Card className="rounded-2xl shadow-md">
@@ -178,7 +178,7 @@ export default function EditCustomer({ params }) {
                 <Input prefix={<PhoneOutlined />} placeholder="Mobile" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            {/* <Col span={12}>
               <Form.Item
                 name="address"
                 label="Address"
@@ -186,11 +186,11 @@ export default function EditCustomer({ params }) {
               >
                 <Input prefix={<HomeOutlined />} placeholder="Address" />
               </Form.Item>
-            </Col>
+            </Col> */}
           </Row>
 
           {/* Login Credentials */}
-          <Title level={5} className="!mt-8 !mb-4">Login Credentials</Title>
+          {/* <Title level={5} className="!mt-8 !mb-4">Login Credentials</Title>
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
@@ -230,7 +230,7 @@ export default function EditCustomer({ params }) {
                 <Input.Password prefix={<LockOutlined />} placeholder="Confirm Password" />
               </Form.Item>
             </Col>
-          </Row>
+          </Row> */}
 
           {/* Save Button */}
           <Form.Item className="!mt-6">

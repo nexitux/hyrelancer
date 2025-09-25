@@ -1038,7 +1038,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                     <Form.Item
                                       name="occupation"
                                       label={<span className="font-medium">Current Occupation</span>}
-                                      rules={[{ required: true, message: "Please enter occupation" }]}
+                                      rules={[{ required: false, message: "Please enter occupation" }]}
                                       className="mb-0"
                                     >
                                       <Input
@@ -1051,7 +1051,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                     <Form.Item
                                       name="yearsOfExperience"
                                       label={<span className="font-medium">Total Experience</span>}
-                                      rules={[{ required: true, message: "Please select years of experience" }]}
+                                      rules={[{ required: false, message: "Please select years of experience" }]}
                                       className="mb-0"
                                     >
                                       <Select

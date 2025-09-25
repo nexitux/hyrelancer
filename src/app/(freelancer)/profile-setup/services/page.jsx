@@ -1350,8 +1350,8 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                           className="w-full"
                           size="large"
                         >
-                          <Option value="Work">Per project/Work</Option>
-                          <Option value="Hour">Hourly Basis</Option>
+                          <Option value="work">Per project/Work</Option>
+                          <Option value="hour">Hourly Basis</Option>
                         </Select>
                       </Form.Item>
                     </Col>
