@@ -43,6 +43,11 @@ const ActiveWorkDashboard = () => {
             const response = await api.get('/getAppliedReJob');
             const data = response.data;
             
+            // Debug: Log the receiver ID for verification
+            if (data.job_Re_list && data.job_Re_list.length > 0) {
+                console.log('Sample job item receiver ID (sjr_fe_u_id):', data.job_Re_list[0].sjr_fe_u_id);
+            }
+            
             const transformedData = data.job_Re_list.map(item => ({
                 id: item.cuj_id,
                 title: item.cuj_title,
@@ -65,6 +70,8 @@ const ActiveWorkDashboard = () => {
                 isRejected: item.cuj_is_rejected === 1,
                 isAssigned: item.cuj_is_assigned === 1,
                 companyId: item.company_id,
+                // Use the correct receiver ID from the API response
+                receiverId: item.sjr_fe_u_id, // This is the freelancer user ID from the API
                 icon: getJobIcon(item.cuj_title),
                 status: getStatus(item),
                 statusColor: getStatusColor(getStatus(item))
@@ -192,6 +199,23 @@ const ActiveWorkDashboard = () => {
     };
 
     const handleChatClick = (job) => {
+        console.log('=== CHAT CLICK DEBUG ===');
+        console.log('Full job object:', job);
+        console.log('Company ID:', job.companyId);
+        console.log('User ID:', job.userId);
+        console.log('Freelancer ID:', job.freelancerId);
+        console.log('All available IDs:', {
+            userId: job.userId,
+            freelancerId: job.freelancerId,
+            companyId: job.companyId
+        });
+        
+        // Use the correct receiver ID from the API response
+        const targetUserId = job.receiverId;
+        console.log('Selected Target User ID (receiverId):', targetUserId);
+        console.log('Target User ID type:', typeof targetUserId);
+        console.log('Target User ID is valid:', targetUserId && targetUserId !== 'null' && targetUserId !== 'undefined');
+        
         setSelectedJobForChat(job);
         setIsModalOpen(true);
     };
@@ -554,8 +578,9 @@ const ActiveWorkDashboard = () => {
                     onClose={handleModalClose}
                     companyName={selectedJobForChat.company}
                     location={selectedJobForChat.location}
-                    targetUserId={selectedJobForChat.companyId}
+                    targetUserId={selectedJobForChat.receiverId}
                     jobTitle={selectedJobForChat.title}
+                    showInbox={false}
                 />
             )}
 

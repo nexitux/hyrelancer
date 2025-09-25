@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, MapPin, Paperclip, Smile, MoreVertical, Phone, Video, AlertCircle } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import api from '@/config/api';
 
 const EnhancedChatModal = ({
     isOpen,
@@ -9,15 +10,51 @@ const EnhancedChatModal = ({
     companyName = "PrimeEdge Solutions",
     location = "Las Vegas, USA",
     targetUserId = null,
-    jobTitle = ""
+    jobTitle = "",
+    showInbox = false
 }) => {
+    // Debug logging
+    console.log('ChatModal Props:', {
+        isOpen,
+        companyName,
+        location,
+        targetUserId,
+        jobTitle,
+        showInbox
+    });
+    
+    // Additional debugging for user ID validation
+    console.log('Target User ID Analysis:', {
+        targetUserId,
+        type: typeof targetUserId,
+        isNull: targetUserId === null,
+        isUndefined: targetUserId === undefined,
+        isString: typeof targetUserId === 'string',
+        isNumber: typeof targetUserId === 'number',
+        isEmptyString: targetUserId === '',
+        isStringNull: targetUserId === 'null',
+        isStringUndefined: targetUserId === 'undefined',
+        isValid: targetUserId && targetUserId !== 'null' && targetUserId !== 'undefined' && targetUserId !== ''
+    });
+    
+    // Validate and normalize targetUserId
+    const normalizedTargetUserId = targetUserId && 
+        targetUserId !== 'null' && 
+        targetUserId !== 'undefined' && 
+        targetUserId !== '' ? 
+        String(targetUserId) : null;
+    
+    if (!normalizedTargetUserId) {
+        console.warn('No valid targetUserId provided to ChatModal');
+    }
+    
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const messagesEndRef = useRef(null);
     const refreshIntervalRef = useRef(null);
-    const lastMessageId = useRef(0);
+    const lastMessageIds = useRef({});
 
     // Get authentication data from Redux store
     const { user, token, isAuthenticated } = useSelector((state) => state.auth);
@@ -27,7 +64,7 @@ const EnhancedChatModal = ({
     // Auth problem detection
     const authProblem = !isAuthenticated || !user || !currentUserId || !authToken;
 
-    // Get auth token
+    // Get auth token 
     const getAuthToken = () => {
         if (!authToken) {
             console.error('No authentication token found');
@@ -36,6 +73,7 @@ const EnhancedChatModal = ({
         return authToken;
     };
 
+    // Get current user ID
     const getCurrentUserId = () => {
         if (!currentUserId) {
             console.error('No current user ID found');
@@ -66,25 +104,18 @@ const EnhancedChatModal = ({
         }
     };
 
-    // Fetch conversation with specific user - USING WORKING API ENDPOINT
+    // Fetch conversation with a specific user
     const fetchConversation = async (userId, showLoading = false) => {
-        if (!userId) {
-            setError('No user ID provided for conversation');
-            return;
-        }
-
-        if (showLoading) setLoading(true);
-        setError(null);
+        if (!userId) return;
         
+        if (showLoading) setLoading(true);
         try {
             const token = getAuthToken();
             if (!token) {
-                setError('No authentication token found');
+                console.error('Cannot fetch conversation: No authentication token');
                 return;
             }
 
-            console.log('Fetching conversation for user:', userId);
-            
             const response = await fetch(`https://test.hyrelancer.in/api/conversation/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -97,57 +128,51 @@ const EnhancedChatModal = ({
             }
             
             const data = await response.json();
-            console.log('Conversation API Response:', data);
-
+            console.log('Conversation API Response:', data); // Debug log
+            
             if (data.status && data.data && Array.isArray(data.data)) {
                 const currentUserId = getCurrentUserId();
-
+                
                 const transformedMessages = data.data.map(msg => ({
                     id: msg.uc_id,
                     text: msg.uc_message,
                     sender: msg.uc_sender_id === currentUserId ? 'me' : 'other',
                     timestamp: formatMessageTime(msg.created_at),
                     rawTimestamp: msg.created_at,
-                    isRead: msg.is_read,
-                    date: new Date(msg.created_at).toDateString()
+                    isRead: msg.is_read
                 }));
-
+                
                 // Sort messages by creation time (ascending)
                 transformedMessages.sort((a, b) => new Date(a.rawTimestamp) - new Date(b.rawTimestamp));
-
+                
                 // Check if we have new messages
-                const newestMessageId = transformedMessages.length > 0 ?
+                const lastKnownMessageId = lastMessageIds.current[userId] || 0;
+                const newestMessageId = transformedMessages.length > 0 ? 
                     Math.max(...transformedMessages.map(m => m.id)) : 0;
-
-                if (newestMessageId > lastMessageId.current) {
-                    lastMessageId.current = newestMessageId;
+                
+                if (newestMessageId > lastKnownMessageId) {
+                    lastMessageIds.current[userId] = newestMessageId;
                 }
-
+                
                 setMessages(transformedMessages);
-            } else {
-                setError('Invalid response format from server');
             }
         } catch (error) {
             console.error('Error fetching conversation:', error);
-            setError(`Failed to load conversation: ${error.message}`);
         } finally {
             if (showLoading) setLoading(false);
         }
     };
 
-    // Send message - USING WORKING API ENDPOINT
+    // Send message
     const sendMessage = async (receiverId, messageText) => {
-        if (!messageText.trim() || !receiverId) {
-            setError('Cannot send empty message or without receiver');
-            return false;
-        }
-
+        if (!messageText.trim()) return;
+        
         const token = getAuthToken();
         if (!token) {
-            setError('No authentication token found');
+            console.error('Cannot send message: No authentication token');
             return false;
         }
-
+        
         // Optimistically add message to UI immediately
         const tempMessage = {
             id: `temp-${Date.now()}`,
@@ -156,13 +181,11 @@ const EnhancedChatModal = ({
             timestamp: formatMessageTime(new Date()),
             rawTimestamp: new Date().toISOString(),
             isRead: 0,
-            sending: true,
-            date: new Date().toDateString()
+            sending: true
         };
 
         setMessages(prev => [...prev, tempMessage]);
-        setError(null);
-
+        
         try {
             const response = await fetch('https://test.hyrelancer.in/api/send', {
                 method: 'POST',
@@ -181,8 +204,8 @@ const EnhancedChatModal = ({
             }
             
             const data = await response.json();
-            console.log('Send Message API Response:', data);
-
+            console.log('Send Message API Response:', data); // Debug log
+            
             if (data.status && data.data) {
                 // Replace optimistic message with real message from server
                 const realMessage = {
@@ -192,29 +215,27 @@ const EnhancedChatModal = ({
                     timestamp: formatMessageTime(data.data.created_at),
                     rawTimestamp: data.data.created_at,
                     isRead: data.data.is_read,
-                    sending: false,
-                    date: new Date(data.data.created_at).toDateString()
+                    sending: false
                 };
 
-                setMessages(prev => prev.map(msg =>
+                setMessages(prev => prev.map(msg => 
                     msg.id === tempMessage.id ? realMessage : msg
                 ));
-
+                
                 // Update last message ID
-                lastMessageId.current = data.data.uc_id;
-
+                lastMessageIds.current[receiverId] = data.data.uc_id;
+                
                 return true;
             } else {
                 // Remove optimistic message if send failed
                 setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-                setError('Failed to send message: Server returned error');
+                console.error('Failed to send message:', data);
                 return false;
             }
         } catch (error) {
             console.error('Error sending message:', error);
             // Remove optimistic message if send failed
             setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-            setError(`Failed to send message: ${error.message}`);
             return false;
         }
     };
@@ -222,27 +243,28 @@ const EnhancedChatModal = ({
     // Group messages by date
     const groupMessagesByDate = (messages) => {
         if (!messages || messages.length === 0) return {};
-
+        
         const groups = {};
         messages.forEach(msg => {
-            const dateKey = msg.date;
-
+            const date = new Date(msg.rawTimestamp);
+            const dateKey = date.toDateString();
+            
             if (!groups[dateKey]) {
                 groups[dateKey] = [];
             }
             groups[dateKey].push(msg);
         });
-
+        
         return groups;
     };
 
     // Handle send message
     const handleSendMessage = async () => {
-        if (!message.trim() || !targetUserId || authProblem) return;
-
+        if (!message.trim() || !normalizedTargetUserId) return;
+        
         const messageText = message.trim();
         setMessage('');
-        await sendMessage(targetUserId, messageText);
+        await sendMessage(normalizedTargetUserId, messageText);
     };
 
     // Handle key press (Enter to send)
@@ -260,22 +282,16 @@ const EnhancedChatModal = ({
         e.target.style.height = e.target.scrollHeight + 'px';
     };
 
-    // Scroll to bottom when messages change
+    // Setup auto-refresh for direct chat
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [messages]);
+        if (isOpen && normalizedTargetUserId) {
+            // Direct chat mode - fetch conversation
+            fetchConversation(normalizedTargetUserId, true);
 
-    // Fetch conversation when modal opens and targetUserId is available
-    useEffect(() => {
-        if (isOpen && targetUserId) {
-            fetchConversation(targetUserId, true);
-
-            // Set up auto-refresh for this conversation (every 5 seconds)
+            // Setup auto-refresh interval for direct chat
             refreshIntervalRef.current = setInterval(() => {
-                fetchConversation(targetUserId, false);
-            }, 5000);
+                fetchConversation(normalizedTargetUserId, false);
+            }, 5000); // Check for new messages every 5 seconds for direct chat
         }
 
         return () => {
@@ -283,7 +299,7 @@ const EnhancedChatModal = ({
                 clearInterval(refreshIntervalRef.current);
             }
         };
-    }, [isOpen, targetUserId]);
+    }, [isOpen, normalizedTargetUserId]);
 
     // Clean up when modal closes
     useEffect(() => {
@@ -291,7 +307,7 @@ const EnhancedChatModal = ({
             setMessages([]);
             setMessage('');
             setError(null);
-            lastMessageId.current = 0;
+            lastMessageIds.current = {};
             if (refreshIntervalRef.current) {
                 clearInterval(refreshIntervalRef.current);
             }
@@ -320,7 +336,17 @@ const EnhancedChatModal = ({
     const groupedMessages = groupMessagesByDate(messages);
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div 
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    console.log('Modal backdrop clicked');
+                    if (onClose && typeof onClose === 'function') {
+                        onClose();
+                    }
+                }
+            }}
+        >
             <div className="bg-white rounded-2xl w-full max-w-4xl mx-4 shadow-2xl overflow-hidden" style={{ height: '80vh' }}>
                 {/* Header */}
                 <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center justify-between flex-shrink-0">
@@ -350,7 +376,14 @@ const EnhancedChatModal = ({
                             <MoreVertical className="w-5 h-5" />
                         </button>
                         <button
-                            onClick={onClose}
+                            onClick={() => {
+                                console.log('Close button clicked');
+                                if (onClose && typeof onClose === 'function') {
+                                    onClose();
+                                } else {
+                                    console.error('onClose function not provided or not a function');
+                                }
+                            }}
                             className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"
                         >
                             <X className="w-5 h-5" />
@@ -363,10 +396,23 @@ const EnhancedChatModal = ({
                     <div className="bg-red-50 border-l-4 border-red-400 p-4 mx-4 mt-4 rounded">
                         <div className="flex items-center">
                             <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
-                            <p className="text-red-700 text-sm">{error}</p>
+                            <div className="flex-1">
+                                <p className="text-red-700 text-sm">{error}</p>
+                                {normalizedTargetUserId && (
+                                    <button 
+                                        onClick={() => {
+                                            setError(null);
+                                            fetchConversation(normalizedTargetUserId, true);
+                                        }}
+                                        className="text-red-600 hover:text-red-800 text-xs underline mt-1"
+                                    >
+                                        Retry
+                                    </button>
+                                )}
+                            </div>
                             <button 
                                 onClick={() => setError(null)}
-                                className="ml-auto text-red-400 hover:text-red-600"
+                                className="ml-2 text-red-400 hover:text-red-600"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -393,9 +439,9 @@ const EnhancedChatModal = ({
                                         Regarding: {jobTitle}
                                     </p>
                                 )}
-                                {!targetUserId && (
+                                {!normalizedTargetUserId && (
                                     <p className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full inline-block mt-2">
-                                        Error: No user selected
+                                        Error: No valid user ID available for messaging. Please contact support.
                                     </p>
                                 )}
                             </div>
@@ -464,7 +510,7 @@ const EnhancedChatModal = ({
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all max-h-32 min-h-[44px] text-sm"
                                 rows={1}
                                 style={{ height: 'auto' }}
-                                disabled={!targetUserId}
+                                disabled={!normalizedTargetUserId}
                             />
                         </div>
 
@@ -474,16 +520,16 @@ const EnhancedChatModal = ({
 
                         <button
                             onClick={handleSendMessage}
-                            disabled={!message.trim() || !targetUserId || authProblem}
+                            disabled={!message.trim() || !normalizedTargetUserId || authProblem}
                             className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
                         >
                             <Send className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {!targetUserId && (
+                    {!normalizedTargetUserId && (
                         <div className="mt-2 text-xs text-red-500 text-center">
-                            Unable to send messages: No target user specified
+                            Unable to send messages: No valid user ID available
                         </div>
                     )}
 
