@@ -127,6 +127,11 @@ const Sidebar = ({ navItems, isCollapsed = false }) => {
         setIsSupportModalOpen(false);
         setIsSuccessModalOpen(true);
         
+        // Auto-hide modal after 8 seconds
+        setTimeout(() => {
+          setIsSuccessModalOpen(false);
+        }, 8000);
+        
         // Reset form
         setFormData({
           subject: "",
@@ -484,10 +489,14 @@ const Sidebar = ({ navItems, isCollapsed = false }) => {
             <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-3 rounded-b-xl">
               <div className="flex justify-center">
                 <button
-                  onClick={() => setIsSuccessModalOpen(false)}
+                  onClick={() => {
+                    setIsSuccessModalOpen(false);
+                    // Redirect to support tickets page
+                    router.push('/customer-dashboard/support-tickets');
+                  }}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Close
+                  View Tickets
                 </button>
               </div>
             </div>
