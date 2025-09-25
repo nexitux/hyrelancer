@@ -20,6 +20,16 @@ import Logo from "../../../../public/images/image.png";
 import Image from "next/image";
 import api from "@/config/api";
 
+// Default category icons mapping
+const defaultCategoryIcons = {
+  "Web Development": <Layers className="w-5 h-5" />,
+  "Design": <Brush className="w-5 h-5" />,
+  "Marketing": <Megaphone className="w-5 h-5" />,
+  "Photography": <Camera className="w-5 h-5" />,
+  "Writing": <ImageIcon className="w-5 h-5" />,
+  // Add more categories as needed
+};
+
 const Header = ({ params }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);

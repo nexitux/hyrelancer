@@ -1,77 +1,50 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-
-// Mock data for tickets
-const initialTickets = [
-  {
-    id: 1,
-    category: "Technical Issue",
-    customer: "John Doe",
-    agent: "Support Agent 1",
-    status: "Open",
-    subject: "Cannot login to dashboard",
-    description: "I've been trying to login to my dashboard for the past hour but keep getting an error message.",
-    priority: "High",
-    createdAt: "2023-10-15T14:30:00Z",
-    replies: [
-      {
-        id: 1,
-        user: "Support Agent 1",
-        message: "We're looking into this issue. Can you try clearing your browser cache?",
-        timestamp: "2023-10-15T15:00:00Z"
-      }
-    ]
-  },
-  {
-    id: 2,
-    category: "Billing",
-    customer: "Jane Smith",
-    agent: "Support Agent 2",
-    status: "In Progress",
-    subject: "Invoice discrepancy",
-    description: "The amount on my latest invoice doesn't match what we agreed upon.",
-    priority: "Medium",
-    createdAt: "2023-10-14T10:15:00Z",
-    replies: []
-  },
-  {
-    id: 3,
-    category: "Feature Request",
-    customer: "Robert Johnson",
-    agent: "Unassigned",
-    status: "Closed",
-    subject: "Dark mode option",
-    description: "Would be great to have a dark mode option for the application.",
-    priority: "Low",
-    createdAt: "2023-10-10T09:45:00Z",
-    replies: [
-      {
-        id: 1,
-        user: "Support Agent 3",
-        message: "Thank you for your suggestion. We've added this to our feature backlog.",
-        timestamp: "2023-10-11T11:20:00Z"
-      },
-      {
-        id: 2,
-        user: "Robert Johnson",
-        message: "Great, looking forward to it!",
-        timestamp: "2023-10-11T14:35:00Z"
-      }
-    ]
-  }
-];
+import api from "../../../../config/api";
 
 const SupportTicketsPage = () => {
-  const [tickets, setTickets] = useState(initialTickets);
-  const [filteredTickets, setFilteredTickets] = useState(initialTickets);
+  const [tickets, setTickets] = useState([]);
+  const [filteredTickets, setFilteredTickets] = useState([]);
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Fetch tickets from API
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/support/tickets');
+        console.log('Full API Response:', response);
+  
+        // FIX: Correctly access tickets
+        const ticketsData = response.data?.tickets || [];
+        console.log('Tickets Data:', ticketsData);
+  
+        setTickets(Array.isArray(ticketsData) ? ticketsData : []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        setError('Failed to load support tickets. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchTickets();
+  }, []);
+  
   // Filter tickets based on selected filters and search term
   useEffect(() => {
-    let result = tickets;
+    console.log('Filtering tickets:', tickets);
+    console.log('Tickets length:', tickets.length);
+    
+    // Ensure tickets is an array
+    let result = Array.isArray(tickets) ? tickets : [];
+    console.log('Result after array check:', result);
     
     if (statusFilter !== "All") {
       result = result.filter(ticket => ticket.status === statusFilter);
@@ -84,15 +57,16 @@ const SupportTicketsPage = () => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(ticket => 
-        ticket.subject.toLowerCase().includes(term) || 
-        ticket.description.toLowerCase().includes(term) ||
-        ticket.customer.toLowerCase().includes(term)
+        ticket.subject?.toLowerCase().includes(term) || 
+        ticket.message?.toLowerCase().includes(term) ||
+        ticket.ticket_code?.toLowerCase().includes(term)
       );
     }
     
     // Sort by latest first
-    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
+    console.log('Final filtered result:', result);
     setFilteredTickets(result);
   }, [tickets, statusFilter, priorityFilter, searchTerm]);
 
@@ -114,26 +88,74 @@ const SupportTicketsPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Open": return "bg-red-100 text-red-800";
-      case "In Progress": return "bg-yellow-100 text-yellow-800";
-      case "Closed": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "open": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      case "in_progress": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "closed": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case "High": return "bg-red-100 text-red-800";
-      case "Medium": return "bg-yellow-100 text-yellow-800";
-      case "Low": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "high": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      case "medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "low": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
     }
   };
+
+  const formatStatus = (status) => {
+    switch (status) {
+      case "open": return "Open";
+      case "in_progress": return "In Progress";
+      case "closed": return "Closed";
+      default: return status;
+    }
+  };
+
+  const formatPriority = (priority) => {
+    switch (priority) {
+      case "high": return "High";
+      case "medium": return "Medium";
+      case "low": return "Low";
+      default: return priority;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Support Tickets</h1>
        
+          <div className="mt-2 text-sm text-gray-500">
+         
+          </div>
+        </div>
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
@@ -148,9 +170,9 @@ const SupportTicketsPage = () => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="All">All Statuses</option>
-                <option value="Open">Open</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Closed">Closed</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="closed">Closed</option>
               </select>
             </div>
             
@@ -164,9 +186,9 @@ const SupportTicketsPage = () => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="All">All Priorities</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
               </select>
             </div>
             
@@ -192,20 +214,18 @@ const SupportTicketsPage = () => {
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    ID
+                    Ticket Code
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Subject
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Customer
+                    Priority
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Priority
-                  </th>
+                 
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Created
                   </th>
@@ -218,30 +238,28 @@ const SupportTicketsPage = () => {
                 {filteredTickets.map((ticket) => (
                   <tr key={ticket.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      #{ticket.id}
+                      {ticket.ticket_code}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {ticket.subject}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {ticket.customer}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(ticket.priority)}`}>
+                        {formatPriority(ticket.priority)}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
-                        {ticket.status}
+                        {formatStatus(ticket.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority}
-                      </span>
-                    </td>
+                   
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(ticket.createdAt).toLocaleDateString()}
+                      {new Date(ticket.created_at).toLocaleDateString('en-GB')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link 
-                       href={`/freelancer-dashboard/support-tickets/${ticket.id}`}
+                       href={`/freelancer-dashboard/support-tickets/${btoa(ticket.id)}`}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
                       >
                         View
