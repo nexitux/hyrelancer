@@ -13,7 +13,7 @@ const AdminSupportTicketsPage = () => {
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [userFilter, setUserFilter] = useState("All");
-  const [agentFilter, setAgentFilter] = useState("All");
+  const [userTypeFilter, setUserTypeFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch tickets from API
@@ -22,7 +22,7 @@ const AdminSupportTicketsPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await adminApi.get('http://localhost:8000/api/admin/support/tickets');
+        const response = await adminApi.get('support/tickets');
         
         if (response.data && response.data.tickets) {
           setTickets(response.data.tickets);
@@ -56,6 +56,8 @@ const AdminSupportTicketsPage = () => {
 
   // Filter tickets based on selected filters and search term
   useEffect(() => {
+    console.log('Filtering tickets with:', { statusFilter, priorityFilter, userFilter, userTypeFilter, searchTerm });
+    console.log('Sample ticket data:', tickets[0]);
     let result = tickets;
     
     if (statusFilter !== "All") {
@@ -70,28 +72,74 @@ const AdminSupportTicketsPage = () => {
       result = result.filter(ticket => ticket.user_id.toString() === userFilter);
     }
     
-    if (agentFilter !== "All") {
-      if (agentFilter === "Unassigned") {
-        result = result.filter(ticket => !ticket.closed_by);
-      } else {
-        result = result.filter(ticket => ticket.closed_by === agentFilter);
-      }
+    if (userTypeFilter !== "All") {
+      result = result.filter(ticket => {
+        // Handle different possible usertype formats
+        const userType = ticket.usertype?.toLowerCase();
+        const filterType = userTypeFilter.toLowerCase();
+        return userType === filterType || userType === filterType + 's';
+      });
     }
     
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(ticket => 
-        ticket.subject.toLowerCase().includes(term) || 
-        ticket.message.toLowerCase().includes(term) ||
-        ticket.ticket_code.toLowerCase().includes(term)
-      );
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(ticket => {
+        // More comprehensive search including all fields
+        const subject = ticket.subject?.toLowerCase() || '';
+        const message = ticket.message?.toLowerCase() || '';
+        const ticketCode = ticket.ticket_code?.toLowerCase() || '';
+        const userName = ticket.user_name?.toLowerCase() || '';
+        const userType = ticket.usertype?.toLowerCase() || ''; // Fixed: use 'usertype' instead of 'user_type'
+        const priority = ticket.priority?.toLowerCase() || '';
+        const status = ticket.status?.toLowerCase() || '';
+        
+        // Enhanced date search with multiple formats
+        let dateMatches = false;
+        if (ticket.created_at) {
+          const createdDate = new Date(ticket.created_at);
+          
+          // Multiple date formats for search
+          const formats = [
+            createdDate.toLocaleDateString().toLowerCase(), // 12/25/2023
+            createdDate.toLocaleDateString('en-GB').toLowerCase(), // 25/12/2023
+            createdDate.toLocaleDateString('en-US').toLowerCase(), // 12/25/2023
+            createdDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase(), // december 25, 2023
+            createdDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).toLowerCase(), // dec 25, 2023
+            createdDate.getFullYear().toString(), // 2023
+            createdDate.getMonth() + 1 + '', // 12 (month number)
+            createdDate.getDate() + '', // 25 (day)
+            createdDate.toISOString().split('T')[0], // 2023-12-25
+            createdDate.toISOString().split('T')[0].replace(/-/g, '/'), // 2023/12/25
+          ];
+          
+          // Also add month names
+          const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                             'july', 'august', 'september', 'october', 'november', 'december'];
+          const monthShortNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                                  'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+          
+          formats.push(monthNames[createdDate.getMonth()]);
+          formats.push(monthShortNames[createdDate.getMonth()]);
+          
+          dateMatches = formats.some(format => format.includes(term));
+        }
+        
+        return subject.includes(term) || 
+               message.includes(term) ||
+               ticketCode.includes(term) ||
+               userName.includes(term) ||
+               userType.includes(term) ||
+               priority.includes(term) ||
+               status.includes(term) ||
+               dateMatches;
+      });
     }
     
     // Sort by latest first
     result.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
     
     setFilteredTickets(result);
-  }, [tickets, statusFilter, priorityFilter, userFilter, agentFilter, searchTerm]);
+  }, [tickets, statusFilter, priorityFilter, userFilter, userTypeFilter, searchTerm]);
 
 
   const getStatusColor = (status) => {
@@ -219,19 +267,17 @@ const AdminSupportTicketsPage = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Agent
+                  User Type
                 </label>
                 <select
-                  value={agentFilter}
-                  onChange={(e) => setAgentFilter(e.target.value)}
+                  value={userTypeFilter}
+                  onChange={(e) => setUserTypeFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 >
-                  <option value="All">All Agents</option>
-                  <option value="You">You</option>
-                  <option value="Support Agent 1">Agent 1</option>
-                  <option value="Support Agent 2">Agent 2</option>
-                  <option value="Support Agent 3">Agent 3</option>
-                  <option value="Unassigned">Unassigned</option>
+                  <option value="All">All User Types</option>
+                  <option value="customer">Customer</option>
+                  <option value="freelancer">Freelancer</option>
+                 
                 </select>
               </div>
               
@@ -241,7 +287,7 @@ const AdminSupportTicketsPage = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="Search tickets..."
+                  placeholder="Search by subject, message, user, type, priority, status, date..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"

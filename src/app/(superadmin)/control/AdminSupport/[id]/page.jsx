@@ -18,7 +18,7 @@ const TicketDetail = () => {
         setLoading(true);
         setError(null);
         // Use the URL-encoded ticket ID directly for API call
-        const response = await adminApi.get(`http://localhost:8000/api/admin/tickets/${ticketId}/replies`);
+        const response = await adminApi.get(`/tickets/${ticketId}/replies`);
         
         if (response.data && response.data.status && response.data.ticket) {
           // Transform API response to match component expectations
@@ -64,7 +64,7 @@ const TicketDetail = () => {
       // Use the URL-encoded ticket ID directly for API call
       console.log('Closing ticket with encoded ID:', ticketId);
       
-      const response = await adminApi.post(`http://localhost:8000/api/admin/support/ticket/close/${ticketId}`, { status: newStatus });
+      const response = await adminApi.post(`support/ticket/close/${ticketId}`, { status: newStatus });
       console.log('Close ticket response:', response.data);
       
       // Update local state
@@ -76,23 +76,19 @@ const TicketDetail = () => {
         });
       }
       
-      // Show success message
-      alert('Ticket closed successfully!');
-      
     } catch (err) {
       console.error('Error updating ticket status:', err);
       setError('Failed to update ticket status. Please try again.');
-      alert('Failed to close ticket. Please try again.');
     }
   };
 
   const handleReply = async (ticketId, message) => {
     try {
       // Use the URL-encoded ticket ID directly for API call
-      await adminApi.post(`http://localhost:8000/api/admin/tickets/${ticketId}/reply`, { message });
+      await adminApi.post(`/tickets/${ticketId}/reply`, { message });
       
       // Refresh ticket data to get updated replies
-      const response = await adminApi.get(`http://localhost:8000/api/admin/tickets/${ticketId}/replies`);
+      const response = await adminApi.get(`/tickets/${ticketId}/replies`);
       if (response.data && response.data.status && response.data.ticket) {
         const transformedTicket = {
           id: response.data.ticket.id,

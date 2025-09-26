@@ -5,6 +5,8 @@ import Link from "next/link";
 
 const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) => {
   const [replyMessage, setReplyMessage] = useState("");
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -31,6 +33,23 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
     setReplyMessage("");
   };
 
+    const handleCloseTicket = async () => {
+      setIsClosing(true);
+      try {
+        await onStatusChange(encodedTicketId, "closed");
+        setShowCloseModal(true);
+        
+        // Auto-hide modal after 8 seconds
+        setTimeout(() => {
+          setShowCloseModal(false);
+        }, 8000);
+      } catch (error) {
+        console.error('Error closing ticket:', error);
+      } finally {
+        setIsClosing(false);
+      }
+    };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
@@ -53,10 +72,11 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
           {/* Close Ticket Button - Top Right */}
           {ticket.status !== "closed" && (
             <button
-              onClick={() => onStatusChange && onStatusChange(encodedTicketId, "closed")}
-              className="absolute top-4 right-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
+              onClick={handleCloseTicket}
+              disabled={isClosing}
+              className="absolute top-4 right-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Close Ticket
+              {isClosing ? "Closing..." : "Close Ticket"}
             </button>
           )}
           
@@ -103,7 +123,7 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
               <div>
                 <p className="text-gray-500 dark:text-gray-400">Attachment</p>
                 <a 
-                  href={`http://localhost:8000/${ticket.file}`} 
+                  href={`http://test.hyrelancer.in/${ticket.file}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
@@ -125,7 +145,7 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
                 {ticket.file && (
                   <div className="mt-1">
                     <a 
-                      href={`http://localhost:8000/${ticket.file}`} 
+                      href={`http://test.hyrelancer.in/${ticket.file}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
@@ -164,7 +184,7 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
                       {reply.file && (
                         <div className="mt-1">
                           <a 
-                            href={`http://localhost:8000/${reply.file}`} 
+                            href={`http://test.hyrelancer.in/${reply.file}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className={`text-xs ${
@@ -226,6 +246,43 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
           )}
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showCloseModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-center">
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30">
+                  <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <div className="mt-3 text-center sm:mt-5">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                  Ticket Closed Successfully!
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    The support ticket has been closed and marked as resolved.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-3 rounded-b-xl">
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowCloseModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { FaTachometerAlt, FaBriefcase, FaUser } from "react-icons/fa";
+import { FaTachometerAlt, FaBriefcase, FaUser, FaHeadset } from "react-icons/fa";
 
 export const customerMenu = [
   {
@@ -26,4 +26,11 @@ export const customerMenu = [
                { name: "Deactivate Profile", path: "/customer-dashboard/acc-active", pro: false }
     ]
   },
+  {
+    icon: <FaHeadset className="w-4 h-4" />,
+    name: "Support Tickets",
+    subItems: [{ name: "Support Tickets", path: "/customer-dashboard/support-tickets", pro: false }
+    ]
+  },
+ 
 ];

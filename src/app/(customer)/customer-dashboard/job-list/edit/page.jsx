@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import Image from 'next/image';
@@ -22,6 +22,7 @@ const EditJobPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [formData, setFormData] = useState({
     category: '',
@@ -46,6 +47,7 @@ const EditJobPage = () => {
 
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
+  const [originalImagePaths, setOriginalImagePaths] = useState([]); // Store original paths from database
   const [charCounts, setCharCounts] = useState({
     title: 0,
     description: 0,
@@ -59,6 +61,7 @@ const EditJobPage = () => {
   const [languagesLoading, setLanguagesLoading] = useState(false);
   const [cities, setCities] = useState([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
+  const modalTimerRef = useRef(null);
 
   // Function to clean image URLs (split on -- and take first part)
   const cleanImageUrl = (url) => {
@@ -80,6 +83,15 @@ const EditJobPage = () => {
       return;
     }
   }, [jobId, router]);
+
+  // Cleanup timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (modalTimerRef.current) {
+        clearTimeout(modalTimerRef.current);
+      }
+    };
+  }, []);
 
   // Fetch job data - using the same approach as EditJobDetails
   useEffect(() => {
@@ -195,12 +207,23 @@ const EditJobPage = () => {
 
           setHideContact(jobData.hide_contact === '1' || jobData.hide_contact === 1);
 
-          // Set existing images with cleaned URLs
+          // Set existing images with cleaned URLs and store original paths
           const images = [];
-          if (jobData.cuj_img1) images.push({ id: 1, url: cleanImageUrl(jobData.cuj_img1), file: null, isExisting: true });
-          if (jobData.cuj_img2) images.push({ id: 2, url: cleanImageUrl(jobData.cuj_img2), file: null, isExisting: true });
-          if (jobData.cuj_img3) images.push({ id: 3, url: cleanImageUrl(jobData.cuj_img3), file: null, isExisting: true });
+          const originalPaths = [];
+          if (jobData.cuj_img1) {
+            images.push({ id: 1, url: cleanImageUrl(jobData.cuj_img1), file: null, isExisting: true });
+            originalPaths.push(jobData.cuj_img1); // Store original path
+          }
+          if (jobData.cuj_img2) {
+            images.push({ id: 2, url: cleanImageUrl(jobData.cuj_img2), file: null, isExisting: true });
+            originalPaths.push(jobData.cuj_img2); // Store original path
+          }
+          if (jobData.cuj_img3) {
+            images.push({ id: 3, url: cleanImageUrl(jobData.cuj_img3), file: null, isExisting: true });
+            originalPaths.push(jobData.cuj_img3); // Store original path
+          }
           setExistingImages(images);
+          setOriginalImagePaths(originalPaths);
           setNewImages([]);
 
           // Update character counts
@@ -345,11 +368,19 @@ const EditJobPage = () => {
         isExisting: false
     }));
     setNewImages(prev => [...prev, ...newPhotos]);
+    
+    // Clear the input value so the same file can be selected again
+    e.target.value = '';
   };
 
   const removePhoto = (id, isExisting = false) => {
     if (isExisting) {
       setExistingImages(prev => prev.filter(photo => photo.id !== id));
+      // Also remove from original paths array
+      setOriginalImagePaths(prev => prev.filter((path, index) => {
+        const imageIndex = existingImages.findIndex(img => img.id === id);
+        return index !== imageIndex;
+      }));
     } else {
       setNewImages(prev => prev.filter(photo => photo.id !== id));
     }
@@ -405,13 +436,42 @@ const EditJobPage = () => {
       payload.append('contact_email', hideContact ? '' : (formData.email || ''));
       payload.append('contact_mobile', hideContact ? '' : (formData.phone || ''));
 
-      // Add new uploaded photos
-      newImages.forEach((photo, index) => {
-        if (photo.file) {
-          payload.append(`cuj_img${index + 1}`, photo.file);
-          payload.append(`uploadfile${index + 1}`, photo.file);
-        }
-      });
+      // Handle images properly - only send image data when there are actual changes
+      const hasImageChanges = newImages.length > 0 || existingImages.length !== originalImagePaths.length;
+      
+      if (hasImageChanges) {
+        // Create a combined array of all images (existing + new) in the correct order
+        const allImages = [...existingImages, ...newImages];
+        
+        // Send images in sequential order (uploadfile1, uploadfile2, uploadfile3)
+        allImages.forEach((image, index) => {
+          if (image.file) {
+            // New uploaded file
+            payload.append(`uploadfile${index + 1}`, image.file);
+            payload.append(`cuj_img${index + 1}`, image.file);
+          } else if (image.isExisting) {
+            // Existing image - send the original path
+            payload.append(`uploadfile${index + 1}`, originalImagePaths[index]);
+          }
+        });
+        
+        // Send flag to indicate images were modified
+        payload.append('images_modified', '1');
+      } else {
+        // No image changes - send existing image paths as uploadfile1, uploadfile2, uploadfile3
+        // This matches what the backend expects
+        originalImagePaths.forEach((path, index) => {
+          if (path) {
+            payload.append(`uploadfile${index + 1}`, path);
+            payload.append(`existing_img${index + 1}`, path);
+            payload.append(`previous_img${index + 1}`, path);
+          }
+        });
+        
+        // Send flags to indicate no changes and preserve existing images
+        payload.append('images_modified', '0');
+        payload.append('preserve_existing_images', '1');
+      }
 
       // Add cuj_* fields
       payload.append('cuj_id', jobId);
@@ -444,11 +504,19 @@ const EditJobPage = () => {
       });
   
       if (response.data) {
-        setSuccess('Job updated successfully!');
+        setShowSuccessModal(true);
         dispatch(clearSelectedJob());
-        setTimeout(() => {
-          router.push('/customer-dashboard/job-list');
-        }, 2000);
+        
+        // Clear any existing timer
+        if (modalTimerRef.current) {
+          clearTimeout(modalTimerRef.current);
+        }
+        
+        // Set new timer for auto-hide after 8 seconds
+        modalTimerRef.current = setTimeout(() => {
+          setShowSuccessModal(false);
+          modalTimerRef.current = null;
+        }, 8000);
       }
     } catch (err) {
       console.error('Error updating job:', err);
@@ -477,6 +545,7 @@ const EditJobPage = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-white">
       {/* Header Banner */}
       <div
@@ -514,12 +583,6 @@ const EditJobPage = () => {
         </div>
 
         {/* Success/Error Messages */}
-        {success && (
-          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-            {success}
-          </div>
-        )}
-
         {error && (
           <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
             {error}
@@ -1007,14 +1070,83 @@ const EditJobPage = () => {
               type="button"
               onClick={handleSubmit}
               disabled={saving}
-              className="w-full mt-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {saving ? 'Updating...' : 'Update Job'}
+              {saving ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Updating Job...
+                </>
+              ) : (
+                'Update Job'
+              )}
             </button>
           </div>
         </div>
       </div>
     </div>
+
+    {/* Success Modal */}
+    {showSuccessModal && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+          <div className="p-6">
+            <div className="flex justify-center">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30">
+                <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <div className="mt-3 text-center sm:mt-5">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                Job Updated Successfully!
+              </h3>
+              <div className="mt-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Your job has been updated and changes are now live. You can manage it from your job list.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-3 rounded-b-xl">
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => {
+                  // Clear timer when manually closing
+                  if (modalTimerRef.current) {
+                    clearTimeout(modalTimerRef.current);
+                    modalTimerRef.current = null;
+                  }
+                  setShowSuccessModal(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Stay Here
+              </button>
+              <button
+                onClick={() => {
+                  // Clear timer when manually closing
+                  if (modalTimerRef.current) {
+                    clearTimeout(modalTimerRef.current);
+                    modalTimerRef.current = null;
+                  }
+                  setShowSuccessModal(false);
+                  router.push('/customer-dashboard/job-list');
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                View Job List
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
