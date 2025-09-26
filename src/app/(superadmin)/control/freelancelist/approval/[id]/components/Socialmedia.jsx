@@ -7,9 +7,7 @@ import {
   TwitterOutlined,
   YoutubeFilled,
   GlobalOutlined,
-  ArrowLeftOutlined,
-  ShareAltOutlined,
-  EditOutlined
+  ShareAltOutlined
 } from "@ant-design/icons";
 import { Spin, Alert, Button } from "antd";
 import { useParams, useRouter } from "next/navigation";
@@ -279,14 +277,6 @@ export default function SocialDisplayPage() {
               <p className="text-gray-500 mb-6 max-w-md mx-auto">
                 This user hasn't added any social media links or website URLs yet.
               </p>
-              <Button
-                type="primary"
-                icon={<EditOutlined />}
-                onClick={() => router.push(`/admin/users/${userId}/edit-social`)}
-                size="large"
-              >
-                Add Social Links
-              </Button>
             </div>
           )}
         </div>

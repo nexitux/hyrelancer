@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Tabs, Button, Card, message, Spin } from "antd";
+import { Tabs, Button, Card, message, Spin, Badge, Space } from "antd";
 import {
   UserOutlined,
   IdcardOutlined,
@@ -55,31 +55,42 @@ export default function FreelancerApprovalPage({ params }) {
     }
   }, [id, router]);
 
-  // Handle approval
-  const handleApprove = async () => {
+  // Handle tab-specific approval
+  const handleTabApprove = async (tabKey) => {
     try {
       setApproving(true);
-      await adminApi.patch(`/freelancers/${id}`, { 
-        is_active: '1' // Set to approved
-      });
-      message.success('Freelancer approved successfully!');
-      router.push('/control/freelancelist/approval');
+      // Backend expects GET with path params: /approveFeUTabData/{type}/{base64UserId}
+      await adminApi.get(`/approveFeUTabData/${tabKey}/${id}`);
+      
+      const tabNames = {
+        '1': 'Profile',
+        '2': 'Service', 
+        '3': 'Career',
+        '4': 'Social Media',
+        '5': 'Portfolio'
+      };
+      
+      message.success(`${tabNames[tabKey]} section approved successfully!`);
+      
+      // Optionally refresh data or update UI state
+      // You might want to refetch freelancer data to show updated approval status
+      
     } catch (error) {
-      console.error('Error approving freelancer:', error);
-      message.error('Failed to approve freelancer');
+      console.error('Error approving tab:', error);
+      message.error('Failed to approve section');
     } finally {
       setApproving(false);
     }
   };
 
-  // Handle rejection
+  // Handle complete rejection
   const handleReject = async () => {
     try {
       setRejecting(true);
       await adminApi.patch(`/freelancers/${id}`, { 
         is_active: '0' // Set to inactive/rejected
       });
-      message.success('Freelancer rejected successfully!');
+      message.success('Freelancer application rejected!');
       router.push('/control/freelancelist/approval');
     } catch (error) {
       console.error('Error rejecting freelancer:', error);
@@ -93,52 +104,147 @@ export default function FreelancerApprovalPage({ params }) {
     {
       key: "1",
       label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <UserOutlined className="text-lg" />
+        <Space>
+          <UserOutlined />
           <span>Profile</span>
+        </Space>
+      ),
+      children: (
+        <div>
+          <div className="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Profile Information</h3>
+              <p className="text-sm text-gray-600">Review freelancer's basic profile details</p>
+            </div>
+            <Button 
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleTabApprove('1')}
+              loading={approving}
+              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+            >
+              Approve Profile
+            </Button>
+          </div>
+          <ProfileForm freelancerId={id} isApprovalMode={true} />
         </div>
       ),
-      children: <ProfileForm freelancerId={id} isApprovalMode={true} />,
     },
     {
       key: "2",
       label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <GlobalOutlined className="text-lg" />
+        <Space>
+          <GlobalOutlined />
           <span>Service</span>
+        </Space>
+      ),
+      children: (
+        <div>
+          <div className="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Service Details</h3>
+              <p className="text-sm text-gray-600">Review services offered and pricing information</p>
+            </div>
+            <Button 
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleTabApprove('2')}
+              loading={approving}
+              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+            >
+              Approve Service
+            </Button>
+          </div>
+          <Service freelancerId={id} isApprovalMode={true} />
         </div>
       ),
-      children: <Service freelancerId={id} isApprovalMode={true} />,
     },
     {
       key: "3",
       label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <ScheduleOutlined className="text-lg" />
+        <Space>
+          <ScheduleOutlined />
           <span>Career</span>
+        </Space>
+      ),
+      children: (
+        <div>
+          <div className="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Career Information</h3>
+              <p className="text-sm text-gray-600">Review education, experience and certifications</p>
+            </div>
+            <Button 
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleTabApprove('3')}
+              loading={approving}
+              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+            >
+              Approve Career
+            </Button>
+          </div>
+          <Education freelancerId={id} isApprovalMode={true} />
         </div>
       ),
-      children: <Education freelancerId={id} isApprovalMode={true} />,
     },
     {
       key: "4",
       label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <TrophyOutlined className="text-lg" />
+        <Space>
+          <TrophyOutlined />
           <span>Social Media</span>
+        </Space>
+      ),
+      children: (
+        <div>
+          <div className="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Social Media Links</h3>
+              <p className="text-sm text-gray-600">Review social media profiles and website links</p>
+            </div>
+            <Button 
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleTabApprove('4')}
+              loading={approving}
+              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+            >
+              Approve Social Media
+            </Button>
+          </div>
+          <Scoialmedia freelancerId={id} isApprovalMode={true} />
         </div>
       ),
-      children: <Scoialmedia freelancerId={id} isApprovalMode={true} />,
     },
     {
       key: "5",
       label: (
-        <div className="flex gap-2 items-center px-2 py-3">
-          <FolderOutlined className="text-lg" />
+        <Space>
+          <FolderOutlined />
           <span>Portfolio</span>
+        </Space>
+      ),
+      children: (
+        <div>
+          <div className="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Portfolio & Skills</h3>
+              <p className="text-sm text-gray-600">Review portfolio items and skill listings</p>
+            </div>
+            <Button 
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleTabApprove('5')}
+              loading={approving}
+              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+            >
+              Approve Portfolio
+            </Button>
+          </div>
+          <Portfolio freelancerId={id} isApprovalMode={true} />
         </div>
       ),
-      children: <Portfolio freelancerId={id} isApprovalMode={true} />,
     },
   ];
 
@@ -153,165 +259,159 @@ export default function FreelancerApprovalPage({ params }) {
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <div className="mx-auto max-w-7xl">
-        {/* Header with Back Button and Actions */}
-        <Card className="mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button 
-                icon={<ArrowLeftOutlined />}
-                onClick={() => router.push('/control/freelancelist/approval')}
-                type="text"
-              >
-                Back to Approval List
-              </Button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-800">
-                  Review Freelancer Application
-                </h1>
+        {/* Header Section */}
+        <div className="mb-6">
+
+          {/* Main Header Card */}
+          <Card className="shadow-sm border-0">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              {/* Title and Info */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold text-gray-800 m-0">
+                    Review Freelancer Application
+                  </h1>
+                  <Badge 
+                    status="processing" 
+                    text="Pending Review" 
+                    className="bg-orange-50 text-orange-600 px-2 py-1 rounded-full text-sm"
+                  />
+                </div>
                 {freelancerData && (
-                  <p className="text-gray-600">
-                    {freelancerData.name} - {freelancerData.email}
-                  </p>
+                  <div className="text-gray-600">
+                    <p className="m-0 text-lg font-medium">{freelancerData.name}</p>
+                    <p className="m-0 text-sm">{freelancerData.email}</p>
+                  </div>
                 )}
               </div>
+              
+              {/* Action Buttons intentionally removed for display-only view */}
             </div>
-            
-            {/* Approval Action Buttons */}
-            <div className="flex gap-3">
-              <Button 
-                type="primary" 
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={handleReject}
-                loading={rejecting}
-                size="large"
-              >
-                Reject Application
-              </Button>
-              <Button 
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={handleApprove}
-                loading={approving}
-                size="large"
-              >
-                Approve Freelancer
-              </Button>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
 
         {/* Tabs Section */}
-        <Tabs
-          activeKey={activeKey}
-          onChange={setActiveKey}
-          tabPosition="left"
-          items={tabItems}
-          className="approval-tabs"
-          tabBarStyle={{
-            width: "220px",
-            height: "calc(100vh - 12rem)",
-            maxHeight: "calc(100vh - 12rem)",
-            backgroundColor: "#3a599c",
-            borderRadius: "8px",
-            padding: "3px 0",
-            overflowY: "auto",
-            overflowX: "hidden",
-          }}
-        />
+        <Card className="shadow-sm border-0">
+          <Tabs
+            activeKey={activeKey}
+            onChange={setActiveKey}
+            items={tabItems}
+            className="approval-tabs-horizontal"
+            size="large"
+          />
+        </Card>
       </div>
 
       <style jsx global>{`
-        .approval-tabs .ant-tabs-nav {
-          margin-right: 0 !important;
-          min-width: 220px;
-          max-height: calc(100vh - 12rem) !important;
-        }
-
-        .approval-tabs .ant-tabs-nav-wrap {
-          max-height: 100% !important;
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-        }
-
-        .approval-tabs .ant-tabs-nav-list {
-          height: auto !important;
-          flex-direction: column !important;
-        }
-
-        .approval-tabs .ant-tabs-tab {
-          height: 60px !important;
-          line-height: 60px !important;
+        .approval-tabs-horizontal {
           margin: 0 !important;
-          transition: all 0.3s ease;
-          color: white !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          position: relative;
-          text-align: center;
-          white-space: nowrap;
-          flex-shrink: 0 !important;
         }
 
-        .approval-tabs .ant-tabs-tab:not(:last-child)::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          left: 16px;
-          right: 16px;
-          height: 1px;
-          background-color: rgba(255, 255, 255, 0.2);
+        .approval-tabs-horizontal .ant-tabs-nav {
+          margin: 0 !important;
+          padding: 0 !important;
         }
 
-        .approval-tabs .ant-tabs-tab:hover {
-          background-color: rgba(255, 255, 255, 0.1) !important;
+        .approval-tabs-horizontal .ant-tabs-nav-wrap {
+          padding: 0 !important;
         }
 
-        .approval-tabs .ant-tabs-tab-active {
-          background-color: #2d4373 !important;
-          font-weight: 500 !important;
-        }
-
-        .approval-tabs .ant-tabs-tab-btn {
+        .approval-tabs-horizontal .ant-tabs-nav-list {
+          margin: 0 !important;
+          padding: 0 !important;
           width: 100% !important;
-          color: inherit !important;
+          display: flex !important;
         }
 
-        .approval-tabs .ant-tabs-ink-bar {
+        .approval-tabs-horizontal .ant-tabs-tab {
+          padding: 12px 24px !important;
+          margin: 0 !important;
+          font-weight: 500 !important;
+          color: #64748b !important;
+          border-radius: 8px 8px 0 0 !important;
+          transition: all 0.2s ease !important;
+          background: #f8fafc !important;
+          border: 1px solid #e2e8f0 !important;
+          border-bottom: none !important;
+          border-right: none !important;
+          position: relative !important;
+          flex: 1 !important;
+          text-align: center !important;
+          justify-content: center !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-tab:last-child {
+          border-right: 1px solid #e2e8f0 !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-tab:first-child {
+          border-radius: 8px 0 0 0 !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-tab:last-child {
+          border-radius: 0 8px 0 0 !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-tab:hover {
+          color: #3b82f6 !important;
+          background: #f1f5f9 !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-tab-active {
+          color: #3b82f6 !important;
+          background: white !important;
+          border-color: #e2e8f0 !important;
+          border-bottom: 1px solid white !important;
+          z-index: 1 !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-nav::before {
+          border-bottom: 1px solid #e2e8f0 !important;
+          position: absolute !important;
+          bottom: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          content: '' !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-content-holder {
+          margin-top: 0 !important;
+          padding: 24px !important;
+          background: white !important;
+          border: 1px solid #e2e8f0 !important;
+          border-top: none !important;
+          border-radius: 0 0 8px 8px !important;
+        }
+
+        .approval-tabs-horizontal .ant-tabs-ink-bar {
           display: none !important;
         }
 
-        .approval-tabs .ant-tabs-content-holder {
-          background-color: white;
-          border-radius: 8px;
-          padding: 24px;
-          margin-left: 16px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          min-height: 600px;
-          overflow-y: auto;
+        .approval-tabs-horizontal .ant-tabs-tab-btn {
+          color: inherit !important;
         }
 
-        .approval-tabs .ant-tabs-nav::before {
-          border-bottom: none !important;
+        /* Remove extra spacing */
+        .approval-tabs-horizontal .ant-tabs-content {
+          margin-top: 0 !important;
         }
 
-        .approval-tabs .ant-tabs-nav-wrap::-webkit-scrollbar {
-          width: 6px;
+        /* Custom Badge Styling */
+        .ant-badge-status-dot {
+          display: none !important;
         }
 
-        .approval-tabs .ant-tabs-nav-wrap::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 3px;
-        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .approval-tabs-horizontal .ant-tabs-tab {
+            padding: 8px 16px !important;
+            margin-right: 4px !important;
+            font-size: 14px !important;
+          }
 
-        .approval-tabs .ant-tabs-nav-wrap::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.3);
-          border-radius: 3px;
-        }
-
-        .approval-tabs .ant-tabs-nav-wrap::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.5);
+          .approval-tabs-horizontal .ant-tabs-content-holder {
+            padding: 16px !important;
+          }
         }
       `}</style>
     </div>

@@ -326,21 +326,7 @@ export default function ServiceDisplayPage() {
               <Text type="secondary">View and manage service information</Text>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => router.push(`/admin/users/${userIdBase64}/edit-services`)}
-            >
-              Edit Services
-            </Button>
-            <Button
-              icon={<LeftOutlined />}
-              onClick={() => router.back()}
-            >
-              Back
-            </Button>
-          </div>
+          
         </div>
 
         <div className="p-6">

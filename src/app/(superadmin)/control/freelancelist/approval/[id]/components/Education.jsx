@@ -211,7 +211,7 @@ export default function AdminProfessionalDisplay() {
               </div>
 
               {/* Approve button placed at bottom center */}
-              <div className="flex justify-center py-4">
+              {/* <div className="flex justify-center py-4">
                 <Button
                   type="primary"
                   icon={<CheckCircleOutlined />}
@@ -221,7 +221,7 @@ export default function AdminProfessionalDisplay() {
                 >
                   Approve
                 </Button>
-              </div>
+              </div> */}
             </Space>
           )}
         </div>
