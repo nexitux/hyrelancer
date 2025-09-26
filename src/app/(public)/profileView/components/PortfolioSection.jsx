@@ -146,7 +146,7 @@ const PortfolioSection = ({
             {/* Main Portfolio Display */}
             <div className="lg:col-span-2">
               {/* Main Image/Video Carousel */}
-              <div className="relative bg-blue-500/50 rounded-2xl overflow-hidden mb-6 aspect-[4/5]">
+              <div className="relativerounded-2xl overflow-hidden mb-6 aspect-[4/5]">
                 {currentItem.type === 'Video' ? (
                   <div className="w-full h-full flex items-center justify-center bg-gray-900">
                     {currentItem.videoUrl && currentItem.videoUrl.startsWith('http') ? (

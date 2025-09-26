@@ -7,11 +7,9 @@ import {
     MdVisibility,
     MdDelete,
     MdSearch,
-    MdMoreVert,
     MdCheckCircle,
     MdCancel,
     MdWork,
-    MdBusiness,
     MdGroup,
     MdRestore
 } from 'react-icons/md';
@@ -19,6 +17,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
 import adminApi from '@/config/adminApi';
+import JobDetailModal from './components/JobDetailModal';
+import EditJobModal from './components/EditJobModal';
 
 const JobListingPage = () => {
     const router = useRouter();
@@ -27,6 +27,11 @@ const JobListingPage = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedJobs, setSelectedJobs] = useState([]);
+    const [selectedJob, setSelectedJob] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [jobToEdit, setJobToEdit] = useState(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isLoadingJobDetail, setIsLoadingJobDetail] = useState(false);
 
     const encodeId = (id) => Base64.encode(String(id));
 
@@ -65,26 +70,55 @@ const JobListingPage = () => {
     };
 
     const handleToggleStatus = async (jobId, currentStatus) => {
-        if (!confirm(`Are you sure you want to ${currentStatus === 1 ? 'deactivate' : 'activate'} this job?`)) {
-            return;
-        }
+        // Only allow approve when job is in Pending state (cuj_is_rejected === 0 && cuj_is_active === 1).
+        // currentStatus is job.cuj_is_active (1 for pending/active), we still confirm with user before approving.
+        if (!confirm('Are you sure you want to approve this job?')) return;
 
-        // Add your API call here to toggle job status
-        console.log(`Toggling job ${jobId} status from ${currentStatus}`);
-        // After successful API call, refresh the jobs
-        // fetchJobs();
+        try {
+            // backend expects base64 encoded id
+            const res = await adminApi.get(`/approveJobByAdmin/${encodeId(jobId)}`);
+
+            // Update local state: set cuj_is_rejected = 1 and cuj_is_active = 1 (Approved / Active)
+            setJobs(prev =>
+                prev.map(j =>
+                    j.cuj_id === jobId
+                        ? { ...j, cuj_is_rejected: 1, cuj_is_active: 1, updated_at: new Date().toISOString() }
+                        : j
+                )
+            );
+
+            // optional feedback
+            alert(res?.data?.message || 'Job approved.');
+
+        } catch (err) {
+            console.error('Approve failed', err);
+            alert(err?.response?.data?.message || 'Approve failed');
+        }
     };
 
     const handleDelete = async (jobId) => {
         if (!confirm('Are you sure you want to delete this job?')) return;
         try {
-            // call your delete API (adjust endpoint as backend expects)
-            await adminApi.delete(`/deleteJob/${jobId}`);
-            setJobs(prev => prev.filter(j => j.cuj_id !== jobId));
+            // backend expects base64 encoded id (deleteJobByAdmin/{id})
+            const res = await adminApi.delete(`/deleteJobByAdmin/${encodeId(jobId)}`);
+
+            // Update local state to reflect soft-delete (cuj_is_rejected = 0, cuj_is_active = 0)
+            setJobs(prev =>
+                prev.map(j =>
+                    j.cuj_id === jobId
+                        ? { ...j, cuj_is_rejected: 0, cuj_is_active: 0, deleted_at: new Date().toISOString() }
+                        : j
+                )
+            );
+
+            // remove selection if it was selected
             setSelectedJobs(prev => prev.filter(id => id !== jobId));
+
+            // optional feedback from API
+            alert(res?.data?.message || 'Job deleted.');
         } catch (err) {
             console.error('Delete failed', err);
-            alert('Delete failed');
+            alert(err?.response?.data?.message || 'Delete failed');
         }
     };
 
@@ -101,6 +135,64 @@ const JobListingPage = () => {
         }
     };
 
+    // Open edit modal for a given job (pass the whole job object)
+    const openEditModal = (job) => {
+        setJobToEdit(job);
+        setIsEditOpen(true);
+    };
+
+    // Close edit modal
+    const closeEditModal = () => {
+        setIsEditOpen(false);
+        setJobToEdit(null);
+    };
+
+    // Called when EditJobModal successfully saves — update local jobs list
+    // Called when EditJobModal successfully saves — update local jobs list
+const handleSaveFromEdit = (updatedPayload) => {
+  // Try to extract updated job object from modal response
+  const updatedJob = updatedPayload?.job_data || updatedPayload?.data || updatedPayload;
+
+  // If backend didn't return the updated job, refresh list and close modal
+  if (!updatedJob || !updatedJob.cuj_id) {
+    fetchJobs();
+    closeEditModal();
+    return;
+  }
+
+  // Normalize IDs to strings when comparing so numeric/string mismatch won't fail
+  setJobs(prev =>
+    prev.map(j =>
+      String(j.cuj_id) === String(updatedJob.cuj_id)
+        ? { ...j, ...updatedJob }
+        : j
+    )
+  );
+
+  closeEditModal();
+};
+
+
+
+    const handleViewJob = async (jobId) => {
+        try {
+            setIsLoadingJobDetail(true);
+            const response = await adminApi.get(`/getJobData/${encodeId(jobId)}`);
+            setSelectedJob(response.data);
+            setIsModalOpen(true);
+        } catch (error) {
+            console.error('Error fetching job details:', error);
+            alert('Error loading job details. Please try again.');
+        } finally {
+            setIsLoadingJobDetail(false);
+        }
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedJob(null);
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -115,7 +207,7 @@ const JobListingPage = () => {
         if (job.cuj_is_rejected === 1 && job.cuj_is_active === 1) {
             status = 'Active';
         } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 1) {
-            status = 'Pending Approval';
+            status = 'Pending';
         } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 0) {
             status = 'Deleted';
         } else {
@@ -125,8 +217,8 @@ const JobListingPage = () => {
         switch (status) {
             case 'Active':
                 return <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Active</span>;
-            case 'Rejected':
-                return <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Rejected</span>;
+            case 'Pending':
+                return <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Pending</span>;
             case 'Deleted':
                 return <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">Deleted</span>;
             default:
@@ -156,9 +248,9 @@ const JobListingPage = () => {
     const rejectedJobs = jobs.filter(job => {
         let status = 'Unknown';
         if (job.cuj_is_rejected === 0 && job.cuj_is_active === 1) {
-            status = 'Rejected';
+            status = 'Pending';
         }
-        return status === 'Rejected';
+        return status === 'Pending';
     }).length;
 
     if (loading) {
@@ -186,13 +278,6 @@ const JobListingPage = () => {
                         <h1 className="text-2xl font-bold text-slate-800">Jobs Management</h1>
                         <p className="mt-1 text-slate-600">Manage and organize all job listings</p>
                     </div>
-                    <Link
-                        href="/control/jobs/addJob"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                        <MdAdd size={20} />
-                        Add New Job
-                    </Link>
                 </div>
 
                 {/* Search and Filters */}
@@ -245,7 +330,7 @@ const JobListingPage = () => {
                 <div className="p-4 bg-white rounded-xl border shadow-sm border-slate-200">
                     <div className="flex justify-between items-center">
                         <div>
-                            <p className="text-sm text-slate-600">Rejected Jobs</p>
+                            <p className="text-sm text-slate-600">Pending Approve</p>
                             <p className="text-2xl font-bold text-red-600">{rejectedJobs}</p>
                         </div>
                         <div className="flex justify-center items-center w-10 h-10 bg-red-100 rounded-lg">
@@ -277,9 +362,6 @@ const JobListingPage = () => {
                         <div className="flex gap-2 items-center">
                             <button className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                                 Delete Selected
-                            </button>
-                            <button className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
-                                Export
                             </button>
                         </div>
                     )}
@@ -317,7 +399,7 @@ const JobListingPage = () => {
                                                         {job.cuj_work_mode} • {job.cuj_job_type} • {job.cuj_u_experience}
                                                     </div>
                                                     {job.cuj_location && (
-                                                        <div className="text-sm text-slate-500">📍 {job.cuj_location}</div>
+                                                        <div className="text-sm text-slate-500"> {job.cuj_location}</div>
                                                     )}
                                                 </div>
                                             </div>
@@ -360,24 +442,30 @@ const JobListingPage = () => {
                                                 return (
                                                     <div className="flex gap-2 justify-end items-center">
                                                         {/* View */}
-                                                        <Link
-                                                            href={`/control/jobs/view/${encodeId(job.cuj_id)}`}
-                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted ? 'text-slate-300 pointer-events-none' : 'text-blue-600 hover:bg-blue-50'}`}
+                                                        <button
+                                                            onClick={() => !isSoftDeleted && handleViewJob(job.cuj_id)}
+                                                            disabled={isSoftDeleted || isLoadingJobDetail}
+                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted ? 'text-slate-300 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'} ${isLoadingJobDetail ? 'opacity-50' : ''}`}
                                                             title="View"
-                                                            aria-disabled={isSoftDeleted}
                                                         >
-                                                            <MdVisibility size={16} />
-                                                        </Link>
+                                                            {isLoadingJobDetail ? (
+                                                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                                            ) : (
+                                                                <MdVisibility size={16} />
+                                                            )}
+                                                        </button>
 
                                                         {/* Edit */}
-                                                        <Link
-                                                            href={`/control/jobs/edit/${encodeId(job.cuj_id)}`}
-                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted ? 'text-slate-300 pointer-events-none' : 'text-slate-600 hover:bg-slate-50'}`}
-                                                            title="Edit"
-                                                            aria-disabled={isSoftDeleted}
-                                                        >
-                                                            <MdEdit size={16} />
-                                                        </Link>
+                                                        <button
+  type="button"
+  onClick={() => openEditModal(job)}
+  disabled={isSoftDeleted}
+  title="Edit"
+  aria-disabled={isSoftDeleted}
+  className={`p-2 rounded-lg transition-colors ${isSoftDeleted ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-50'}`}
+>
+  <MdEdit size={16} />
+</button>
 
                                                         {/* Active button — always shown, enabled only for the specific condition */}
                                                         <button
@@ -460,6 +548,17 @@ const JobListingPage = () => {
                     </div>
                 )}
             </div>
+            <JobDetailModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                jobData={selectedJob}
+            />
+            <EditJobModal
+    isOpen={isEditOpen}
+    onClose={closeEditModal}
+    jobData={jobToEdit ? { job_data: jobToEdit } : null} // keep the shape your modal expects
+    onSave={handleSaveFromEdit}
+/>
         </div>
     );
 };

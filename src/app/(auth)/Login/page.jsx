@@ -1038,7 +1038,7 @@ const AuthForm = () => {
                   </button>
 
                   {/* Sign up with Mobile -> open shared modal in signup mode */}
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setForgotModalMode('signup');           // open modal in signup mode
@@ -1053,7 +1053,7 @@ const AuthForm = () => {
                   >
                     <MailOutlined className="w-4 h-4 mr-3 text-gray-500" />
                     Sign up with Mobile
-                  </button>
+                  </button> */}
 
                   <p className="text-center text-gray-600 text-sm mt-3">
                     Already have an account?{' '}
@@ -1324,7 +1324,7 @@ const AuthForm = () => {
                   </button>
 
                   {/* Sign up with Mobile -> open shared modal in signup mode */}
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setForgotModalMode('signup');
@@ -1334,7 +1334,7 @@ const AuthForm = () => {
                   >
                     <MailOutlined className="w-4 h-4 mr-3 text-gray-500" />
                     Sign up with Mobile
-                  </button>
+                  </button> */}
 
 
                   <p className="text-center text-gray-600 text-sm mt-3">

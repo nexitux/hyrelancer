@@ -1113,8 +1113,8 @@ export default function AdminServicePage() {
                       label="Payment Terms"
                     >
                       <Select placeholder="Select type" size="large">
-                        <Option value="Work">Per project/Work</Option>
-                        <Option value="Hour">Hourly Basis</Option>
+                        <Option value="work">Per project/work</Option>
+                        <Option value="hour">Hourly Basis</Option>
                       </Select>
                     </Form.Item>
                   </Col>
