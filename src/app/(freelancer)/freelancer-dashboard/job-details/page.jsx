@@ -25,8 +25,6 @@ import { useSelector } from 'react-redux';
 const JobListingsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [jobsPerPage] = useState(6); // Even number for 2 per row
-    const [salaryRange, setSalaryRange] = useState({ min: 0, max: 3000 });
-    const [sortOption, setSortOption] = useState('latest');
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -129,14 +127,6 @@ const JobListingsPage = () => {
         fetchJobs();
     }, [token]);
 
-    const handleSalaryChange = (e, type) => {
-        const value = parseInt(e.target.value);
-        if (type === 'min') {
-            setSalaryRange(prev => ({ ...prev, min: value }));
-        } else {
-            setSalaryRange(prev => ({ ...prev, max: value }));
-        }
-    };
 
     const applyForJob = async (jobId) => {
         if (!token) {
@@ -219,27 +209,14 @@ const JobListingsPage = () => {
         });
     };
 
-    // Filter and sort jobs
-    const filteredJobs = jobs
-        .filter(job => {
-            return job.salary_from >= salaryRange.min && job.salary_from <= salaryRange.max;
-        })
-        .sort((a, b) => {
-            const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
-            const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
-
-            if (sortOption === 'latest') {
-                return dateB - dateA;
-            } else {
-                return dateA - dateB;
-            }
-        });
+    // Display all jobs without filtering
+    const displayJobs = jobs;
 
     // Pagination logic
     const indexOfLastJob = currentPage * jobsPerPage;
     const indexOfFirstJob = indexOfLastJob - jobsPerPage;
-    const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
-    const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
+    const currentJobs = displayJobs.slice(indexOfFirstJob, indexOfLastJob);
+    const totalPages = Math.ceil(displayJobs.length / jobsPerPage);
 
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -412,59 +389,6 @@ const JobListingsPage = () => {
                     </div>
                 </div>
 
-                {/* Enhanced Filters */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
-                    <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-semibold text-gray-700">Sort by:</span>
-                                <select
-                                    value={sortOption}
-                                    onChange={(e) => setSortOption(e.target.value)}
-                                    className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                                >
-                                    <option value="latest">Latest First</option>
-                                    <option value="earliest">Earliest First</option>
-                                </select>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-semibold text-gray-700">Salary Range:</span>
-                                <div className="flex items-center gap-2">
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="3000"
-                                            value={salaryRange.min}
-                                            onChange={(e) => handleSalaryChange(e, 'min')}
-                                            className="w-28 pl-8 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                                            placeholder="Min"
-                                        />
-                                    </div>
-                                    <span className="text-gray-400">-</span>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="3000"
-                                            value={salaryRange.max}
-                                            onChange={(e) => handleSalaryChange(e, 'max')}
-                                            className="w-28 pl-8 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                                            placeholder="Max"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="text-sm text-gray-600">
-                            Showing {currentJobs.length} of {filteredJobs.length} jobs
-                        </div>
-                    </div>
-                </div>
 
                 {/* Loading and Error States */}
                 {loading && (
@@ -620,16 +544,10 @@ const JobListingsPage = () => {
                                             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
                                                 <Briefcase size={48} className="text-gray-400" />
                                             </div>
-                                            <h3 className="text-2xl font-bold text-gray-700 mb-3">No jobs match your criteria</h3>
+                                            <h3 className="text-2xl font-bold text-gray-700 mb-3">No jobs available</h3>
                                             <p className="text-gray-500 max-w-md mx-auto mb-6">
-                                                Try adjusting your salary range or check back later for new opportunities.
+                                                Check back later for new opportunities.
                                             </p>
-                                            <button
-                                                onClick={() => setSalaryRange({ min: 0, max: 3000 })}
-                                                className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                                            >
-                                                Reset Filters
-                                            </button>
                                         </div>
                                     </div>
                                 )}
@@ -639,7 +557,7 @@ const JobListingsPage = () => {
                             {currentJobs.length > 0 && totalPages > 1 && (
                                 <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                                     <div className="text-sm text-gray-600">
-                                        Page {currentPage} of {totalPages} • {filteredJobs.length} total jobs
+                                        Page {currentPage} of {totalPages} • {displayJobs.length} total jobs
                                     </div>
 
                                     <div className="flex items-center gap-2">

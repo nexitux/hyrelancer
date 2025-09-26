@@ -1404,7 +1404,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       >
                         <Input
                           placeholder="Enter amount"
-                          prefix={<DollarOutlined className="text-gray-400" />}
+                          prefix={<span className="text-gray-400">₹</span>}
                           suffix="INR"
                           className="w-full"
                           size="large"
@@ -1478,9 +1478,15 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                                 }
 
                                 if (type === 'Passport') {
-                                  return /^[A-PR-WY][0-9]{7}$/i.test(v)
-                                    ? Promise.resolve()
-                                    : Promise.reject(new Error('Passport format invalid. Example: A1234567'));
+                                  // Option 1: 1 letter and 7 numbers (e.g., A1234567)
+                                  if (/^[A-Z][0-9]{7}$/i.test(v)) {
+                                    return Promise.resolve();
+                                  }
+                                  // Option 2: 2 letters and 6 numbers (e.g., AB123456)
+                                  if (/^[A-Z]{2}[0-9]{6}$/i.test(v)) {
+                                    return Promise.resolve();
+                                  }
+                                  return Promise.reject(new Error('Passport format invalid. Example: A1234567 or AB123456'));
                                 }
 
                                 if (type === 'Driving License') {

@@ -44,6 +44,8 @@ const JobPostForm = () => {
   const [languagesLoading, setLanguagesLoading] = useState(false);
   const [cities, setCities] = useState([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = [
     'Technology', 'Design', 'Business', 'Marketing', 'Sales', 
@@ -183,7 +185,7 @@ const JobPostForm = () => {
     setUploadedPhotos(prev => prev.filter(photo => photo.id !== id));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form before submission
@@ -195,6 +197,8 @@ const JobPostForm = () => {
       }
       return;
     }
+
+    setIsSubmitting(true);
 
     // Prepare multipart payload including cuj_img1..3
     const payload = new FormData();
@@ -281,20 +285,27 @@ const JobPostForm = () => {
     } catch {}
 
     // Submit to API
-    api.post('/storeJob', payload, {
+    try {
+      const res = await api.post('/storeJob', payload, {
       headers: { 'Content-Type': 'multipart/form-data' }
-    })
-      .then((res) => {
-        window.alert(res?.data?.message || 'Job submitted successfully');
-        try { window.location.href = '/customer-dashboard/job-list'; } catch {}
-      })
-      .catch((err) => {
+      });
+      
+      // Show success modal
+      setShowSuccessModal(true);
+      
+      // Auto-hide modal after 8 seconds
+      setTimeout(() => {
+        setShowSuccessModal(false);
+      }, 8000);
+    } catch (err) {
         const resp = err?.response?.data;
         const details = resp?.errors ? `\n${Object.entries(resp.errors).map(([k,v]) => `${k}: ${(Array.isArray(v)?v.join(', '):v)}`).join('\n')}` : '';
         const msg = (resp?.message || 'Failed to submit job') + details;
         window.alert(msg);
         console.error('Job submit error', err);
-      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Prefill category and service (subcategory) from query params if provided
@@ -470,6 +481,7 @@ const JobPostForm = () => {
   }, []);
 
   return (
+    <>
     <div className="min-h-screen bg-white">
       {/* Header Banner */}
       <div
@@ -966,14 +978,72 @@ const JobPostForm = () => {
               <button
               type="button"
               onClick={handleSubmit}
-              className="w-full mt-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting}
+              className="w-full mt-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Post Job Now
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Posting Job...
+                </>
+              ) : (
+                'Post Job Now'
+              )}
               </button>
             </div>
           </div>
         </div>
     </div>
+
+    {/* Success Modal */}
+    {showSuccessModal && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+          <div className="p-6">
+            <div className="flex justify-center">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30">
+                <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <div className="mt-3 text-center sm:mt-5">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                Job Posted Successfully!
+              </h3>
+              <div className="mt-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Your job has been posted and is now visible to freelancers. You can manage it from your job list.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-3 rounded-b-xl">
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Stay Here
+              </button>
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  window.location.href = '/customer-dashboard/job-list';
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                View Job List
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

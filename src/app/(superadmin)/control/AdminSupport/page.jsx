@@ -2,133 +2,62 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-
-// Mock data for tickets - admin view with all users
-const initialTickets = [
-  {
-    id: 1,
-    category: "Technical Issue",
-    customer: "John Doe",
-    customerId: "user-123",
-    customerEmail: "john@example.com",
-    agent: "Unassigned",
-    status: "Open",
-    subject: "Cannot login to dashboard",
-    description: "I've been trying to login to my dashboard for the past hour but keep getting an error message.",
-    priority: "High",
-    createdAt: "2023-10-15T14:30:00Z",
-    updatedAt: "2023-10-15T14:30:00Z",
-    replies: [
-      {
-        id: 1,
-        user: "John Doe",
-        message: "I'm still having this issue. Any updates?",
-        timestamp: "2023-10-15T16:00:00Z"
-      }
-    ]
-  },
-  {
-    id: 2,
-    category: "Billing",
-    customer: "Jane Smith",
-    customerId: "user-456",
-    customerEmail: "jane@example.com",
-    agent: "Support Agent 2",
-    status: "In Progress",
-    subject: "Invoice discrepancy",
-    description: "The amount on my latest invoice doesn't match what we agreed upon.",
-    priority: "Medium",
-    createdAt: "2023-10-14T10:15:00Z",
-    updatedAt: "2023-10-15T09:20:00Z",
-    replies: [
-      {
-        id: 1,
-        user: "Support Agent 2",
-        message: "We've forwarded this to our billing department.",
-        timestamp: "2023-10-14T14:20:00Z"
-      }
-    ]
-  },
-  {
-    id: 3,
-    category: "Feature Request",
-    customer: "Robert Johnson",
-    customerId: "user-789",
-    customerEmail: "robert@example.com",
-    agent: "Support Agent 3",
-    status: "Closed",
-    subject: "Dark mode option",
-    description: "Would be great to have a dark mode option for the application.",
-    priority: "Low",
-    createdAt: "2023-10-10T09:45:00Z",
-    updatedAt: "2023-10-11T14:35:00Z",
-    replies: [
-      {
-        id: 1,
-        user: "Support Agent 3",
-        message: "Thank you for your suggestion. We've added this to our feature backlog.",
-        timestamp: "2023-10-11T11:20:00Z"
-      },
-      {
-        id: 2,
-        user: "Robert Johnson",
-        message: "Great, looking forward to it!",
-        timestamp: "2023-10-11T14:35:00Z"
-      }
-    ]
-  },
-  {
-    id: 4,
-    category: "Technical Issue",
-    customer: "Sarah Williams",
-    customerId: "user-101",
-    customerEmail: "sarah@example.com",
-    agent: "Support Agent 1",
-    status: "Open",
-    subject: "Upload not working",
-    description: "When I try to upload files, the progress bar gets stuck at 50%.",
-    priority: "High",
-    createdAt: "2023-10-16T08:20:00Z",
-    updatedAt: "2023-10-16T08:20:00Z",
-    replies: []
-  },
-  {
-    id: 5,
-    category: "Account",
-    customer: "Michael Brown",
-    customerId: "user-202",
-    customerEmail: "michael@example.com",
-    agent: "Unassigned",
-    status: "Open",
-    subject: "Can't change password",
-    description: "The password reset link is not working for my account.",
-    priority: "Medium",
-    createdAt: "2023-10-15T16:45:00Z",
-    updatedAt: "2023-10-15T16:45:00Z",
-    replies: []
-  }
-];
-
-// Mock list of users
-const users = [
-  { id: "user-123", name: "John Doe", email: "john@example.com", ticketCount: 2 },
-  { id: "user-456", name: "Jane Smith", email: "jane@example.com", ticketCount: 1 },
-  { id: "user-789", name: "Robert Johnson", email: "robert@example.com", ticketCount: 1 },
-  { id: "user-101", name: "Sarah Williams", email: "sarah@example.com", ticketCount: 1 },
-  { id: "user-202", name: "Michael Brown", email: "michael@example.com", ticketCount: 1 }
-];
+import adminApi from "@/config/adminApi";
 
 const AdminSupportTicketsPage = () => {
-  const [tickets, setTickets] = useState(initialTickets);
-  const [filteredTickets, setFilteredTickets] = useState(initialTickets);
+  const [tickets, setTickets] = useState([]);
+  const [filteredTickets, setFilteredTickets] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [userFilter, setUserFilter] = useState("All");
-  const [agentFilter, setAgentFilter] = useState("All");
+  const [userTypeFilter, setUserTypeFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch tickets from API
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await adminApi.get('support/tickets');
+        
+        if (response.data && response.data.tickets) {
+          setTickets(response.data.tickets);
+          
+          // Extract unique users from tickets
+          const uniqueUsers = response.data.tickets.reduce((acc, ticket) => {
+            const existingUser = acc.find(user => user.id === ticket.user_id);
+            if (!existingUser) {
+              acc.push({
+                id: ticket.user_id,
+                name: `User ${ticket.user_id}`,
+                email: `user${ticket.user_id}@example.com`,
+                usertype: ticket.usertype,
+                ticketCount: response.data.tickets.filter(t => t.user_id === ticket.user_id).length
+              });
+            }
+            return acc;
+          }, []);
+          setUsers(uniqueUsers);
+        }
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        setError('Failed to fetch tickets. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
 
   // Filter tickets based on selected filters and search term
   useEffect(() => {
+    console.log('Filtering tickets with:', { statusFilter, priorityFilter, userFilter, userTypeFilter, searchTerm });
+    console.log('Sample ticket data:', tickets[0]);
     let result = tickets;
     
     if (statusFilter !== "All") {
@@ -140,73 +69,139 @@ const AdminSupportTicketsPage = () => {
     }
     
     if (userFilter !== "All") {
-      result = result.filter(ticket => ticket.customerId === userFilter);
+      result = result.filter(ticket => ticket.user_id.toString() === userFilter);
     }
     
-    if (agentFilter !== "All") {
-      if (agentFilter === "Unassigned") {
-        result = result.filter(ticket => ticket.agent === "Unassigned");
-      } else {
-        result = result.filter(ticket => ticket.agent === agentFilter);
-      }
+    if (userTypeFilter !== "All") {
+      result = result.filter(ticket => {
+        // Handle different possible usertype formats
+        const userType = ticket.usertype?.toLowerCase();
+        const filterType = userTypeFilter.toLowerCase();
+        return userType === filterType || userType === filterType + 's';
+      });
     }
     
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(ticket => 
-        ticket.subject.toLowerCase().includes(term) || 
-        ticket.description.toLowerCase().includes(term) ||
-        ticket.customer.toLowerCase().includes(term)
-      );
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(ticket => {
+        // More comprehensive search including all fields
+        const subject = ticket.subject?.toLowerCase() || '';
+        const message = ticket.message?.toLowerCase() || '';
+        const ticketCode = ticket.ticket_code?.toLowerCase() || '';
+        const userName = ticket.user_name?.toLowerCase() || '';
+        const userType = ticket.usertype?.toLowerCase() || ''; // Fixed: use 'usertype' instead of 'user_type'
+        const priority = ticket.priority?.toLowerCase() || '';
+        const status = ticket.status?.toLowerCase() || '';
+        
+        // Enhanced date search with multiple formats
+        let dateMatches = false;
+        if (ticket.created_at) {
+          const createdDate = new Date(ticket.created_at);
+          
+          // Multiple date formats for search
+          const formats = [
+            createdDate.toLocaleDateString().toLowerCase(), // 12/25/2023
+            createdDate.toLocaleDateString('en-GB').toLowerCase(), // 25/12/2023
+            createdDate.toLocaleDateString('en-US').toLowerCase(), // 12/25/2023
+            createdDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase(), // december 25, 2023
+            createdDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).toLowerCase(), // dec 25, 2023
+            createdDate.getFullYear().toString(), // 2023
+            createdDate.getMonth() + 1 + '', // 12 (month number)
+            createdDate.getDate() + '', // 25 (day)
+            createdDate.toISOString().split('T')[0], // 2023-12-25
+            createdDate.toISOString().split('T')[0].replace(/-/g, '/'), // 2023/12/25
+          ];
+          
+          // Also add month names
+          const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                             'july', 'august', 'september', 'october', 'november', 'december'];
+          const monthShortNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                                  'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+          
+          formats.push(monthNames[createdDate.getMonth()]);
+          formats.push(monthShortNames[createdDate.getMonth()]);
+          
+          dateMatches = formats.some(format => format.includes(term));
+        }
+        
+        return subject.includes(term) || 
+               message.includes(term) ||
+               ticketCode.includes(term) ||
+               userName.includes(term) ||
+               userType.includes(term) ||
+               priority.includes(term) ||
+               status.includes(term) ||
+               dateMatches;
+      });
     }
     
     // Sort by latest first
-    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    result.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
     
     setFilteredTickets(result);
-  }, [tickets, statusFilter, priorityFilter, userFilter, agentFilter, searchTerm]);
+  }, [tickets, statusFilter, priorityFilter, userFilter, userTypeFilter, searchTerm]);
 
-  const handleStatusChange = (ticketId, newStatus) => {
-    setTickets(prevTickets => 
-      prevTickets.map(ticket => 
-        ticket.id === ticketId ? { 
-          ...ticket, 
-          status: newStatus,
-          updatedAt: new Date().toISOString()
-        } : ticket
-      )
-    );
-  };
-
-  const handleAssignToMe = (ticketId) => {
-    setTickets(prevTickets => 
-      prevTickets.map(ticket => 
-        ticket.id === ticketId ? { 
-          ...ticket, 
-          agent: "You",
-          updatedAt: new Date().toISOString()
-        } : ticket
-      )
-    );
-  };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Open": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
-      case "In Progress": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300";
-      case "Closed": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
+    switch (status.toLowerCase()) {
+      case "open": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
+      case "in_progress": 
+    
+      case "closed": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
     }
   };
 
   const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "High": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
-      case "Medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300";
-      case "Low": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
+    switch (priority.toLowerCase()) {
+      case "high": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
+      case "medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300";
+      case "low": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600 dark:text-gray-400 mt-4">Loading tickets...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                  <p>{error}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200 px-3 py-2 rounded-md text-sm font-medium hover:bg-red-200 dark:hover:bg-red-700"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -232,9 +227,9 @@ const AdminSupportTicketsPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="All">All Statuses</option>
-                  <option value="Open">Open</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Closed">Closed</option>
+                  <option value="open">Open</option>
+             
+                  <option value="closed">Closed</option>
                 </select>
               </div>
               
@@ -248,9 +243,9 @@ const AdminSupportTicketsPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="All">All Priorities</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
                 </select>
               </div>
               
@@ -272,19 +267,17 @@ const AdminSupportTicketsPage = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Agent
+                  User Type
                 </label>
                 <select
-                  value={agentFilter}
-                  onChange={(e) => setAgentFilter(e.target.value)}
+                  value={userTypeFilter}
+                  onChange={(e) => setUserTypeFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 >
-                  <option value="All">All Agents</option>
-                  <option value="You">You</option>
-                  <option value="Support Agent 1">Agent 1</option>
-                  <option value="Support Agent 2">Agent 2</option>
-                  <option value="Support Agent 3">Agent 3</option>
-                  <option value="Unassigned">Unassigned</option>
+                  <option value="All">All User Types</option>
+                  <option value="customer">Customer</option>
+                  <option value="freelancer">Freelancer</option>
+                 
                 </select>
               </div>
               
@@ -294,7 +287,7 @@ const AdminSupportTicketsPage = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="Search tickets..."
+                  placeholder="Search by subject, message, user, type, priority, status, date..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
@@ -309,23 +302,28 @@ const AdminSupportTicketsPage = () => {
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    ID
+                    Ticket Code
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Subject
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Customer
+                    Customer Name
                   </th>
-                
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Status
+                    User Type
                   </th>
+                  
+                 
+                 
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Priority
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Updated
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Created
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
@@ -336,36 +334,46 @@ const AdminSupportTicketsPage = () => {
                 {filteredTickets.map((ticket) => (
                   <tr key={ticket.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      #{ticket.id}
+                      {ticket.ticket_code}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {ticket.subject}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {ticket.customer}
+                      {ticket.user ? ticket.user.name : `User ${ticket.user_id}`}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        ticket.usertype === 'Freelancer' 
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
+                          : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                      }`}>
+                        {ticket.usertype}
+                      </span>
+                    </td>
+                    
                   
+                    
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
-                        {ticket.status}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(ticket.priority)}`}>
+                        {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
+                        {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(ticket.updatedAt).toLocaleDateString()}
+                      {new Date(ticket.created_at).toLocaleDateString('en-GB')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
-                        href={`AdminSupport/${ticket.id}`}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                        href={`AdminSupport/${btoa(ticket.id.toString())}`}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         View
                       </Link>
-                     
                     </td>
                   </tr>
                 ))}

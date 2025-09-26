@@ -19,6 +19,63 @@ export default function MessageBox() {
     const currentUserId = user?.id;
     const authToken = token;
 
+    // Prefilled message templates
+    const prefilledMessages = [
+        {
+            category: "Greetings",
+            messages: [
+                "Hello! How are you doing today?",
+                "Hi there! Hope you're having a great day!",
+                "Good morning! How can I help you?",
+                "Hello! Nice to meet you!"
+            ]
+        },
+        {
+            category: "Project Related",
+            messages: [
+                "I'm interested in working on this project. Can we discuss the details?",
+                "I have experience with this type of work. Would you like to see my portfolio?",
+                "I can start working on this project immediately. What's the timeline?",
+                "I'd love to help with this project. Let me know your requirements."
+            ]
+        },
+        {
+            category: "Contact & Communication",
+            messages: [
+                "What's the best way to contact you for project updates?",
+                "I'm available for a call to discuss the project in detail.",
+                "Please let me know your preferred communication method.",
+                "I'm flexible with meeting times. When works best for you?"
+            ]
+        },
+        {
+            category: "Availability",
+            messages: [
+                "I'm available to start working on this project right away.",
+                "I can dedicate 20-30 hours per week to this project.",
+                "I'm flexible with deadlines. What's your preferred timeline?",
+                "I'm available for both short-term and long-term projects."
+            ]
+        },
+        {
+            category: "Pricing & Budget",
+            messages: [
+                "What's your budget range for this project?",
+                "I can work within your budget. Let's discuss the scope.",
+                "I offer competitive rates. Would you like a detailed quote?",
+                "I'm open to negotiating the price based on project requirements."
+            ]
+        }
+    ];
+
+    // Simple quick messages like in the image
+    const quickMessages = [
+        "Hello! How are you?",
+        "Are you available for a project?",
+        "What's your rate?",
+        "I'm interested in your services >"
+    ];
+
 
     // Get auth token 
     const getAuthToken = () => {
@@ -349,12 +406,22 @@ export default function MessageBox() {
         await sendMessage(selectedUser, messageText);
     };
 
+    // Handle prefilled message click
+    const handlePrefilledMessage = (prefilledText) => {
+        setMessage(prefilledText);
+    };
+
     // Handle key press (Enter to send)
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
         }
+    };
+
+    // Handle prefilled message selection
+    const handlePrefilledMessageSelect = (messageText) => {
+        setMessage(messageText);
     };
 
     // Auto-resize textarea
@@ -418,16 +485,16 @@ export default function MessageBox() {
     // Show loading if not authenticated or missing user data
     if (!isAuthenticated || !user || !currentUserId || !authToken) {
         return (
-            <div className="w-full max-w-[1600px] mx-auto">
-                <div className="flex-shrink-0 p-4 sm:p-6">
-                    <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Messages</h1>
-                    <p className="text-sm text-slate-600 mt-1">Loading authentication...</p>
+            <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6">
+                <div className="flex-shrink-0 p-3 sm:p-4 lg:p-6">
+                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">Messages</h1>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1">Loading authentication...</p>
                 </div>
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-4 sm:mx-6" style={{ height: 'calc(100vh - 200px)' }}>
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-2 sm:mx-4 lg:mx-6" style={{ height: 'calc(100vh - 180px)' }}>
                     <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading messages...</p>
+                        <div className="text-center p-4">
+                            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                            <p className="text-gray-600 text-sm sm:text-base">Loading messages...</p>
                         </div>
                     </div>
                 </div>
@@ -436,30 +503,30 @@ export default function MessageBox() {
     }
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto">
+        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6">
             {/* Messages Header */}
-            <div className="flex-shrink-0 p-4 sm:p-6">
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Messages</h1>
-                <p className="text-sm text-slate-600 mt-1">
+            <div className="flex-shrink-0 p-3 sm:p-4 lg:p-6">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">Messages</h1>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1">
                     Welcome, {user?.name || 'User'}
                 </p>
             </div>
-
+        
             {/* Messages Container */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-4 sm:mx-6" style={{ height: 'calc(100vh - 200px)' }}>
-                <div className="flex h-full flex-col sm:flex-row">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-2 sm:mx-4 lg:mx-6" >
+                <div className="flex h-full flex-col lg:flex-row">
                     {/* Users Sidebar */}
-                    <div className={`${selectedUser ? 'hidden sm:flex' : 'flex'} w-full sm:w-1/3 lg:w-1/4 bg-slate-50 border-r border-slate-200 flex-col`}>
+                    <div className={`${selectedUser ? 'hidden lg:flex' : 'flex'} w-full lg:w-1/3 xl:w-1/4 bg-slate-50 border-r border-slate-200 flex-col`}>
                         {/* Search Header */}
-                        <div className="flex-shrink-0 p-3 bg-slate-100 border-b border-slate-200">
+                        <div className="flex-shrink-0 p-2 sm:p-3 bg-slate-100 border-b border-slate-200">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-slate-500" />
                                 <input
                                     type="text"
                                     placeholder="Search conversations..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm border border-slate-300"
+                                    className="w-full pl-7 sm:pl-9 pr-2 sm:pr-3 py-1.5 sm:py-2 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-xs sm:text-sm border border-slate-300"
                                 />
                             </div>
                         </div>
@@ -467,36 +534,36 @@ export default function MessageBox() {
                         {/* Users List */}
                         <div className="flex-1 overflow-y-auto">
                             {loading && users.length === 0 ? (
-                                <div className="flex justify-center items-center p-4">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                                <div className="flex justify-center items-center p-3 sm:p-4">
+                                    <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
                                 </div>
                             ) : filteredUsers.length > 0 ? (
                                 filteredUsers.map((user) => (
                                     <div
                                         key={user.id}
                                         onClick={() => setSelectedUser(user.id)}
-                                        className={`flex items-center p-3 hover:bg-slate-100 cursor-pointer border-b border-slate-100 transition-colors ${selectedUser === user.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                                        className={`flex items-center p-2 sm:p-3 hover:bg-slate-100 cursor-pointer border-b border-slate-100 transition-colors touch-manipulation ${selectedUser === user.id ? 'bg-blue-50 border-l-2 sm:border-l-4 border-l-blue-600' : ''
                                             }`}
                                     >
-                                        <div className="relative">
+                                        <div className="relative flex-shrink-0">
                                             <img
                                                 src={user.avatar}
                                                 alt={user.name}
-                                                className="w-10 h-10 rounded-full object-cover"
+                                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                                                 onError={(e) => {
                                                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
                                                 }}
                                             />
                                             {user.online && (
-                                                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full ring-2 ring-white"></div>
+                                                <div className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-400 rounded-full ring-1 sm:ring-2 ring-white"></div>
                                             )}
                                         </div>
-                                        <div className="ml-3 flex-1 min-w-0">
+                                        <div className="ml-2 sm:ml-3 flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
-                                                <h3 className="text-sm font-medium text-slate-900 truncate">
+                                                <h3 className="text-xs sm:text-sm font-medium text-slate-900 truncate">
                                                     {user.name}
                                                 </h3>
-                                                <span className="text-xs text-slate-500">{user.timestamp}</span>
+                                                <span className="text-xs text-slate-500 ml-1">{user.timestamp}</span>
                                             </div>
                                           
                                             <p className="text-xs text-blue-500 truncate">
@@ -504,19 +571,19 @@ export default function MessageBox() {
                                             </p>
                                         </div>
                                         {user.unreadCount > 0 && (
-                                            <div className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                            <div className="ml-1 sm:ml-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center flex-shrink-0">
                                                 {user.unreadCount}
                                             </div>
                                         )}
                                     </div>
                                 ))
                             ) : (
-                                <div className="flex flex-col justify-center items-center p-8 text-slate-500">
-                                    <p className="mb-2">No conversations found</p>
+                                <div className="flex flex-col justify-center items-center p-4 sm:p-8 text-slate-500">
+                                    <p className="mb-2 text-xs sm:text-sm">No conversations found</p>
                                     {users.length === 0 && !loading && (
                                         <button 
                                             onClick={() => fetchInbox(true)}
-                                            className="text-blue-500 hover:text-blue-700 text-sm"
+                                            className="text-blue-500 hover:text-blue-700 text-xs sm:text-sm touch-manipulation"
                                         >
                                             Retry Loading
                                         </button>
@@ -527,37 +594,37 @@ export default function MessageBox() {
                     </div>
 
                     {/* Chat Area */}
-                    <div className={`${selectedUser ? 'flex' : 'hidden sm:flex'} flex-1 flex-col bg-white`}>
+                    <div className={`${selectedUser ? 'flex' : 'hidden lg:flex'} flex-1 flex-col bg-white`}>
                         {selectedUserData ? (
                             <>
                                 {/* Chat Header */}
-                                <div className="flex-shrink-0 bg-blue-50 px-4 py-3 flex items-center justify-between border-b border-blue-100">
-                                    <div className="flex items-center space-x-3">
+                                <div className="flex-shrink-0 bg-blue-50 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between border-b border-blue-100">
+                                    <div className="flex items-center space-x-2 sm:space-x-3">
                                         <button
                                             onClick={() => setSelectedUser(null)}
-                                            className="sm:hidden p-2 hover:bg-blue-200 rounded-full transition-colors"
+                                            className="lg:hidden p-1.5 sm:p-2 hover:bg-blue-200 rounded-full transition-colors touch-manipulation"
                                         >
-                                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                             </svg>
                                         </button>
-                                        <div className="relative">
+                                        <div className="relative flex-shrink-0">
                                             <img
                                                 src={selectedUserData.avatar}
                                                 alt={selectedUserData.name}
-                                                className="w-10 h-10 rounded-full object-cover"
+                                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                                                 onError={(e) => {
                                                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUserData.name)}&background=random`;
                                                 }}
                                             />
                                             {selectedUserData.online && (
-                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full ring-2 ring-white"></div>
+                                                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-400 rounded-full ring-1 sm:ring-2 ring-white"></div>
                                             )}
                                         </div>
-                                        <div>
-                                            <h2 className="text-base font-semibold text-gray-800">{selectedUserData.name}</h2>
-                                            <p className="text-xs text-blue-600">
-                                                {selectedUserData.userType} • {selectedUserData.online ? 'Online' : 'Last seen recently'}
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="text-sm sm:text-base font-semibold text-gray-800 truncate">{selectedUserData.name}</h2>
+                                            <p className="text-xs text-blue-600 truncate">
+                                                {selectedUserData.userType} 
                                             </p>
                                         </div>
                                     </div>
@@ -565,54 +632,54 @@ export default function MessageBox() {
                                 </div>
 
                                 {/* Messages Area */}
-                                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                                <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-gray-50">
                                     {loading && currentMessages.length === 0 ? (
                                         <div className="flex justify-center items-center h-full">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
                                         </div>
                                     ) : currentMessages.length === 0 ? (
-                                        <div className="flex flex-col justify-center items-center h-full text-gray-500">
-                                            <p className="mb-4">No messages yet. Start a conversation!</p>
+                                        <div className="flex flex-col justify-center items-center h-full text-gray-500 p-4">
+                                            <p className="mb-4 text-sm sm:text-base text-center">No messages yet. Start a conversation!</p>
                                             <button 
                                                 onClick={() => fetchConversation(selectedUser, true)}
-                                                className="text-blue-500 hover:text-blue-700 text-sm"
+                                                className="text-blue-500 hover:text-blue-700 text-xs sm:text-sm touch-manipulation"
                                             >
                                                 Refresh Conversation
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="space-y-4">
+                                        <div className="space-y-3 sm:space-y-4">
                                             {Object.entries(groupedMessages).map(([dateKey, dateMessages]) => (
                                                 <div key={dateKey}>
                                                     {/* Date Header */}
-                                                    <div className="flex justify-center mb-4">
-                                                        <div className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700 font-medium">
+                                                    <div className="flex justify-center mb-3 sm:mb-4">
+                                                        <div className="bg-gray-200 px-2 sm:px-3 py-1 rounded-full text-xs text-gray-700 font-medium">
                                                             {formatDateHeader(dateKey)}
                                                         </div>
                                                     </div>
                                                     
                                                     {/* Messages for this date */}
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-2 sm:space-y-3">
                                                         {dateMessages.map((msg) => (
                                                             <div
                                                                 key={msg.id}
                                                                 className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
                                                             >
-                                                                <div className={`max-w-[70%] ${msg.sender === 'me' ? 'ml-auto' : 'mr-auto'}`}>
+                                                                <div className={`max-w-[85%] sm:max-w-[70%] ${msg.sender === 'me' ? 'ml-auto' : 'mr-auto'}`}>
                                                                     <div
-                                                                        className={`px-4 py-2 rounded-2xl shadow-sm relative ${msg.sender === 'me'
+                                                                        className={`px-3 sm:px-4 py-2 rounded-2xl shadow-sm relative ${msg.sender === 'me'
                                                                             ? 'bg-blue-500 text-white rounded-br-md'
                                                                             : 'bg-white text-gray-800 rounded-bl-md border border-gray-200'
                                                                             }`}
                                                                     >
-                                                                        <p className="text-sm leading-relaxed break-words">{msg.text}</p>
+                                                                        <p className="text-xs sm:text-sm leading-relaxed break-words">{msg.text}</p>
                                                                         <div className={`flex items-center justify-between mt-1 ${msg.sender === 'me' ? 'text-blue-100' : 'text-gray-500'}`}>
                                                                             <span className="text-xs">
                                                                                 {msg.timestamp}
                                                                             </span>
                                                                             {msg.sending && (
                                                                                 <div className="ml-2">
-                                                                                    <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                                                                                    <div className="animate-spin rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 border-b border-current"></div>
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -626,42 +693,58 @@ export default function MessageBox() {
                                             <div ref={messagesEndRef} />
                                         </div>
                                     )}
-                                </div>
+                                    {/* Quick Message Suggestions - Show only when no messages exist */}
+                                    {/* currentMessages.length === 30 && currentMessages.length < 20 && */}
+                                { (
+                                    <div className="flex-shrink-0 pt-16 sm:pt-20">
+                                        <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center px-2">
+                                            {quickMessages.map((msg, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => handlePrefilledMessageSelect(msg)}
+                                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-purple-300 rounded-full text-xs sm:text-sm text-gray-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 shadow-sm touch-manipulation"
+                                                >
+                                                    {msg}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                </div>  
+
+                                
 
                                 {/* Message Input */}
-                                <div className="flex-shrink-0 bg-white border-t border-gray-200 p-3">
-                                    <div className="flex items-end space-x-2">
-                                     
-                                        
+                                <div className="flex-shrink-0 bg-white border-t border-gray-200 p-2 sm:p-3">
+                                    <div className="flex items-end space-x-1.5 sm:space-x-2">
                                         <div className="flex-1 relative">
                                             <textarea
                                                 value={message}
                                                 onChange={handleTextareaChange}
                                                 onKeyPress={handleKeyPress}
                                                 placeholder={`Message ${selectedUserData.name}...`}
-                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all max-h-32 min-h-[44px] text-sm"
+                                                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all max-h-32 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm scrollbar-hide"
                                                 rows={1}
-                                                style={{ height: 'auto' }}
+                                                style={{ height: 'auto', overflow: 'hidden' }}
                                             />
-                                         
                                         </div>
 
                                         <button
                                             onClick={handleSendMessage}
                                             disabled={!message.trim() || !selectedUser}
-                                            className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
+                                            className="p-2 sm:p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0 touch-manipulation"
                                         >
-                                            <Send className="w-5 h-5" />
+                                            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </button>
                                     </div>
                                 </div>
                             </>
                         ) : (
                             // No user selected state
-                            <div className="flex-1 flex items-center justify-center bg-gray-50">
+                            <div className="flex-1 flex items-center justify-center bg-gray-50 p-4">
                                 <div className="text-center text-gray-500">
-                                    <h3 className="text-lg font-medium mb-2">Welcome to Messages</h3>
-                                    <p className="text-sm">Select a conversation to start messaging</p>
+                                    <h3 className="text-base sm:text-lg font-medium mb-2">Welcome to Messages</h3>
+                                    <p className="text-xs sm:text-sm">Select a conversation to start messaging</p>
                                 </div>
                             </div>
                         )}

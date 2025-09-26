@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useRef } from 'react';
 import { FacebookFilled, GoogleOutlined, MailOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import { useRouter } from "next/navigation";
@@ -101,6 +101,7 @@ const AuthForm = () => {
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotModalMode, setForgotModalMode] = useState('forgot-password');
+  const otpRefs = useRef([]);
 
   const { validation: passwordValidation, isValid: isPasswordValid } = usePasswordValidation(formData.password || '');
 
@@ -475,20 +476,47 @@ const AuthForm = () => {
   };
 
   const handleOtpChange = (index, value) => {
+    // allow only digits
     if (!/^\d*$/.test(value)) return;
 
+    // keep a single digit per box
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = value.slice(0, 1);
     setOtp(newOtp);
 
-    if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`).focus();
+    // move focus to next input (use refs for reliability)
+    if (value && index < otpRefs.current.length - 1) {
+      // small timeout helps on some mobile keyboards
+      setTimeout(() => {
+        const next = otpRefs.current[index + 1];
+        if (next) next.focus();
+      }, 0);
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      document.getElementById(`otp-${index - 1}`).focus();
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const newOtp = [...otp];
+
+      // if current box has a digit, clear it
+      if (newOtp[index]) {
+        newOtp[index] = '';
+        setOtp(newOtp);
+        return;
+      }
+
+      // otherwise move focus to previous box
+      if (index > 0) {
+        const prev = otpRefs.current[index - 1];
+        if (prev) prev.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      const prev = otpRefs.current[index - 1];
+      if (prev) prev.focus();
+    } else if (e.key === 'ArrowRight' && index < otpRefs.current.length - 1) {
+      const next = otpRefs.current[index + 1];
+      if (next) next.focus();
     }
   };
 
@@ -643,6 +671,7 @@ const AuthForm = () => {
     </div>
   );
 
+ 
   const renderOtpInput = () => (
     <div className="space-y-4">
       <div className="text-center">
@@ -663,7 +692,10 @@ const AuthForm = () => {
           <input
             key={index}
             id={`otp-${index}`}
+            ref={(el) => (otpRefs.current[index] = el)}
             type="text"
+            inputMode="numeric"
+            pattern="\d*"
             maxLength={1}
             value={otp[index]}
             onChange={(e) => handleOtpChange(index, e.target.value)}

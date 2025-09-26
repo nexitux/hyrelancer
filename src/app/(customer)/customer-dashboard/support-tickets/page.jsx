@@ -171,7 +171,7 @@ const SupportTicketsPage = () => {
               >
                 <option value="All">All Statuses</option>
                 <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
+                {/* <option value="in_progress">In Progress</option> */}
                 <option value="closed">Closed</option>
               </select>
             </div>
@@ -259,7 +259,7 @@ const SupportTicketsPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link 
-                       href={`/freelancer-dashboard/support-tickets/${btoa(ticket.id)}`}
+                       href={`/customer-dashboard/support-tickets/${btoa(ticket.id)}`}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
                       >
                         View

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { Search, ChevronDown, MapPin, Calendar, Trash2, DollarSign } from 'lucide-react';
-import Jobs from "../../bookmarks/components/Jobs"
+
 
 const UXUIDesignAlerts = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -143,19 +143,7 @@ const UXUIDesignAlerts = () => {
                 </div>
 
                 {/* Jobs Grid */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div className="p-6">
-                        <Jobs jobs={filteredJobs} />
-                        
-                        {/* Empty State */}
-                        {filteredJobs.length === 0 && (
-                            <div className="text-center py-12">
-                                <div className="text-gray-500 text-lg">No jobs found</div>
-                                <div className="text-gray-400 text-sm mt-1">Try adjusting your search criteria</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
+               
 
                 {/* Results Info */}
                 <div className="mt-6 text-center text-sm text-gray-500">

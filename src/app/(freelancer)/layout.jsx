@@ -63,14 +63,17 @@ export default function FreelancerLayout({ children, showSidebar = true }) {
           </div>
         )}
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          {children}
-        </main>
-      </div>
+        {/* Main content area with footer */}
+        <div className="flex flex-col flex-1">
+          {/* Main content */}
+          <main className="flex-1 overflow-y-auto bg-gray-50">
+            {children}
+          </main>
 
-      {/* Footer */}
-      <Footer />
+          {/* Footer */}
+          <Footer />
+        </div>
+      </div>
     </div>
   );
 }
