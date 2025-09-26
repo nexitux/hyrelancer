@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Loader2, Upload, MapPin, Tag, Briefcase, DollarSign, User, Mail, Phone, Globe, Clock, Check, ChevronDown, Search } from 'lucide-react';
+import adminApi from '@/config/adminApi';
+import api from '@/config/api';
 
 const EditJobModal = ({ isOpen, onClose, jobData, onSave }) => {
     const [formData, setFormData] = useState({});
@@ -75,22 +77,16 @@ const EditJobModal = ({ isOpen, onClose, jobData, onSave }) => {
     const fetchDropdownData = async () => {
         try {
             const [categoriesRes, languagesRes, citiesRes] = await Promise.all([
-                fetch('https://test.hyrelancer.in/api/getCategorylist'),
-                fetch('https://test.hyrelancer.in/api/getLanglist'),
-                fetch('https://test.hyrelancer.in/api/getStatelist'),
-            ]);
-
-            const [categoriesData, languagesData, citiesData] = await Promise.all([
-                categoriesRes.json(),
-                languagesRes.json(),
-                citiesRes.json(),
+                api.get('/getCategorylist'),
+                api.get('/getLanglist'),
+                api.get('/getStatelist'),
             ]);
 
             setDropdownData({
-                categories: categoriesData.sc_list || [],
-                services: categoriesData.se_list || [],
-                languages: languagesData.la_list || [],
-                cities: citiesData.city || [],
+                categories: categoriesRes.data.sc_list || [],
+                services: categoriesRes.data.se_list || [],
+                languages: languagesRes.data.la_list || [],
+                cities: citiesRes.data.city || [],
             });
         } catch (error) {
             console.error('Error fetching dropdown data:', error);
@@ -213,28 +209,23 @@ const EditJobModal = ({ isOpen, onClose, jobData, onSave }) => {
                 }
             });
 
-            const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-
-            const response = await fetch('https://test.hyrelancer.in/api/admin/updateJobByAdmin', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formDataToSend
+            const response = await adminApi.post('/updateJobByAdmin', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
 
-            const result = await response.json();
+            const result = response.data;
 
-            if (response.ok) {
-                onSave?.(result);
-                if (!result?.job_data && typeof onSave === 'function') {
-                    onSave({ needsRefresh: true });
-                }
-                onClose();
-            } else {
-                setErrors({ submit: result.message || 'Update failed' });
+            onSave?.(result);
+            if (!result?.job_data && typeof onSave === 'function') {
+                onSave({ needsRefresh: true });
             }
+            onClose();
         } catch (error) {
             console.error('Error updating job:', error);
-            setErrors({ submit: 'Network error. Please try again.' });
+            const errorMessage = error.response?.data?.message || error.message || 'Network error. Please try again.';
+            setErrors({ submit: errorMessage });
         } finally {
             setLoading(false);
         }

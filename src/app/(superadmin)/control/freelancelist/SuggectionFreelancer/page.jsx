@@ -5,20 +5,12 @@ import { useState, useEffect } from "react";
 import AddCategory from './add-category/page';
 import AddService from './addService/page';
 import { Base64 } from 'js-base64';
+import adminApi from '@/config/adminApi';
 
 const { Option } = Select;
 const { Title, Text } = Typography;
 
-// API Configuration
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// Using centralized adminApi config
 
 export default function FreelancerSuggestionList() {
   const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
@@ -36,33 +28,9 @@ export default function FreelancerSuggestionList() {
   const fetchSuggestionDetails = async (fsuId) => {
     try {
       setDetailsLoading(true);
-      const token = TokenManager.getToken();
-      
-      if (!token) {
-        message.error('Authentication token not found. Please log in again.');
-        return;
-      }
-
       const encodedId = Base64.encode(fsuId.toString());
-      const response = await fetch(`${API_BASE_URL}/addSuggestion/${encodedId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-      
-      if (response.status === 401) {
-        message.error('Authentication failed. Please log in again.');
-        return;
-      }
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      setSuggestionDetails(result);
+      const response = await adminApi.get(`/addSuggestion/${encodedId}`);
+      setSuggestionDetails(response.data);
       
     } catch (error) {
       message.error('Error fetching suggestion details: ' + error.message);
@@ -74,33 +42,8 @@ export default function FreelancerSuggestionList() {
 
   const fetchSuggestions = async () => {
     try {
-      const token = TokenManager.getToken();
-      
-      if (!token) {
-        message.error('Authentication token not found. Please log in again.');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/getSuggestion`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-      
-      if (response.status === 401) {
-        message.error('Authentication failed. Please log in again.');
-        setLoading(false);
-        return;
-      }
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
+      const response = await adminApi.get('/getSuggestion');
+      const result = response.data;
       
       const suggestionsData = Array.isArray(result) ? result : result.data;
       
@@ -184,25 +127,11 @@ export default function FreelancerSuggestionList() {
 
   const handleDelete = async (record) => {
     try {
-      const token = TokenManager.getToken();
-      
-      if (!token) {
-        message.error('Authentication token not found. Please log in again.');
-        return;
-      }
-
       const encodedId = Base64.encode(record.key.toString());
-      const response = await fetch(`${API_BASE_URL}/deleteSuggestion/${encodedId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        message.success(result.message || 'Suggestion deleted successfully');
+      const response = await adminApi.delete(`/deleteSuggestion/${encodedId}`);
+      if (response.status === 200) {
+        const result = response.data;
+        message.success(result?.message || 'Suggestion deleted successfully');
         fetchSuggestions(); // Refresh the list
       } else {
         message.error('Failed to delete suggestion');

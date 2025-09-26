@@ -14,24 +14,9 @@ import {
   EditOutlined
 } from "@ant-design/icons";
 import Link from 'next/link';
+import adminApi from '@/config/adminApi';
 
-// API configuration
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-
-// Token management
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  },
-  removeToken: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken');
-    }
-  }
-};
+// Using centralized adminApi config
 
 const CustomerProfile = () => {
   const params = useParams();
@@ -47,31 +32,8 @@ const CustomerProfile = () => {
         setLoading(true);
         setError(null);
         
-        const token = TokenManager.getToken();
-        if (!token) {
-          TokenManager.removeToken();
-          router.push('/gateway');
-          return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/customers/${customerId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-          }
-        });
-
-        if (response.status === 401) {
-          TokenManager.removeToken();
-          router.push('/gateway');
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch customer data');
-        }
-
-        const data = await response.json();
+        const response = await adminApi.get(`/customers/${customerId}`);
+        const data = response.data?.data || response.data;
         setCustomerData(data);
         
       } catch (err) {

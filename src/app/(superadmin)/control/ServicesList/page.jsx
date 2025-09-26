@@ -13,19 +13,9 @@ import {
 } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import { Base64 } from 'js-base64';
+import adminApi from '@/config/adminApi';
 
-// API configuration and Token Manager (re-using from your category page)
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  },
-  // We'll assume the token is set elsewhere, for this component we only need to get it.
-};
+// Using centralized adminApi config
 
 // Helper function to format date from API
 const formatDate = (dateString) => {
@@ -59,30 +49,11 @@ export default function ListServicePage() {
     setLoading(true);
     setError(null);
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        setError('Authentication token not found. Please log in.');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/services`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.message || 'Failed to fetch services.');
-      }
-
-      const result = await response.json();
-      setServices(result.data);
-      setTotalServices(result.total);
+      const response = await adminApi.get('/services');
+      const result = response.data;
+      const list = result?.data ?? result;
+      setServices(Array.isArray(list) ? list : []);
+      setTotalServices(result?.total ?? (Array.isArray(list) ? list.length : 0));
 
       // Create a map of categories to display names
       const uniqueCategories = new Map();
@@ -143,23 +114,7 @@ export default function ListServicePage() {
   setError(null);
   
   try {
-    const token = TokenManager.getToken();
-    if (!token) {
-      throw new Error('Authentication token not found.');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/services/${encodedId}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData?.message || 'Failed to delete service.');
-    }
+    await adminApi.delete(`/services/${encodedId}`);
 
     // Refresh the service list after successful deletion
     fetchServices();
@@ -181,28 +136,12 @@ const handleDeleteSelected = async () => {
   setError(null);
   
   try {
-    const token = TokenManager.getToken();
-    if (!token) {
-      throw new Error('Authentication token not found.');
-    }
-
     const deletePromises = selectedServices.map(serviceId => {
       const encodedId = Base64.encode(String(serviceId));
-      return fetch(`${API_BASE_URL}/services/${encodedId}`, {
-        method: 'DELETE',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      return adminApi.delete(`/services/${encodedId}`);
     });
 
-    const results = await Promise.all(deletePromises);
-
-    const failedDeletions = results.filter(res => !res.ok);
-    if (failedDeletions.length > 0) {
-      throw new Error('One or more services failed to delete.');
-    }
+    await Promise.all(deletePromises);
 
     // Clear the selections and re-fetch the data
     setSelectedServices([]);

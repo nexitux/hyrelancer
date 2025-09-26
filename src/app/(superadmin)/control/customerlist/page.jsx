@@ -16,17 +16,9 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
+import adminApi from '@/config/adminApi';
 
-// API configuration and Token Manager
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// Using centralized adminApi config
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
@@ -52,25 +44,9 @@ export default function ListCustomerPage() {
     setLoading(true);
     setError(null);
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/customers`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch customers.');
-      }
-
-      const data = await response.json();
-      setCustomers(data);
+      const response = await adminApi.get('/customers');
+      const data = response.data?.data || response.data;
+      setCustomers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching customers:', err);
       setError(err.message || 'An unexpected error occurred.');
@@ -123,23 +99,7 @@ export default function ListCustomerPage() {
   setError(null);
   
   try {
-    const token = TokenManager.getToken();
-    if (!token) {
-      throw new Error('Authentication token not found.');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/customers/${encodedId}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData?.message || 'Failed to deactivate customer.');
-    }
+    await adminApi.delete(`/customers/${encodedId}`);
 
     // Refresh the customer list after successful deactivation
     fetchCustomers();
@@ -161,28 +121,12 @@ const handleDeleteSelected = async () => {
   setError(null);
   
   try {
-    const token = TokenManager.getToken();
-    if (!token) {
-      throw new Error('Authentication token not found.');
-    }
-
     const deletePromises = selectedCustomers.map(customerId => {
       const encodedId = Base64.encode(String(customerId));
-      return fetch(`${API_BASE_URL}/customers/${encodedId}`, {
-        method: 'DELETE',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      return adminApi.delete(`/customers/${encodedId}`);
     });
 
-    const results = await Promise.all(deletePromises);
-
-    const failedDeactivations = results.filter(res => !res.ok);
-    if (failedDeactivations.length > 0) {
-      throw new Error('One or more customers failed to deactivate.');
-    }
+    await Promise.all(deletePromises);
 
     // Clear selections and re-fetch data
     setSelectedCustomers([]);
@@ -331,7 +275,6 @@ const handleDeleteSelected = async () => {
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Name</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Email</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Mobile</th>
-                <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Address</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Status</th>
                 <th className="px-6 py-3 text-sm font-semibold text-right text-gray-700">Actions</th>
               </tr>
@@ -359,9 +302,6 @@ const handleDeleteSelected = async () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-slate-800">{customer.mobile}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-slate-800">{customer.address}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -395,12 +335,6 @@ const handleDeleteSelected = async () => {
                           onClick={() => handleDelete(customer.id)}
                         >
                           <MdDelete size={16} />  
-                        </button>
-                        <button 
-                          className="p-2 rounded-lg transition-colors text-slate-400 hover:bg-slate-50"
-                          title="More options"
-                        >
-                          <MdMoreVert size={16} />
                         </button>
                       </div>
                     </td>

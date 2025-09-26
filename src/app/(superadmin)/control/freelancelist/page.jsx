@@ -21,6 +21,8 @@ import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
 import { message } from 'antd';
 import adminApi from '@/config/adminApi';
+import FreelancerAssignedJobsModal from './components/FreelancerAssignedJobsModal';
+import FreelancerAppliedJobsModal from './components/FreelancerAppliedJobsModal';
 
 // --- Status Mapping Helper ---
 const getStatusInfo = (freelancer) => {
@@ -29,7 +31,7 @@ const getStatusInfo = (freelancer) => {
   const isRegiComplete = freelancer.is_regi_complete;
   
   // Priority order: Account status -> Active status -> Registration status
-  if (isActiveAcc === '0') {
+  if (isActiveAcc === '0' ) {
     return { 
       status: 'Inactive', 
       color: 'bg-red-100 text-red-800',
@@ -96,6 +98,14 @@ export default function ListFreelancerPage() {
   const [allFreelancers, setAllFreelancers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Assigned Jobs Modal state
+  const [isAssignedModalOpen, setIsAssignedModalOpen] = useState(false);
+  const [selectedFreelancerForJobs, setSelectedFreelancerForJobs] = useState(null);
+
+  // Applied Jobs Modal state
+  const [isAppliedModalOpen, setIsAppliedModalOpen] = useState(false);
+  const [selectedFreelancerForApplied, setSelectedFreelancerForApplied] = useState(null);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -245,6 +255,26 @@ export default function ListFreelancerPage() {
   const handlePageChange = (page) => {
     setCurrentPage(page);
     setSelectedFreelancers([]); // Clear selections when changing page
+  };
+
+  const openAssignedJobsModal = (freelancer) => {
+    setSelectedFreelancerForJobs(freelancer);
+    setIsAssignedModalOpen(true);
+  };
+
+  const closeAssignedJobsModal = () => {
+    setIsAssignedModalOpen(false);
+    setSelectedFreelancerForJobs(null);
+  };
+
+  const openAppliedJobsModal = (freelancer) => {
+    setSelectedFreelancerForApplied(freelancer);
+    setIsAppliedModalOpen(true);
+  };
+
+  const closeAppliedJobsModal = () => {
+    setIsAppliedModalOpen(false);
+    setSelectedFreelancerForApplied(null);
   };
 
   // Get unique status options for filter dropdown
@@ -416,14 +446,16 @@ export default function ListFreelancerPage() {
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Mobile</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Registration</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Status</th>
+                <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">Assigned Jobs</th>
+                <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">Applied Jobs</th>
                 <th className="px-6 py-3 text-sm font-semibold text-right text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
-                <tr><td colSpan="7" className="py-12 text-center">Loading...</td></tr>
+                <tr><td colSpan="8" className="py-12 text-center">Loading...</td></tr>
               ) : error ? (
-                <tr><td colSpan="7" className="py-12 text-center text-red-500">{error}</td></tr>
+                <tr><td colSpan="8" className="py-12 text-center text-red-500">{error}</td></tr>
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((freelancer) => (
                   <tr key={freelancer.id} className="transition-colors hover:bg-slate-50">
@@ -437,7 +469,7 @@ export default function ListFreelancerPage() {
                         />
                         <div>
                           <p className="font-medium text-slate-800">{freelancer.name}</p>
-                          <p className="text-sm text-slate-500">ID: {freelancer.id}</p>
+                          {/* <p className="text-sm text-slate-500">ID: {freelancer.id}</p> */}
                         </div>
                       </div>
                     </td>
@@ -452,17 +484,17 @@ export default function ListFreelancerPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        freelancer.is_regi_complete === '1' 
+                        freelancer.is_status === 'old' 
                           ? 'bg-green-100 text-green-800' 
-                          : freelancer.is_regi_complete === '2'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-orange-100 text-orange-800'
+                          : freelancer.is_status === 'new'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {freelancer.is_regi_complete === '1' 
+                        {freelancer.is_status === 'old' 
                           ? 'Complete' 
-                          : freelancer.is_regi_complete === '2'
-                          ? 'Under Review'
-                          : 'Incomplete'
+                          : freelancer.is_status === 'new'
+                          ? 'Incomplete'
+                          : 'Under Review'
                         }
                       </span>
                     </td>
@@ -471,6 +503,24 @@ export default function ListFreelancerPage() {
                         {freelancer.statusInfo.icon}
                         {freelancer.statusInfo.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <button
+                        onClick={() => openAssignedJobsModal(freelancer)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors text-xs font-medium"
+                        title="View Assigned Jobs"
+                      >
+                        Assigned Jobs
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <button
+                        onClick={() => openAppliedJobsModal(freelancer)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors text-xs font-medium"
+                        title="View Applied Jobs"
+                      >
+                        Applied Jobs
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex gap-2 justify-end items-center">
@@ -510,7 +560,7 @@ export default function ListFreelancerPage() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="7" className="py-12 text-center">No freelancers found.</td></tr>
+                <tr><td colSpan="9" className="py-12 text-center">No freelancers found.</td></tr>
               )}
             </tbody>
           </table>
@@ -572,6 +622,18 @@ export default function ListFreelancerPage() {
           </div>
         )}
       </div>
+      {/* Assigned Jobs Modal */}
+      <FreelancerAssignedJobsModal
+        isOpen={isAssignedModalOpen}
+        onClose={closeAssignedJobsModal}
+        freelancerId={selectedFreelancerForJobs?.id}
+      />
+      {/* Applied Jobs Modal */}
+      <FreelancerAppliedJobsModal
+        isOpen={isAppliedModalOpen}
+        onClose={closeAppliedJobsModal}
+        freelancer={selectedFreelancerForApplied}
+      />
     </div>
   );
 }

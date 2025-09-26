@@ -100,8 +100,10 @@ export default function Sidebar() {
       subLinks: [
         { id: 'freelancers-lists', label: 'Freelancer List', href: '/control/freelancelist' },
         { id: 'freelancers-add', label: 'Add Freelancer', href: '/control/freelancelist/addFreelancer' },
-        { id: 'freelancers-suggestions', label: 'Freelancer Suggestions', href: '/control/freelancelist/SuggectionFreelancer' },
+        { id: 'freelancers-reg-incomplete', label: 'Incomplete Registration', href: '/control/freelancelist/incomplete-registration' },
         { id: 'freelancers-approval', label: 'Approve Freelancer', href: '/control/freelancelist/approval' },
+        { id: 'freelancers-suggestions', label: 'Freelancer Suggestions', href: '/control/freelancelist/SuggectionFreelancer' },
+
       ]
     },
     { 

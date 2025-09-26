@@ -12,29 +12,9 @@ import {
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { Base64 } from 'js-base64';
+import adminApi from '@/config/adminApi';
 
-// API configuration
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-
-// Token management utilities (re-using from your existing code)
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  },
-  setToken: (token) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('adminToken', token);
-    }
-  },
-  removeToken: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken');
-    }
-  }
-};
+// Using centralized adminApi config
 
 // Helper function to format date from API
 const formatDate = (dateString) => {
@@ -64,37 +44,12 @@ export default function CategoryTable() {
     setError(null);
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        setError('Authentication token not found. Please log in.');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/category`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          TokenManager.removeToken();
-          throw new Error('Authentication failed. Please login again.');
-        }
-        const errorData = await response.json();
-        throw new Error(errorData?.message || `Failed to fetch categories: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.data) {
-        setCategories(result.data.data || []);
-        setTotalCategories(result.data.total || 0);
-      }
+      const response = await adminApi.get('/category');
+      const result = response.data;
+      const list = result?.data?.data ?? result?.data ?? result;
+      const total = result?.data?.total ?? (Array.isArray(list) ? list.length : 0);
+      setCategories(Array.isArray(list) ? list : []);
+      setTotalCategories(total);
 
     } catch (err) {
       console.error('Error fetching categories:', err);
@@ -136,23 +91,7 @@ export default function CategoryTable() {
     setError(null);
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        throw new Error('Authentication token not found.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/category/${encodedId}`, {
-        method: 'DELETE',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.message || 'Failed to delete category.');
-      }
+      await adminApi.delete(`/category/${encodedId}`);
 
       fetchCategories();
 
@@ -174,30 +113,12 @@ export default function CategoryTable() {
     setError(null);
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        throw new Error('Authentication token not found.');
-      }
-
-      // Iterate through the selected IDs and send a DELETE request for each
       const deletePromises = selectedCategories.map(categoryId => {
         const encodedId = Base64.encode(String(categoryId));
-        return fetch(`${API_BASE_URL}/category/${encodedId}`, {
-          method: 'DELETE',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        return adminApi.delete(`/category/${encodedId}`);
       });
 
-      const results = await Promise.all(deletePromises);
-
-      // Check if all requests were successful
-      const failedDeletions = results.filter(res => !res.ok);
-      if (failedDeletions.length > 0) {
-        throw new Error('One or more categories failed to delete.');
-      }
+      await Promise.all(deletePromises);
 
       // Clear the selections and re-fetch the data
       setSelectedCategories([]);
