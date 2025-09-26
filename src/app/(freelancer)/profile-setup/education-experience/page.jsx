@@ -18,9 +18,9 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const FieldGroup = ({ title, children, onRemove, canRemove }) => (
-  <div className="field-group border border-gray-200 rounded-lg p-6 mb-6 relative bg-white hover:shadow-md transition-shadow">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-lg font-medium text-gray-800">{title}</h3>
+  <div className="field-group border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6 relative bg-white hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-center mb-3 sm:mb-4">
+      <h3 className="text-base sm:text-lg font-medium text-gray-800">{title}</h3>
       {canRemove && (
         <Button
           type="text"
@@ -631,7 +631,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
         {!token && (
           <Card className="shadow-sm rounded-lg overflow-hidden border-0 mb-4">
@@ -666,10 +666,10 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
             </div>
           ) : (
             <>
-              <div className="bg-white p-6 border-b border-gray-100">
-                <div className="flex justify-between items-start sm:items-center">
-                  <div>
-                    <Title level={3} className="!mb-1 !text-gray-900">
+              <div className="bg-white p-4 sm:p-6 border-b border-gray-100">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                  <div className="flex-1">
+                    <Title level={3} className="!mb-1 !text-gray-900 !text-lg sm:!text-xl lg:!text-2xl">
                       {currentView === 'form' ? (
                         editingSection === 'education' ? "Edit Education" :
                           editingSection === 'experience' ? "Edit Experience" :
@@ -678,7 +678,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                         currentView === 'education' ? "Education Profile" : "Experience Profile"
                       )}
                     </Title>
-                    <Text type="secondary">
+                    <Text type="secondary" className="text-sm sm:text-base">
                       {currentView === 'form' ? (
                         editingSection ? `Update your ${editingSection} information` :
                           "Complete your professional resume details"
@@ -689,23 +689,27 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                   </div>
 
                   {hasExistingData && currentView !== 'form' && (
-                    <Space>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                       {currentView === 'education' && (
                         <>
                           <Button
                             type="primary"
                             icon={<EditOutlined />}
                             onClick={handleEditEducation}
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
+                            size="middle"
                           >
-                            Edit Education
+                            <span className="hidden sm:inline">Edit Education</span>
+                            <span className="sm:hidden">Edit</span>
                           </Button>
                           <Button
                             icon={<LaptopOutlined />}
                             onClick={showExperienceReview}
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
+                            size="middle"
                           >
-                            View Experience
+                            <span className="hidden sm:inline">View Experience</span>
+                            <span className="sm:hidden">Experience</span>
                           </Button>
                         </>
                       )}
@@ -715,52 +719,60 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                             type="primary"
                             icon={<EditOutlined />}
                             onClick={handleEditExperience}
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
+                            size="middle"
                           >
-                            Edit Experience
+                            <span className="hidden sm:inline">Edit Experience</span>
+                            <span className="sm:hidden">Edit</span>
                           </Button>
                           <Button
                             icon={<BookOutlined />}
                             onClick={showEducationReview}
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
+                            size="middle"
                           >
-                            View Education
+                            <span className="hidden sm:inline">View Education</span>
+                            <span className="sm:hidden">Education</span>
                           </Button>
                         </>
                       )}
-                    </Space>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {/* Review Mode - Education */}
                 {hasExistingData && currentView === 'education' && (
                   <div>
-                    <div className="mb-8">
-                      <Title level={4} className="!mb-4">
+                    <div className="mb-6 sm:mb-8">
+                      <Title level={4} className="!mb-4 !text-base sm:!text-lg">
                         <BookOutlined className="mr-2" />
                         Education Background
                       </Title>
-                      <Table
-                        columns={educationColumns}
-                        dataSource={educationData}
-                        pagination={false}
-                        className="mb-8"
-                        rowKey="fc_id"
-                        locale={{
-                          emptyText: 'No education records found'
-                        }}
-                      />
+                      <div className="overflow-x-auto">
+                        <Table
+                          columns={educationColumns}
+                          dataSource={educationData}
+                          pagination={false}
+                          className="mb-6 sm:mb-8 min-w-[600px]"
+                          rowKey="fc_id"
+                          scroll={{ x: 600 }}
+                          size="small"
+                          locale={{
+                            emptyText: 'No education records found'
+                          }}
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 mt-6">
-                      <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         {/* Always show back button if onBack is provided */}
                         {onBack && (
                           <Button
                             size="large"
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
                             onClick={onBack}
                           >
                             Back
@@ -781,7 +793,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                               }
                               onNext();
                             }}
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
                           >
                             Save & Next
                           </Button>
@@ -794,39 +806,45 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                 {/* Review Mode - Experience */}
                 {hasExistingData && currentView === 'experience' && (
                   <div>
-                    <div className="mb-8">
-                      <Descriptions bordered column={1} className="mb-8">
-                        <Descriptions.Item label="Current Occupation">
-                          <Text strong>{profileData?.fp_occupation || 'Not specified'}</Text>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Total Experience">
-                          {profileData?.fp_ex_year ? `${profileData.fp_ex_year}` : 'Not specified'}
-                        </Descriptions.Item>
-                      </Descriptions>
+                    <div className="mb-6 sm:mb-8">
+                      <div className="mb-6">
+                        <Descriptions bordered column={1} className="mb-6" size="small">
+                          <Descriptions.Item label="Current Occupation">
+                            <Text strong className="text-sm sm:text-base">{profileData?.fp_occupation || 'Not specified'}</Text>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Total Experience">
+                            <Text className="text-sm sm:text-base">{profileData?.fp_ex_year ? `${profileData.fp_ex_year}` : 'Not specified'}</Text>
+                          </Descriptions.Item>
+                        </Descriptions>
+                      </div>
 
-                      <Title level={4} className="!mb-4">
-                        <LaptopOutlined className="mr-2 mt-6" />
+                      <Title level={4} className="!mb-4 !text-base sm:!text-lg">
+                        <LaptopOutlined className="mr-2" />
                         Work Experience
                       </Title>
-                      <Table
-                        columns={experienceColumns}
-                        dataSource={experienceData}
-                        pagination={false}
-                        className="mb-8"
-                        rowKey="fj_id"
-                        locale={{
-                          emptyText: 'No work experience records found'
-                        }}
-                      />
+                      <div className="overflow-x-auto">
+                        <Table
+                          columns={experienceColumns}
+                          dataSource={experienceData}
+                          pagination={false}
+                          className="mb-6 sm:mb-8 min-w-[600px]"
+                          rowKey="fj_id"
+                          scroll={{ x: 600 }}
+                          size="small"
+                          locale={{
+                            emptyText: 'No work experience records found'
+                          }}
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 mt-6">
-                      <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         {/* Always show back button if onBack is provided */}
                         {onBack && (
                           <Button
                             size="large"
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
                             onClick={onBack}
                           >
                             Back
@@ -847,7 +865,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                               }
                               onNext();
                             }}
-                            className="flex items-center"
+                            className="flex items-center justify-center w-full sm:w-auto"
                           >
                             Save & Next
                           </Button>
@@ -864,23 +882,23 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                       <Collapse
                         defaultActiveKey={editingSection ? [editingSection] : ['education', 'experience']}
                         expandIcon={({ isActive }) => <EditOutlined rotate={isActive ? 90 : 0} />}
-                        className="mb-6"
-                        size="large"
+                        className="mb-4 sm:mb-6"
+                        size="middle"
                       >
                         {/* Education Section */}
                         {(!editingSection || editingSection === 'education') && (
                           <>
                             {/* High School Education */}
-                            <Panel header={<span className="font-medium"><BookOutlined className="mr-2" /> High School</span>} key="highschool">
-                              <Row gutter={16}>
+                            <Panel header={<span className="font-medium text-sm sm:text-base"><BookOutlined className="mr-2" /> High School</span>} key="highschool">
+                              <Row gutter={[16, 16]}>
                                 <Col xs={24}>
                                   <Form.Item
                                     name="highSchoolYear"
-                                    label={<span className="font-medium">Graduation Year</span>}
+                                    label={<span className="font-medium text-sm sm:text-base">Graduation Year</span>}
                                   >
                                     <Input
                                       placeholder="Enter graduation year"
-                                      size="large"
+                                      size="middle"
                                       className="w-full"
                                     />
                                   </Form.Item>
@@ -889,7 +907,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                             </Panel>
 
                             {/* Higher Education */}
-                            <Panel header={<span className="font-medium"><BookOutlined className="mr-2" /> Higher Education</span>} key="education">
+                            <Panel header={<span className="font-medium text-sm sm:text-base"><BookOutlined className="mr-2" /> Higher Education</span>} key="education">
                               <div className="mb-4">
                                 {educationFields.map((field, index) => (
                                   <FieldGroup
@@ -898,17 +916,17 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                     onRemove={() => removeEducationField(field.key)}
                                     canRemove={educationFields.length > 1}
                                   >
-                                    <Row gutter={16}>
-                                      <Col xs={24} md={12}>
+                                    <Row gutter={[16, 16]}>
+                                      <Col xs={24} sm={12}>
                                         <Form.Item
                                           name={[`education_${field.key}`, 'type']}
-                                          label={<span className="font-medium">Education Type</span>}
+                                          label={<span className="font-medium text-sm sm:text-base">Education Type</span>}
                                           rules={[{ required: true, message: "Please Select education type" }]}
                                           initialValue={field.type}
                                         >
                                           <Select
                                             placeholder="Select education type"
-                                            size="large"
+                                            size="middle"
                                            
                                             onChange={(value) => {
                                               // keep local state in sync (so label/placeholders etc. update)
@@ -931,22 +949,22 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                           </Select>
                                         </Form.Item>
                                       </Col>
-                                      <Col xs={24} md={12}>
+                                      <Col xs={24} sm={12}>
                                         <Form.Item
                                           name={[`education_${field.key}`, 'year']}
-                                          label={<span className="font-medium">Year</span>}
+                                          label={<span className="font-medium text-sm sm:text-base">Year</span>}
                                           rules={[{ required: true, message: "Please enter year" }]}
                                         >
                                           <Input
                                             placeholder="e.g., 2018"
-                                            size="large"
+                                            size="middle"
                                           />
                                         </Form.Item>
                                       </Col>
-                                      <Col xs={24} md={12}>
+                                      <Col xs={24} sm={12}>
                                         <Form.Item
                                           name={[`education_${field.key}`, 'specialized']}
-                                          label={<span className="font-medium">
+                                          label={<span className="font-medium text-sm sm:text-base">
                                             {field.type === 'UG' ? 'Specialization' :
                                               field.type === 'PG' ? 'Specialization' :
                                                 'Expertise/Skill'}
@@ -959,14 +977,14 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                                 field.type === 'PG' ? "e.g., MBA, M.Tech" :
                                                   "e.g., Web Development, Graphic Design"
                                             }
-                                            size="large"
+                                            size="middle"
                                           />
                                         </Form.Item>
                                       </Col>
-                                      <Col xs={24} md={12}>
+                                      <Col xs={24} sm={12}>
                                         <Form.Item
                                           name={[`education_${field.key}`, 'college']}
-                                          label={<span className="font-medium">
+                                          label={<span className="font-medium text-sm sm:text-base">
                                             {field.type === 'Other' ? 'Institution/Platform' : 'Institution'}
                                           </span>}
                                           rules={[{ required: false, message: "Please enter institution name" }]}
@@ -977,7 +995,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                                 "e.g., Coursera, Udemy, Self-taught" :
                                                 "University or College name"
                                             }
-                                            size="large"
+                                            size="middle"
                                           />
                                         </Form.Item>
                                       </Col>
@@ -990,14 +1008,14 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                   icon={<PlusOutlined />}
                                   onClick={addEducationField}
                                   className="w-full mt-2"
-                                  size="large"
+                                  size="middle"
                                 >
                                   Add Another Education
                                 </Button>
 
                                 {/* Add Education to Profile Checkbox - Only for education section */}
                                 {(!editingSection || editingSection === 'education') && (
-                                  <div className="mt-4 px-4 pt-4 bg-gray-50 rounded-lg border border-gray-200">
+                                  <div className="mt-4 px-3 sm:px-4 pt-3 sm:pt-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <Form.Item
                                       name="fp_add_edu_profile"
                                       valuePropName="checked"
@@ -1006,13 +1024,13 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                       <Checkbox
                                         checked={addEducationToProfile}
                                         onChange={(e) => setAddEducationToProfile(e.target.checked)}
-                                        className="text-base"
+                                        className="text-sm sm:text-base"
                                       >
-                                        <span className="font-medium text-gray-800">
+                                        <span className="font-medium text-gray-800 text-sm sm:text-base">
                                           Add education details to my profile
                                         </span>
                                       </Checkbox>
-                                      <div className="text-sm text-gray-400 mt-1">
+                                      <div className="text-xs sm:text-sm text-gray-400 mt-1">
                                         This will make your education information visible on your public profile
                                       </div>
                                     </Form.Item>
@@ -1027,36 +1045,36 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
 
                         {/* Experience Section */}
                         {(!editingSection || editingSection === 'experience') && (
-                          <Panel header={<span className="font-medium"><LaptopOutlined className="mr-2" /> Work Experience</span>} key="experience">
+                          <Panel header={<span className="font-medium text-sm sm:text-base"><LaptopOutlined className="mr-2" /> Work Experience</span>} key="experience">
                             {!editingSection && (
-                              <div className="mb-6">
-                                <h3 className="text-lg font-medium text-gray-800 mb-4">Professional Information</h3>
-                                <Divider className="my-4" />
+                              <div className="mb-4 sm:mb-6">
+                                <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-3 sm:mb-4">Professional Information</h3>
+                                <Divider className="my-3 sm:my-4" />
 
-                                <Row gutter={16}>
-                                  <Col xs={24} md={12}>
+                                <Row gutter={[16, 16]}>
+                                  <Col xs={24} sm={12}>
                                     <Form.Item
                                       name="occupation"
-                                      label={<span className="font-medium">Current Occupation</span>}
+                                      label={<span className="font-medium text-sm sm:text-base">Current Occupation</span>}
                                       rules={[{ required: false, message: "Please enter occupation" }]}
                                       className="mb-0"
                                     >
                                       <Input
                                         placeholder="e.g., Software Engineer"
-                                        size="large"
+                                        size="middle"
                                       />
                                     </Form.Item>
                                   </Col>
-                                  <Col xs={24} md={12}>
+                                  <Col xs={24} sm={12}>
                                     <Form.Item
                                       name="yearsOfExperience"
-                                      label={<span className="font-medium">Total Experience</span>}
+                                      label={<span className="font-medium text-sm sm:text-base">Total Experience</span>}
                                       rules={[{ required: false, message: "Please select years of experience" }]}
                                       className="mb-0"
                                     >
                                       <Select
                                         placeholder="Select experience"
-                                        size="large"
+                                        size="middle"
                                       >
                                         <Option value="0 to 1 year">0 to 1 year</Option>
                                         <Option value="1 to 2 year">1 to 2 year</Option>
@@ -1078,30 +1096,30 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                   onRemove={() => removeExperienceField(field.key)}
                                   canRemove={experienceFields.length > 1}
                                 >
-                                  <Row gutter={16}>
-                                    <Col xs={24} md={12}>
+                                  <Row gutter={[16, 16]}>
+                                    <Col xs={24} sm={12}>
                                       <Form.Item
                                         name={[`experience_${field.key}`, 'position']}
-                                        label={<span className="font-medium">Position & Company</span>}
+                                        label={<span className="font-medium text-sm sm:text-base">Position & Company</span>}
                                         rules={[{ required: true, message: "Please enter position and company" }]}
                                       >
                                         <Input
                                           placeholder="e.g., Senior Developer at Tech Corp"
-                                          size="large"
+                                          size="middle"
                                         />
                                       </Form.Item>
                                     </Col>
-                                    <Col xs={24} md={12}>
+                                    <Col xs={24} sm={12}>
                                       <Form.Item
                                         name={[`experience_${field.key}`, 'duration']}
-                                        label={<span className="font-medium">Employment Period</span>}
+                                        label={<span className="font-medium text-sm sm:text-base">Employment Period</span>}
                                         rules={[{ required: true, message: "Please select employment period" }]}
                                       >
-                                        <Input.Group compact>
+                                        <div className="flex flex-col sm:flex-row gap-2">
                                           <Select
                                             placeholder="From"
-                                            size="large"
-                                            style={{ width: '48%' }}
+                                            size="middle"
+                                            className="flex-1"
                                             value={form.getFieldValue([`experience_${field.key}`, 'duration_from'])}
                                             onChange={fromYear => {
                                               const toYear = form.getFieldValue([`experience_${field.key}`, 'duration_to']);
@@ -1125,11 +1143,11 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                               return <Option key={year} value={year.toString()}>{year}</Option>;
                                             })}
                                           </Select>
-                                          <span style={{ width: '4%', display: 'inline-block', textAlign: 'center', lineHeight: '40px' }}>-</span>
+                                          <span className="hidden sm:inline-flex items-center justify-center text-gray-500">-</span>
                                           <Select
                                             placeholder="To"
-                                            size="large"
-                                            style={{ width: '48%' }}
+                                            size="middle"
+                                            className="flex-1"
                                             value={form.getFieldValue([`experience_${field.key}`, 'duration_to'])}
                                             onChange={toYear => {
                                               const fromYear = form.getFieldValue([`experience_${field.key}`, 'duration_from']);
@@ -1154,17 +1172,17 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                               return <Option key={year} value={year.toString()}>{year}</Option>;
                                             })}
                                           </Select>
-                                        </Input.Group>
+                                        </div>
                                       </Form.Item>
                                     </Col>
                                     <Col xs={24}>
                                       <Form.Item
                                         name={[`experience_${field.key}`, 'description']}
-                                        label={<span className="font-medium">Job Description</span>}
+                                        label={<span className="font-medium text-sm sm:text-base">Job Description</span>}
                                         rules={[{ required: false, message: "Please enter job description" }]}
                                       >
                                         <TextArea
-                                          rows={4}
+                                          rows={3}
                                           placeholder="Describe your responsibilities and achievements..."
                                           className="resize-none"
                                         />
@@ -1179,7 +1197,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                 icon={<PlusOutlined />}
                                 onClick={addExperienceField}
                                 className="w-full mt-2"
-                                size="large"
+                                size="middle"
                               >
                                 Add Another Experience
                               </Button>
@@ -1189,43 +1207,45 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                       </Collapse>
 
                       {/* Action Buttons */}
-                      <div className="flex justify-end gap-3 mt-8">
-                        {editingSection && (
+                      <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 sm:mt-8">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                          {editingSection && (
+                            <Button
+                              size="middle"
+                              onClick={() => {
+                                if (editingSection === 'education') {
+                                  showEducationReview();
+                                } else {
+                                  showExperienceReview();
+                                }
+                                setEditingSection(null);
+                              }}
+                              className="flex items-center justify-center w-full sm:w-auto"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                          {/* Always show back button if onBack is provided */}
+                          {onBack && (
+                            <Button
+                              size="middle"
+                              className="flex items-center justify-center w-full sm:w-auto"
+                              onClick={onBack}
+                            >
+                              Back
+                            </Button>
+                          )}
                           <Button
-                            size="large"
-                            onClick={() => {
-                              if (editingSection === 'education') {
-                                showEducationReview();
-                              } else {
-                                showExperienceReview();
-                              }
-                              setEditingSection(null);
-                            }}
-                            className="flex items-center"
+                            type="primary"
+                            size="middle"
+                            htmlType="submit"
+                            icon={<CheckOutlined />}
+                            loading={loading}
+                            className="flex items-center justify-center w-full sm:w-auto"
                           >
-                            Cancel
+                            {loading ? 'Saving...' : editingSection ? `Save ${editingSection}` : 'Save & Next'}
                           </Button>
-                        )}
-                        {/* Always show back button if onBack is provided */}
-                        {onBack && (
-                          <Button
-                            size="large"
-                            className="flex items-center"
-                            onClick={onBack}
-                          >
-                            Back
-                          </Button>
-                        )}
-                        <Button
-                          type="primary"
-                          size="large"
-                          htmlType="submit"
-                          icon={<CheckOutlined />}
-                          loading={loading}
-                          className="flex items-center"
-                        >
-                          {loading ? 'Saving...' : editingSection ? `Save ${editingSection}` : 'Save & Next'}
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   </Form>
@@ -1233,22 +1253,22 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
 
                 {/* New User - No Data */}
                 {!hasExistingData && currentView !== 'form' && (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8 sm:py-12">
                     <div className="mb-6">
-                      <BookOutlined className="text-6xl text-gray-300 mb-4" />
-                      <Title level={4} className="text-gray-600">
+                      <BookOutlined className="text-4xl sm:text-6xl text-gray-300 mb-4" />
+                      <Title level={4} className="text-gray-600 !text-lg sm:!text-xl">
                         No Professional Data Found
                       </Title>
-                      <Text type="secondary">
+                      <Text type="secondary" className="text-sm sm:text-base">
                         Get started by creating your professional resume profile
                       </Text>
                     </div>
                     <Button
                       type="primary"
-                      size="large"
+                      size="middle"
                       icon={<PlusOutlined />}
                       onClick={showForm}
-                      className="flex items-center mx-auto"
+                      className="flex items-center justify-center mx-auto w-full sm:w-auto"
                     >
                       Create Resume Profile
                     </Button>

@@ -2,17 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Form, Input, Button, Card, Row, Col, Divider,
-  Upload, Collapse, Typography, Space, message, Modal, Table, Checkbox, Tag,Spin
+  Upload, Modal, Typography, Space, message, Tag, Spin
 } from 'antd';
 import {
-  PlusOutlined, CloseOutlined, EditOutlined, CheckOutlined,
-  PlayCircleOutlined, FileOutlined, ArrowLeftOutlined,
-  LoadingOutlined
+  PlusOutlined, EditOutlined, CheckOutlined,
+  PlayCircleOutlined, FileOutlined, DeleteOutlined,
+  LoadingOutlined, EyeOutlined, SettingOutlined
 } from '@ant-design/icons';
 import api from '../../../../config/api'; // Adjust path to your api config
 import Loader from "../../../../components/Loader/page";
 
-const { Panel } = Collapse;
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
@@ -30,31 +29,27 @@ const safeBtoa = (value) => {
 
 export default function PortfolioForm({ onNext, onBack, isRegistration = false, showCompletionModal }) {
   const [form] = Form.useForm();
-  const [portfolios, setPortfolios] = useState([
-    { id: 1, title: '', description: '', videoUrls: [''], images: [], fpo_id: null }
-  ]);
+  const [portfolios, setPortfolios] = useState([]);
   const [skills, setSkills] = useState([]);
-  const [skillsWithIds, setSkillsWithIds] = useState([]);
   const [newSkill, setNewSkill] = useState('');
-  const [editingSkills, setEditingSkills] = useState(false);
-  const [isEditing, setIsEditing] = useState(true);
-  const [portfolioData, setPortfolioData] = useState(null);
-  const [skillsData, setSkillsData] = useState(null);
-  const [activeKeys, setActiveKeys] = useState(['portfolio-0']);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  
+  // Modal states
+  const [skillModalVisible, setSkillModalVisible] = useState(false);
+  const [portfolioModalVisible, setPortfolioModalVisible] = useState(false);
+  const [editPortfolioModalVisible, setEditPortfolioModalVisible] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editingPortfolio, setEditingPortfolio] = useState(null);
-  const [addAnotherPortfolio, setAddAnotherPortfolio] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [formErrors, setFormErrors] = useState({});
-  const [videoData, setVideoData] = useState([]);
-  const [deletedImages, setDeletedImages] = useState([]);
-  const [deletedVideos, setDeletedVideos] = useState([]);
-  const [skillSeparateMode, setSkillSeparateMode] = useState(false);
-  const [newPortfolioModalVisible, setNewPortfolioModalVisible] = useState(false);
-  const [skillReadyMessage, setSkillReadyMessage] = useState(false);
+  
+  // Current portfolio being edited/added
+  const [currentPortfolio, setCurrentPortfolio] = useState({
+    title: '',
+    description: '',
+    videoUrls: [''],
+    images: []
+  });
 
   const generateUID = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.floor(Math.random() * 10000)}`;
 
@@ -73,66 +68,46 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     fetchPortfolioData();
   }, []);
 
-  // Ensure the form is shown automatically when there are NO portfolio items
-  useEffect(() => {
-    if (Array.isArray(portfolioData)) {
-      if (portfolioData.length === 0) {
-        setIsEditing(true);
-      } else {
-        setIsEditing(false);
-      }
-    }
-  }, [portfolioData]);
-
-  useEffect(() => {
-    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-      setSkillReadyMessage(true);
-    } else {
-      setSkillReadyMessage(false);
-    }
-  }, [newSkill, skills]);
-
-  const fetchPortfolioData = async ({ reloadSkills = true } = {}) => {
+  const fetchPortfolioData = async () => {
     try {
       setLoading(true);
       const response = await api.get('/getPortfolio');
 
-      if (reloadSkills) {
-        if (response.data.fe_skills?.length > 0) {
-          const skillNames = response.data.fe_skills.map(skill => skill.fs_skill);
-          setSkills(skillNames);
-          setSkillsData(skillNames);
-          setSkillsWithIds(response.data.fe_skills.map(s => ({ name: s.fs_skill, id: s.fs_id })));
-        } else {
-          setSkills([]);
-          setSkillsWithIds([]);
-          setSkillsData(null);
-        }
+      if (response.data.fe_skills?.length > 0) {
+        const skillNames = response.data.fe_skills.map(skill => skill.fs_skill);
+        setSkills(skillNames);
       }
 
       if (response.data.fe_porfolio?.length > 0) {
-        if (response.data.fe_po_img) {
-          setVideoData(response.data.fe_po_img.filter(img => img.fpoi_type === 'Video'));
-        }
-
         const portfolioItems = response.data.fe_porfolio.map(item => {
-          const associatedVideos = response.data.fe_po_img?.filter(img => img.fpoi_fpo_id === item.fpo_id && img.fpoi_type === 'Video') || [];
-          const videoUrls = associatedVideos.length > 0 ? associatedVideos.map(video => video.fpoi_path) : [''];
           const associatedImages = response.data.fe_po_img?.filter(img => img.fpoi_fpo_id === item.fpo_id && img.fpoi_type === 'Image') || [];
           const images = [];
+          
           const mainImageUrl = getFullImageUrl(item.fpo_img);
           if (mainImageUrl) {
             images.push({
-              uid: generateUID(), name: 'main_portfolio_image', status: 'done', url: mainImageUrl, isMain: true,
-              originalPath: item.fpo_img, dbStored: true
+              uid: generateUID(), 
+              name: 'main_portfolio_image', 
+              status: 'done', 
+              url: mainImageUrl, 
+              isMain: true,
+              originalPath: item.fpo_img, 
+              dbStored: true
             });
           }
+
           associatedImages.forEach((img, index) => {
             const fullImageUrl = getFullImageUrl(img.fpoi_path);
             if (fullImageUrl) {
               images.push({
-                uid: generateUID(), name: `additional_image_${index}`, status: 'done', url: fullImageUrl, isMain: false,
-                originalPath: img.fpoi_path, fpoi_id: img.fpoi_id, dbStored: true
+                uid: generateUID(), 
+                name: `additional_image_${index}`, 
+                status: 'done', 
+                url: fullImageUrl, 
+                isMain: false,
+                originalPath: img.fpoi_path, 
+                fpoi_id: img.fpoi_id, 
+                dbStored: true
               });
             }
           });
@@ -142,69 +117,22 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
             fpo_id: item.fpo_id,
             title: item.fpo_title,
             description: item.fpo_desc,
-            videoUrls,
-            videoIds: associatedVideos.map(video => video.fpoi_id),
             images,
+            date: item.created_at || '24/09/2025'
           };
         });
 
         setPortfolios(portfolioItems);
-        setPortfolioData(portfolioItems);
-        if (reloadSkills) {
-          setSkillSeparateMode(false);
-        }
-      } else {
-        // explicitly set empty array so useEffect above will show the form
-        setPortfolioData([]);
-        if (reloadSkills) setSkillSeparateMode(false);
       }
     } catch (error) {
       console.error('Error fetching portfolio data:', error);
       message.error('Failed to load portfolio data');
-      // still set empty so user can add new item
-      setPortfolioData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const resetFormForNewPortfolio = (clearSkills = false) => {
-    const newPortfolio = { id: Date.now(), title: '', description: '', videoUrls: [''], images: [], fpo_id: null };
-    setPortfolios([newPortfolio]);
-    setActiveKeys(['portfolio-0']);
-    setFormErrors({});
-    setDeletedImages([]);
-    setDeletedVideos([]);
-    form.resetFields();
-    form.setFieldsValue({ addAnotherPortfolio: false });
-    if (clearSkills) {
-      setSkills([]);
-      setSkillsWithIds([]);
-      setSkillsData(null);
-      setSkillSeparateMode(false);
-    } else {
-      setSkillSeparateMode(false);
-    }
-
-    message.success('Form has been reset for your next portfolio item!');
-  };
-
-  const saveSingleSkillToServer = async (skillValue) => {
-    if (!skillValue || !skillValue.trim()) return;
-    try {
-      const fd = new FormData();
-      fd.append('skillinput[]', skillValue.trim());
-      fd.append('skill_only', '1');
-      const res = await api.post('/storeFePortfolio', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      if (res.data?.message) message.success(res.data.message);
-      await fetchPortfolioData();
-    } catch (err) {
-      console.error('Error saving single skill:', err);
-      message.error(err.response?.data?.message || 'Failed to save skill');
-    }
-  };
-
-  const addSkill = async () => {
+  const handleAddSkill = async () => {
     const trimmed = newSkill.trim();
     if (!trimmed) {
       message.warning('Please enter a valid skill!');
@@ -216,49 +144,54 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
       return;
     }
 
-    setSkills(prev => [...prev, trimmed]);
-    setNewSkill('');
-    setSkillReadyMessage(false);
-
-    await saveSingleSkillToServer(trimmed);
-  };
-
-  const updatePortfolio = (portfolioId, field, value) => {
-    setPortfolios(portfolios.map(p => p.id === portfolioId ? { ...p, [field]: value } : p));
-    const newErrors = { ...formErrors };
-    Object.keys(newErrors).forEach(k => {
-      if (k.includes(field) || k === field) delete newErrors[k];
-    });
-    setFormErrors(newErrors);
-  };
-
-  const addVideoField = (portfolioId) => {
-    const portfolio = portfolios.find(p => p.id === portfolioId);
-    const newVideoUrls = [...portfolio.videoUrls, ''];
-    updatePortfolio(portfolioId, 'videoUrls', newVideoUrls);
-  };
-
-  const removeVideoField = (portfolioId, index) => {
-    const portfolio = portfolios.find(p => p.id === portfolioId);
-    if (portfolio.videoUrls.length > 1) {
-      const newVideoUrls = portfolio.videoUrls.filter((_, i) => i !== index);
-      updatePortfolio(portfolioId, 'videoUrls', newVideoUrls);
-    } else {
-      message.warning('You need at least one video URL field');
+    try {
+      const fd = new FormData();
+      fd.append('skillinput', trimmed);
+      const res = await api.post('/storeFeSkill', fd, { 
+        headers: { 'Content-Type': 'multipart/form-data' } 
+      });
+      
+      if (res.data?.message) message.success(res.data.message);
+      setSkills(prev => [...prev, trimmed]);
+      setNewSkill('');
+      setSkillModalVisible(false);
+      await fetchPortfolioData();
+    } catch (err) {
+      console.error('Error saving skill:', err);
+      message.error(err.response?.data?.message || 'Failed to save skill');
     }
   };
 
-  const updateVideoUrl = (portfolioId, index, value) => {
-    const portfolio = portfolios.find(p => p.id === portfolioId);
-    const newVideoUrls = portfolio.videoUrls.map((url, i) => i === index ? value : url);
-    updatePortfolio(portfolioId, 'videoUrls', newVideoUrls);
+  const handleRemoveSkill = async (skillToRemove) => {
+    try {
+      // Find the skill ID from the API response
+      const response = await api.get('/getPortfolio');
+      const skillData = response.data.fe_skills?.find(skill => skill.fs_skill === skillToRemove);
+      
+      if (skillData) {
+        const encodedId = btoa(String(skillData.fs_id));
+        const res = await api.get(`/deleteItem/1/${encodedId}`);
+        
+        if (res.data?.message) message.success(res.data.message);
+        setSkills(prev => prev.filter(skill => skill !== skillToRemove));
+        await fetchPortfolioData();
+      } else {
+        message.error('Skill not found');
+      }
+    } catch (err) {
+      console.error('Error removing skill:', err);
+      message.error('Failed to remove skill');
+    }
   };
 
-  const handleImageUpload = (portfolioId, { fileList }) => {
+  const handleImageUpload = ({ fileList }) => {
     const processedImages = fileList.map(file => {
       if (file.originFileObj && !file.url && !file.preview) {
         const reader = new FileReader();
-        reader.onload = (e) => { file.preview = e.target.result; setPortfolios(prev => [...prev]); };
+        reader.onload = (e) => { 
+          file.preview = e.target.result; 
+          setCurrentPortfolio(prev => ({ ...prev })); 
+        };
         reader.readAsDataURL(file.originFileObj);
         return { ...file, uid: file.uid || generateUID(), file: file.originFileObj, status: 'done', isNew: true };
       }
@@ -268,26 +201,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
       return { ...file, uid: file.uid || generateUID(), dbStored: file.dbStored || false };
     });
 
-    updatePortfolio(portfolioId, 'images', processedImages);
-    const newErrors = { ...formErrors };
-    delete newErrors.fpo_img_file;
-    portfolios.forEach((_, index) => {
-      const portfolioKey = `portfolio_${index}`;
-      if (newErrors[portfolioKey]?.images) {
-        delete newErrors[portfolioKey].images;
-        if (Object.keys(newErrors[portfolioKey]).length === 0) delete newErrors[portfolioKey];
-      }
-    });
-    setFormErrors(newErrors);
-  };
-
-  const removeImage = (portfolioId, index) => {
-    const portfolio = portfolios.find(p => p.id === portfolioId);
-    const imageToRemove = portfolio.images[index];
-    if (imageToRemove?.fpoi_id) setDeletedImages(prev => [...prev, imageToRemove.fpoi_id]);
-    const newImages = portfolio.images.filter((_, i) => i !== index);
-    updatePortfolio(portfolioId, 'images', newImages);
-    message.success('Image removed successfully!');
+    setCurrentPortfolio(prev => ({ ...prev, images: processedImages }));
   };
 
   const handlePreview = (file) => {
@@ -305,129 +219,85 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     if (previewUrl) {
       setPreviewImage(previewUrl);
       setPreviewVisible(true);
-    } else {
-      console.error('Unable to generate preview for file:', file);
-      message.error('Unable to preview this image');
     }
   };
 
-  const calculateProgress = () => {
-    const skillProgress = (skills.length > 0 && !addAnotherPortfolio) ? 1 : 0;
-    const filledFields = portfolios.reduce((acc, portfolio) => {
-      const fields = [
-        portfolio.title,
-        portfolio.description,
-        ...portfolio.videoUrls.filter(url => url.trim() !== ''),
-        ...portfolio.images
-      ].filter(field => field && field.toString().trim() !== '');
-      return acc + fields.length;
-    }, 0) + skillProgress;
-
-    const totalFields = portfolios.reduce((acc, portfolio) => acc + 2 + portfolio.videoUrls.length + portfolio.images.length, 0) + (skills.length > 0 && !addAnotherPortfolio ? 1 : 0);
-    return Math.round((filledFields / (totalFields || 1)) * 100);
+  const removeImage = (file) => {
+    setCurrentPortfolio(prev => ({
+      ...prev,
+      images: prev.images.filter(img => img.uid !== file.uid)
+    }));
   };
 
-  const validateForm = () => {
-    let isValid = true;
-    const errors = {};
+  const addVideoField = () => {
+    setCurrentPortfolio(prev => ({
+      ...prev,
+      videoUrls: [...prev.videoUrls, '']
+    }));
+  };
 
-    if (!addAnotherPortfolio && skills.length === 0) {
-      isValid = false;
-      errors.skills = ['Please add at least one skill'];
-    }
+  const removeVideoField = (index) => {
+    setCurrentPortfolio(prev => ({
+      ...prev,
+      videoUrls: prev.videoUrls.filter((_, i) => i !== index)
+    }));
+  };
 
-    portfolios.forEach((portfolio, index) => {
-      const portfolioErrors = {};
-      if (!portfolio.title?.trim()) {
-        isValid = false;
-        portfolioErrors.title = ['Please add a title'];
-        errors.title = ['Please enter a title.'];
-      }
-      if (!portfolio.description?.trim()) {
-        isValid = false;
-        portfolioErrors.description = ['Please add a description'];
-        errors.description = ['Please enter a description.'];
-      }
-      if (!portfolio.images?.length) {
-        isValid = false;
-        portfolioErrors.images = ['Please upload at least one image'];
-        errors.fpo_img_file = ['An image is required.'];
-      }
-      const emptyVideoUrls = portfolio.videoUrls.filter(url => url && url.trim() === '');
-      if (emptyVideoUrls.length > 0 && portfolio.videoUrls.some(url => url.trim() !== '')) {
-        isValid = false;
-        portfolioErrors.videoUrls = ['Please fill all video URLs or remove empty fields'];
-      }
-      if (Object.keys(portfolioErrors).length > 0) errors[`portfolio_${index}`] = portfolioErrors;
+  const updateVideoUrl = (index, value) => {
+    setCurrentPortfolio(prev => {
+      const newVideoUrls = [...prev.videoUrls];
+      newVideoUrls[index] = value;
+      return { ...prev, videoUrls: newVideoUrls };
     });
-
-    return { isValid, errors };
   };
 
-  const prepareImageForSubmission = (image, isFirstImage = false) => {
-    if (image.originFileObj) return image.originFileObj;
-    else if (image.file && image.isNew) return image.file;
-    else if (image instanceof File) return image;
-    if (image.originalPath && image.dbStored) return image.originalPath;
-    if (image.url) {
-      if (image.url.includes('/uploads/')) return image.url.substring(image.url.indexOf('/uploads/'));
-      return image.url;
+  const validatePortfolio = () => {
+    const errors = {};
+    
+    if (!currentPortfolio.title?.trim()) {
+      errors.title = 'Title is required';
     }
-    return null;
+    if (!currentPortfolio.description?.trim()) {
+      errors.description = 'Description is required';
+    }
+    if (!currentPortfolio.images?.length) {
+      errors.images = 'At least one image is required';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleInitialSubmit = async (event) => {
-    if (event) { event.preventDefault(); event.stopPropagation(); }
-
-    const { isValid, errors } = validateForm();
-    if (!isValid) {
-      setFormErrors(errors);
-      const errorMessages = [];
-      if (errors.title) errorMessages.push(errors.title[0]);
-      if (errors.description) errorMessages.push(errors.description[0]);
-      if (errors.fpo_img_file) errorMessages.push(errors.fpo_img_file[0]);
-      if (errors.skills) errorMessages.push(errors.skills[0]);
-
-      const mainError = errorMessages[0] || 'Please fix the validation errors';
-      const additionalCount = errorMessages.length - 1;
-      message.error(additionalCount > 0 ? `${mainError} (and ${additionalCount} more error${additionalCount > 1 ? 's' : ''})` : mainError);
-      setActiveKeys(portfolios.map((_, index) => `portfolio-${index}`));
+  const handleSavePortfolio = async () => {
+    if (!validatePortfolio()) {
+      message.error('Please fix the errors before saving');
       return;
     }
 
     setIsSubmitting(true);
-    setFormErrors({});
-
     try {
       const formData = new FormData();
 
+      // Add skills if any
       if (skills.length > 0) {
         skills.forEach(skill => formData.append('skillinput[]', skill));
       }
 
-      portfolios.forEach((portfolio, index) => {
-        formData.append('title', portfolio.title.trim());
-        formData.append('description', portfolio.description.trim());
-        const validUrls = (portfolio.videoUrls || []).filter(url => url && url.trim());
-        validUrls.forEach(url => formData.append('video-upload[]', url.trim()));
+      // Add portfolio data
+      formData.append('title', currentPortfolio.title.trim());
+      formData.append('description', currentPortfolio.description.trim());
 
-        if (portfolio.images?.length > 0) {
-          let mainImageSet = false;
-          portfolio.images.forEach((image, imgIndex) => {
-            const preparedImage = prepareImageForSubmission(image, imgIndex === 0);
-            if (preparedImage) {
-              if (!mainImageSet) { formData.append('fpo_img_file', preparedImage); mainImageSet = true; }
-              else { formData.append('addImageField[]', preparedImage); }
-            }
-          });
-          if (!mainImageSet) throw new Error('No valid main image found.');
-        }
-      });
+      // Add video URLs
+      const validUrls = currentPortfolio.videoUrls.filter(url => url && url.trim());
+      validUrls.forEach(url => formData.append('video-upload[]', url.trim()));
 
-      if (addAnotherPortfolio) {
-        formData.append('add_more', 'add_more');
-      } else {
-        formData.append('portfolio_time', String(Date.now()));
+      // Add images
+      if (currentPortfolio.images?.length > 0) {
+        currentPortfolio.images.forEach((image, index) => {
+          if (image.originFileObj) {
+            formData.append(index === 0 ? 'fpo_img_file' : 'addImageField[]', image.originFileObj);
+          }
+        });
       }
 
       const response = await api.post('/storeFePortfolio', formData, {
@@ -435,780 +305,741 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
       });
 
       if (response.data.message) message.success(response.data.message);
+      setPortfolioModalVisible(false);
+      setCurrentPortfolio({ title: '', description: '', videoUrls: [''], images: [] });
+      await fetchPortfolioData();
 
-      if (addAnotherPortfolio) {
-        message.success('Portfolio saved! Start adding the next item.');
-        await fetchPortfolioData({ reloadSkills: false });
-        setNewPortfolioModalVisible(true);
-        setDeletedImages([]); setDeletedVideos([]); setSkillSeparateMode(true);
-      } else {
-        message.success('Portfolio saved successfully!');
-        await fetchPortfolioData();
-
-        Modal.confirm({
-          title: 'Portfolio Saved!',
-          content: 'Would you like to add another portfolio item now?',
-          okText: 'Yes, add another',
-          cancelText: 'No, continue',
-          okType: 'primary',
-          centered: true,
-          onOk: () => {
-            handleAddMorePortfolio();
-          },
-          onCancel: () => {
-            setIsEditing(false);
-            setSkillSeparateMode(false);
-
-            if (isRegistration && showCompletionModal) {
-              showCompletionModal(
-                'Portfolio Completed!',
-                'Your portfolio and skills have been saved successfully.',
-                'Continue to Next Step'
-              );
-            }
-
-            if (onNext) onNext();
-          },
-        });
+      if (isRegistration && showCompletionModal) {
+        showCompletionModal(
+          'Portfolio Completed!',
+          'Your portfolio and skills have been saved successfully.',
+          'Continue to Next Step'
+        );
       }
-      setAddAnotherPortfolio(false);
+
     } catch (error) {
       console.error('Error saving portfolio:', error);
-      if (error.response?.data) {
-        const responseData = error.response.data;
-        if (responseData.errors) {
-          const mappedErrors = {};
-          Object.keys(responseData.errors).forEach(key => {
-            const errorMessage = Array.isArray(responseData.errors[key]) ? responseData.errors[key][0] : responseData.errors[key];
-            if (key === 'title') mappedErrors.title = [errorMessage];
-            else if (key === 'description') mappedErrors.description = [errorMessage];
-            else if (key === 'fpo_img_file') mappedErrors.fpo_img_file = [errorMessage];
-            else if (key === 'skillinput' || key === 'skillinput.*') mappedErrors.skills = [errorMessage];
-            else mappedErrors[key] = Array.isArray(responseData.errors[key]) ? responseData.errors[key] : [responseData.errors[key]];
-          });
-          setFormErrors(mappedErrors);
-          const errorKeys = Object.keys(responseData.errors);
-          let errorMessage = Array.isArray(responseData.errors[errorKeys[0]]) ? responseData.errors[errorKeys[0]][0] : responseData.errors[errorKeys[0]];
-          if (errorKeys.length > 1) errorMessage += ` (and ${errorKeys.length - 1} more error${errorKeys.length > 2 ? 's' : ''})`;
-          message.error(responseData.message || errorMessage);
-          setActiveKeys(portfolios.map((_, index) => `portfolio-${index}`));
-        } else if (responseData.message) {
-          message.error(responseData.message);
-        } else {
-          message.error('Failed to save portfolio. Please try again.');
-        }
+      if (error.response?.data?.message) {
+        message.error(error.response.data.message);
       } else {
-        message.error(error.message || 'Network error. Please check your connection and try again.');
+        message.error('Failed to save portfolio');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEditSkills = () => setEditingSkills(true);
+  const handleEditPortfolio = (portfolio) => {
+    // Fetch video URLs for this portfolio
+    const fetchVideoUrls = async () => {
+      try {
+        const response = await api.get('/getPortfolio');
+        const portfolioData = response.data.fe_porfolio?.find(item => item.fpo_id === portfolio.fpo_id);
+        const videoUrls = response.data.fe_po_img?.filter(img => 
+          img.fpoi_fpo_id === portfolio.fpo_id && img.fpoi_type === 'Video'
+        ).map(video => video.fpoi_path) || [];
+        
+        setCurrentPortfolio({
+          ...portfolio,
+          videoUrls: videoUrls.length > 0 ? videoUrls : ['']
+        });
+        setEditPortfolioModalVisible(true);
+      } catch (error) {
+        console.error('Error fetching video URLs:', error);
+        setCurrentPortfolio({
+          ...portfolio,
+          videoUrls: ['']
+        });
+        setEditPortfolioModalVisible(true);
+      }
+    };
+    
+    fetchVideoUrls();
+  };
 
-  const handleSaveSkills = async () => {
-    if (!skills.length) {
-      message.warning('No skills to save');
+  const handleUpdatePortfolio = async () => {
+    if (!validatePortfolio()) {
+      message.error('Please fix the errors before updating');
       return;
     }
-    setEditingSkills(false);
+
+    setIsSubmitting(true);
     try {
-      const fd = new FormData();
-      skills.forEach(s => fd.append('skillinput[]', s));
-      fd.append('skill_only', '1');
-      const res = await api.post('/storeFePortfolio', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      if (res.data?.message) message.success(res.data.message);
-      await fetchPortfolioData();
-      setSkillSeparateMode(false);
-    } catch (err) {
-      console.error('Error saving skills:', err);
-      message.error(err.response?.data?.message || 'Failed to save skills');
-    }
-  };
-
-  const handleAddMorePortfolio = () => {
-    const newPortfolio = { id: Date.now(), title: '', description: '', videoUrls: [''], images: [], fpo_id: null };
-    setPortfolios([newPortfolio]);
-    setNewSkill('');
-    setActiveKeys(['portfolio-0']);
-
-    // CLEAR skills so the add-portfolio form shows an empty skills section
-    setSkills([]);
-    setSkillsWithIds([]);
-    setSkillsData(null);
-
-    setSkillSeparateMode(true);
-    setAddAnotherPortfolio(true);
-    setFormErrors({});
-    setDeletedImages([]);
-    setDeletedVideos([]);
-    setIsEditing(true);
-    setEditingSkills(false);
-    form.resetFields();
-    form.setFieldsValue({ addAnotherPortfolio: false, title: '', description: '' });
-    message.info('Form ready for new portfolio item! Skills shown in separate panel (optional).');
-  };
-
-
-  // NEW: Edit in Form from preview/table
-  const handleEditFromPreview = (record) => {
-    setIsEditing(true);
-    setEditingSkills(true); // enable skill edits when opening form from preview
-    setSkillSeparateMode(false); // show skills inline
-
-    const portfolioObj = {
-      id: record.fpo_id || record.id || Date.now(),
-      fpo_id: record.fpo_id || record.id || null,
-      title: record.fpo_title || record.title || record.fpo_title || '',
-      description: record.fpo_desc || record.description || '',
-      videoUrls: record.videoUrls?.length ? [...record.videoUrls] : (record.videoUrls ? [...record.videoUrls] : ['']),
-      images: (record.images || []).map(img => ({ ...img, uid: img.uid || generateUID(), dbStored: true, url: img.url || img.originalPath || img })),
-    };
-
-    setPortfolios([portfolioObj]);
-    setActiveKeys(['portfolio-0']);
-    form.setFieldsValue({ title: portfolioObj.title, description: portfolioObj.description });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // NEW: Cancel editing form and go back to preview/list
-  const handleCancelEditForm = () => {
-    setIsEditing(false);
-    setEditingSkills(false);
-    setSkillSeparateMode(false);
-    setFormErrors({});
-    form.resetFields();
-    if (portfolioData && portfolioData.length) setPortfolios(portfolioData);
-    else setPortfolios([{ id: Date.now(), title: '', description: '', videoUrls: [''], images: [], fpo_id: null }]);
-    fetchPortfolioData();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const openEditModal = (portfolio, e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    const full = portfolios.find(p => p.id === portfolio.id) || portfolio;
-    const editingData = {
-      ...full,
-      videoUrls: full.videoUrls?.length > 0 ? [...full.videoUrls] : [''],
-      images: full.images ? full.images.map(img => (Array.isArray(img) ? img[0] : img)).map(img => ({
-        ...img, uid: img.uid || generateUID(), url: img.url, originalPath: img.originalPath, dbStored: true, status: 'done'
-      })) : [],
-      originalVideoIds: full.videoIds || [],
-      videoIds: [...(full.videoIds || [])]
-    };
-    setEditingPortfolio(editingData);
-    setDeletedImages([]); setDeletedVideos([]); setEditModalVisible(true);
-  };
-
-  const handleEditSave = async () => {
-    if (!editingPortfolio) return;
-    if (!editingPortfolio.title?.trim()) { message.error('Title is required'); return; }
-    if (!editingPortfolio.description?.trim()) { message.error('Description is required'); return; }
-    if (!editingPortfolio.images?.length) { message.error('At least one image is required'); return; }
-
-    try {
-      setIsSubmitting(true);
       const formData = new FormData();
-      formData.append('fpo_id', safeBtoa(String(editingPortfolio.fpo_id)));
-      formData.append('title', editingPortfolio.title.trim());
-      formData.append('description', editingPortfolio.description.trim());
+      formData.append('fpo_id', btoa(String(currentPortfolio.fpo_id)));
+      formData.append('title', currentPortfolio.title.trim());
+      formData.append('description', currentPortfolio.description.trim());
+      formData.append('_method', 'PUT');
 
-      if (editingPortfolio.images?.length > 0) {
-        const mainImage = editingPortfolio.images[0];
-        if (mainImage.originFileObj) formData.append('fpo_img_file', mainImage.originFileObj);
-        else if (mainImage.dbStored) formData.append('fpo_img_file', mainImage.originalPath || mainImage.url);
-        if (editingPortfolio.images.length > 1) {
-          for (let i = 1; i < editingPortfolio.images.length; i++) {
-            const image = editingPortfolio.images[i];
-            if (image.originFileObj) formData.append('addImageField[]', image.originFileObj);
-            else if (image.dbStored) formData.append('addImageField[]', image.originalPath || image.url);
+      // Handle images
+      if (currentPortfolio.images?.length > 0) {
+        currentPortfolio.images.forEach((image, index) => {
+          if (image.originFileObj) {
+            formData.append(index === 0 ? 'fpo_img_file' : 'addImageField[]', image.originFileObj);
+          } else if (image.dbStored) {
+            formData.append(index === 0 ? 'fpo_img_file' : 'addImageField[]', image.originalPath || image.url);
           }
-        }
-      }
-
-      if (editingPortfolio.videoUrls && editingPortfolio.videoUrls.length > 0) {
-        const videoUrls = Array.isArray(editingPortfolio.videoUrls) ? editingPortfolio.videoUrls : [];
-        const rawVideoIds = Array.isArray(editingPortfolio.videoIds) ? editingPortfolio.videoIds : [];
-        const videoIdsSanitized = rawVideoIds.map(v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; });
-        while (videoIdsSanitized.length < videoUrls.length) videoIdsSanitized.push(0);
-        videoUrls.forEach((rawUrl, idx) => {
-          const url = rawUrl ? String(rawUrl).trim() : '';
-          if (!url) return;
-          formData.append('video-upload[]', url);
-          const fpoiIdForThis = videoIdsSanitized[idx] || 0;
-          formData.append('fpoi_id[]', String(fpoiIdForThis));
-          formData.append('fpoi_type[]', 'Video');
         });
       }
 
-      if (deletedImages.length > 0) deletedImages.forEach(id => formData.append('deleted_images[]', id));
-      formData.append('_method', 'PUT');
-      const response = await api.post('/updatePortfolio', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const response = await api.post('/updatePortfolio', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
       message.success(response.data.message || 'Portfolio updated successfully!');
+      setEditPortfolioModalVisible(false);
+      setCurrentPortfolio({ title: '', description: '', videoUrls: [''], images: [] });
       await fetchPortfolioData();
-      setEditModalVisible(false); setEditingPortfolio(null); setDeletedImages([]); setDeletedVideos([]);
+
     } catch (error) {
       console.error('Error updating portfolio:', error);
-      if (error.response?.data) {
-        const responseData = error.response.data;
-        if (responseData.errors) {
-          const errorKeys = Object.keys(responseData.errors);
-          let errorMessage = Array.isArray(responseData.errors[errorKeys[0]]) ? responseData.errors[errorKeys[0]][0] : responseData.errors[errorKeys[0]];
-          if (errorKeys.length > 1) errorMessage += ` (and ${errorKeys.length - 1} more error${errorKeys.length > 2 ? 's' : ''})`;
-          message.error(responseData.message || errorMessage);
-        } else if (responseData.message) message.error(responseData.message);
-        else message.error('Failed to update portfolio. Please try again.');
-      } else message.error('Network error. Please check your connection and try again.');
-    } finally { setIsSubmitting(false); }
+      message.error('Failed to update portfolio');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const addVideoFieldEdit = () => setEditingPortfolio(prev => ({ ...prev, videoUrls: [...(prev.videoUrls || ['']), ''] }));
-  const removeVideoFieldEdit = (index) => setEditingPortfolio(prev => {
-    const videoUrls = prev.videoUrls || [''];
-    if (videoUrls.length > 1) {
-      const newVideoUrls = videoUrls.filter((_, i) => i !== index);
-      return { ...prev, videoUrls: newVideoUrls.length > 0 ? newVideoUrls : [''] };
-    }
-    return prev;
-  });
-  const updateVideoUrlEdit = (index, value) => setEditingPortfolio(prev => { const newVideoUrls = [...(prev.videoUrls || [''])]; newVideoUrls[index] = value; return { ...prev, videoUrls: newVideoUrls }; });
-
-  const handleEditImageUpload = ({ fileList }) => {
-    const processedImages = fileList.map(file => {
-      if (file.originFileObj && !file.url && !file.preview) {
-        const reader = new FileReader();
-        reader.onload = (e) => { file.preview = e.target.result; setEditingPortfolio(prev => ({ ...prev })); };
-        reader.readAsDataURL(file.originFileObj);
-        return { ...file, uid: file.uid || generateUID(), file: file.originFileObj, status: 'done', isNew: true };
+  const handleDeletePortfolio = async (portfolioId) => {
+    console.log('Delete portfolio called with ID:', portfolioId);
+    
+    Modal.confirm({
+      title: 'Delete Portfolio Item',
+      content: 'Are you sure you want to delete this portfolio item?',
+      okText: 'Yes, Delete',
+      cancelText: 'Cancel',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          console.log('Portfolio ID to delete:', portfolioId);
+          const encodedId = btoa(String(portfolioId));
+          console.log('Encoded ID:', encodedId);
+          console.log('API URL:', `/deleteItem/8/${encodedId}`);
+          
+          const response = await api.get(`/deleteItem/8/${encodedId}`);
+          console.log('Delete response:', response);
+          
+          if (response.data?.message) {
+            message.success(response.data.message);
+          } else {
+            message.success('Portfolio deleted successfully!');
+          }
+          await fetchPortfolioData();
+        } catch (error) {
+          console.error('Error deleting portfolio:', error);
+          console.error('Error response:', error.response);
+          if (error.response?.data?.message) {
+            message.error(error.response.data.message);
+          } else {
+            message.error('Failed to delete portfolio');
+          }
+        }
       }
-      if (file.originFileObj) return { ...file, uid: file.uid || generateUID(), file: file.originFileObj, isNew: true, status: 'done' };
-      return { ...file, uid: file.uid || generateUID(), dbStored: file.dbStored !== undefined ? file.dbStored : true, url: file.url, originalPath: file.originalPath, status: 'done' };
     });
-    setEditingPortfolio(prev => ({ ...prev, images: processedImages }));
   };
 
-  const removeEditImage = (file) => {
-    const imageToRemove = (editingPortfolio.images || []).find(img => img.uid === file.uid);
-    if (imageToRemove) {
-      if (imageToRemove.fpoi_id) { setDeletedImages(prev => [...prev, imageToRemove.fpoi_id]); message.success('Image marked for deletion'); }
-      else message.success('Image removed');
-      const newImages = (editingPortfolio.images || []).filter(img => img.uid !== file.uid);
-      setEditingPortfolio(prev => ({ ...prev, images: newImages }));
-    }
-    return false;
+  const handleDeleteImage = async (imageId, portfolioId) => {
+    Modal.confirm({
+      title: 'Delete Image',
+      content: 'Are you sure you want to delete this image?',
+      okText: 'Yes, Delete',
+      cancelText: 'Cancel',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          const encodedId = btoa(String(imageId));
+          const response = await api.get(`/deleteItem/9/${encodedId}`);
+          message.success(response.data.message || 'Image deleted successfully!');
+          await fetchPortfolioData();
+        } catch (error) {
+          console.error('Error deleting image:', error);
+          message.error('Failed to delete image');
+        }
+      }
+    });
   };
 
-  const uploadButton = (<div className="flex flex-col items-center"><PlusOutlined /><div className="mt-2">Upload</div></div>);
+  const uploadButton = (
+    <div className="flex flex-col items-center justify-center p-2 sm:p-4 border-2 border-dashed border-gray-300 rounded-lg h-20 sm:h-24">
+      <PlusOutlined className="text-lg sm:text-xl" />
+      <div className="mt-1 sm:mt-2 text-gray-600 text-xs sm:text-sm text-center">Upload Image</div>
+    </div>
+  );
 
-  const columns = [
-    { title: 'Title', dataIndex: 'title', key: 'title', render: text => <span className="font-medium">{text}</span> },
-    { title: 'Description', dataIndex: 'description', key: 'description', render: text => <div className="max-w-xs truncate">{text}</div> },
-    { title: 'Videos', dataIndex: 'videoUrls', key: 'videoUrls', render: urls => <span>{urls?.filter(url => url && url.trim()).length || 0}</span> },
-    { title: 'Images', dataIndex: 'images', key: 'images', render: images => <span>{images?.length || 0}</span> },
-    {
-      title: 'Action', key: 'action', render: (_, record) => (
-        <Space>
-          <Button type="primary" icon={<EditOutlined />} onClick={e => openEditModal(record, e)} className="bg-blue-600 hover:bg-blue-700">Edit</Button>
-        </Space>
-      )
-    }
-  ];
-
+  // No data state - Show when no portfolios or skills
+  const hasData = portfolios.length > 0 || skills.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <Card className="shadow-lg rounded-lg border-0">
-          <div className="bg-white p-6 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-              <div>
-                <Title level={3} className="!mb-1 text-gray-900">Portfolio Setup</Title>
-                <Text type="secondary">{isEditing ? "Add your skills and portfolio items to showcase your work" : "View and manage your portfolio items"}</Text>
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <Card className="shadow-sm rounded-lg border border-gray-200">
+          <div className="bg-white p-3 sm:p-4 md:p-6 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+              <div className="w-full sm:w-auto">
+                <Title level={2} className="!mb-1 sm:!mb-2 !text-gray-800 text-lg sm:text-xl md:text-2xl">Portfolio Management</Title>
+                <Text className="text-gray-600 text-sm sm:text-base">Manage your portfolio items and skills</Text>
               </div>
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-3 sm:p-4 md:p-6">
             {loading ? (
-              <div className="py-16 flex justify-center items-center"><Loader /></div>
+              <div className="py-16 flex justify-center items-center">
+                <Loader />
+              </div>
+            ) : !hasData ? (
+              // No Data State
+              <div className="text-center py-8 sm:py-12 md:py-16 lg:py-20 px-4">
+                <div className="mb-6 sm:mb-8">
+                  <div className="mx-auto w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-gray-100 rounded-full flex items-center justify-center">
+                    <FileOutlined className="text-2xl sm:text-3xl md:text-4xl text-gray-400" />
+                  </div>
+                </div>
+                <Title level={3} className="!mb-2 text-gray-700 text-lg sm:text-xl md:text-2xl">No Portfolio & Skills Added</Title>
+                <Text type="secondary" className="mb-6 sm:mb-8 block text-gray-500 text-sm sm:text-base max-w-md mx-auto">
+                  Start building your professional portfolio by adding your skills and portfolio items
+                </Text>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-sm sm:max-w-none mx-auto">
+                  <Button 
+                    type="default" 
+                    size="large" 
+                    icon={<SettingOutlined />}
+                    onClick={() => setSkillModalVisible(true)}
+                    className="border-gray-300 text-gray-700 hover:border-gray-400 h-10 sm:h-12 px-4 sm:px-6 md:px-8 text-sm sm:text-base"
+                  >
+                    <span className="hidden sm:inline">Manage Skills</span>
+                    <span className="sm:hidden">Skills</span>
+                  </Button>
+                  <Button 
+                    type="primary" 
+                    size="large" 
+                    icon={<PlusOutlined />}
+                    onClick={() => setPortfolioModalVisible(true)}
+                    className="bg-blue-600 hover:bg-blue-700 border-blue-600 h-10 sm:h-12 px-4 sm:px-6 md:px-8 text-sm sm:text-base"
+                  >
+                    <span className="hidden sm:inline">Add Portfolio</span>
+                    <span className="sm:hidden">Portfolio</span>
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <>
-                {/** Show the form when editing OR when portfolioData is an empty array */}
-                {(isEditing || (Array.isArray(portfolioData) && portfolioData.length === 0)) ? (
-                  <Spin spinning={isSubmitting} tip="Saving your portfolio...">
-                    <Form form={form} layout="vertical" onFinish={handleInitialSubmit} initialValues={{ addAnotherPortfolio: false }} className="space-y-6">
-
-                      <div className="mb-6">
-                        <div className="flex justify-between items-center mb-2">
-                          <Text className="font-medium text-gray-700">Portfolio Completion</Text>
-                          <Text className="font-bold">{calculateProgress()}%</Text>
+              // Has Data State
+              <div className="space-y-6 sm:space-y-8">
+                {/* Skills Section */}
+                <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg border border-gray-200">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+                    <Title level={4} className="!mb-0 text-gray-800 text-base sm:text-lg">Skills</Title>
+                    <Button 
+                      type="primary" 
+                      icon={<PlusOutlined />}
+                      onClick={() => setSkillModalVisible(true)}
+                      className="bg-blue-600 hover:bg-blue-700 border-blue-600 w-full sm:w-auto h-9 sm:h-10 text-sm"
+                    >
+                      <span className="hidden sm:inline">Add Skill</span>
+                      <span className="sm:hidden">Add</span>
+                    </Button>
+                  </div>
+                  
+                  {skills.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
+                      {skills.map((skill, index) => (
+                        <div
+                          key={index}
+                          className="group relative bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 sm:p-3 hover:shadow-md transition-all duration-200"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs sm:text-sm font-medium text-blue-800 truncate pr-1 sm:pr-2 flex-1">
+                              {skill}
+                            </span>
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<DeleteOutlined />}
+                              onClick={() => handleRemoveSkill(skill)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 sm:p-1 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center flex-shrink-0"
+                              title="Delete skill"
+                            />
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${calculateProgress()}%` }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 sm:py-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <div className="mb-3">
+                        <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                          <SettingOutlined className="text-lg sm:text-xl text-gray-400" />
                         </div>
                       </div>
+                      <Text type="secondary" className="text-gray-500 text-sm sm:text-base">No skills added yet</Text>
+                      <div className="mt-3">
+                        <Button 
+                          type="dashed" 
+                          size="small"
+                          onClick={() => setSkillModalVisible(true)}
+                          className="text-gray-600 text-xs sm:text-sm h-8 sm:h-9"
+                        >
+                          Add your first skill
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                      {skillSeparateMode && (
-                        <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                          <div>
-                            <div className="flex items-center gap-2 mb-3">
-                              <Input
-                                placeholder="Add a new skill (e.g., React, UI Design)"
-                                value={newSkill}
-                                onChange={e => setNewSkill(e.target.value)}
-                                onPressEnter={addSkill}
-                                onClick={() => {
-                                  if (newSkill && newSkill.trim().length > 0 && !skills.includes(newSkill.trim())) {
-                                    setSkillReadyMessage(true);
-                                  }
-                                }}
-                                className="flex-1"
+                {/* Portfolio Section */}
+                <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg border border-gray-200">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+                    <Title level={4} className="!mb-0 text-gray-800 text-base sm:text-lg">Portfolio Items</Title>
+                    <Button 
+                      type="primary" 
+                      icon={<PlusOutlined />}
+                      onClick={() => setPortfolioModalVisible(true)}
+                      className="bg-blue-600 hover:bg-blue-700 border-blue-600 w-full sm:w-auto h-9 sm:h-10 text-sm"
+                    >
+                      <span className="hidden sm:inline">Add Portfolio</span>
+                      <span className="sm:hidden">Add</span>
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {portfolios.map((portfolio) => (
+                      <Card
+                        key={portfolio.id}
+                        className="group border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
+                        bodyStyle={{ padding: 0 }}
+                        cover={
+                          portfolio.images?.length > 0 ? (
+                            <div className="relative h-40 sm:h-48 w-full overflow-hidden">
+                              <img
+                                alt={portfolio.title}
+                                src={portfolio.images[0]?.url || portfolio.images[0]?.preview}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                               />
-                              <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={addSkill}
-                              >
-                                Add
-                              </Button>
-                            </div>
-                            {skillReadyMessage && (
-                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                                <Text type="secondary" className="text-sm">
-                                  Skill ready to add! Click the "Add" button or press Enter to include this skill.
-                                </Text>
-                              </div>
-                            )}
-                            <div className="flex flex-wrap gap-2">
-                              {skills.map((skill, index) => (
-                                <Tag
-                                  key={index}
-                                  color="blue"
-                                  className="mb-2 flex items-center"
-                                  closable
-                                  onClose={e => {
-                                    e.preventDefault();
-                                    setSkills(skills.filter((_, i) => i !== index));
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+                              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1 sm:gap-2 z-10">
+                                <Button
+                                  type="text"
+                                  icon={<EyeOutlined />}
+                                  className="bg-white/90 hover:bg-white text-gray-600 h-7 w-7 sm:h-8 sm:w-8 p-0 flex items-center justify-center"
+                                  onClick={() => {
+                                    const img = portfolio.images[0];
+                                    if (img) handlePreview(img);
                                   }}
-                                >
-                                  {skill}
-                                </Tag>
-                              ))}
-                            </div>
-                            {skills.length === 0 && (
-                              <div className="mt-3 p-3 border border-dashed rounded text-sm text-gray-600">
-                                No skills yet — add one .
+                                  title="View Image"
+                                />
+                                <Button
+                                  type="text"
+                                  icon={<EditOutlined />}
+                                  className="bg-white/90 hover:bg-white text-gray-600 h-7 w-7 sm:h-8 sm:w-8 p-0 flex items-center justify-center"
+                                  onClick={() => handleEditPortfolio(portfolio)}
+                                  title="Edit Portfolio"
+                                />
+                                <Button
+                                  type="text"
+                                  icon={<DeleteOutlined />}
+                                  className="bg-white/90 hover:bg-white text-red-500 h-7 w-7 sm:h-8 sm:w-8 p-0 flex items-center justify-center"
+                                  onClick={() => {
+                                    console.log('Portfolio object:', portfolio);
+                                    console.log('Portfolio fpo_id:', portfolio.fpo_id);
+                                    handleDeletePortfolio(portfolio.fpo_id);
+                                  }}
+                                  title="Delete Portfolio"
+                                />
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {!skillSeparateMode && (
-                        <div className="mb-8">
-                          <div className="mb-2">
-                            <Text className="text-xs font-bold">
-                              Enter the Skill <span className="text-red-500 text-xs font-normal">(this field is mandatory for final submission)</span>
-                            </Text>
-                          </div>
-                          {formErrors.skills && (
-                            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded">
-                              <Text type="danger">
-                                {Array.isArray(formErrors.skills) ? formErrors.skills.join(', ') : formErrors.skills}
-                              </Text>
-                            </div>
-                          )}
-                          <div className="mb-4">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Input
-                                placeholder="Add a new skill (e.g., React, UI Design)"
-                                value={newSkill}
-                                onChange={e => setNewSkill(e.target.value)}
-                                onPressEnter={addSkill}
-                                onClick={() => {
-                                  if (newSkill && newSkill.trim().length > 0 && !skills.includes(newSkill.trim())) {
-                                    setSkillReadyMessage(true);
-                                  }
-                                }}
-                                className="flex-1"
-                              />
-                              <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={addSkill}
-                              >
-                                Add
-                              </Button>
-                              {editingSkills && skillsData && (
-                                <Button type="default" icon={<CheckOutlined />} onClick={handleSaveSkills}>
-                                  Save Skills
-                                </Button>
+                              {portfolio.images?.length > 1 && (
+                                <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-black/70 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-xs">
+                                  +{portfolio.images.length - 1} more
+                                </div>
                               )}
                             </div>
-                            {skillReadyMessage && (
-                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                                <Text type="secondary" className="text-sm">
-                                  Skill ready to add! Click the "Add" button or press Enter to include this skill.
-                                </Text>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {skills.map((skill, index) => (
-                              <Tag
-                                key={index}
-                                color="blue"
-                                className="mb-2 flex items-center"
-                                closable
-                                onClose={e => {
-                                  e.preventDefault();
-                                  setSkills(skills.filter((_, i) => i !== index));
-                                }}
-                              >
-                                {skill}
-                              </Tag>
-                            ))}
-                          </div>
-                          {skills.length === 0 && (
-                            <div className="text-center p-4 border border-dashed border-gray-300 rounded-lg">
-                              <Text type="secondary">No skills added yet. Add your first skill above.</Text>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <Collapse
-                        activeKey={activeKeys}
-                        onChange={setActiveKeys}
-                        expandIcon={({ isActive }) => <EditOutlined rotate={isActive ? 90 : 0} />}
-                        className="mb-6"
-                        size="large"
-                      >
-                        {portfolios.map((portfolio, index) => {
-                          const portfolioErrors = formErrors[`portfolio_${index}`] || {};
-                          return (
-                            <Panel
-                              header={
-                                <span className="font-medium">
-                                  <FileOutlined className="mr-2" />
-                                  Portfolio Item {index + 1}
-                                  {portfolio.title && `: ${portfolio.title}`}
-                                </span>
-                              }
-                              key={`portfolio-${index}`}
-                              className="bg-white rounded-lg"
-                            >
-                              <div className="p-4 border border-gray-200 rounded-lg">
-                                <Row gutter={16}>
-                                  <Col xs={24}>
-                                    <Form.Item
-                                      label={
-                                        <span className="font-medium">
-                                          Title <span className="text-red-500">*</span>
-                                        </span>
-                                      }
-                                      validateStatus={formErrors.title || portfolioErrors.title ? 'error' : ''}
-                                      help={
-                                        formErrors.title
-                                          ? formErrors.title.join(', ')
-                                          : portfolioErrors.title?.join(', ')
-                                      }
-                                    >
-                                      <Input
-                                        placeholder="Project title..."
-                                        value={portfolio.title}
-                                        onChange={e => updatePortfolio(portfolio.id, 'title', e.target.value)}
-                                        size="large"
-                                        status={formErrors.title || portfolioErrors.title ? 'error' : ''}
-                                      />
-                                    </Form.Item>
-                                  </Col>
-                                  <Col xs={24}>
-                                    <Form.Item
-                                      label={
-                                        <span className="font-medium">
-                                          Description <span className="text-red-500">*</span>
-                                        </span>
-                                      }
-                                      validateStatus={formErrors.description || portfolioErrors.description ? 'error' : ''}
-                                      help={
-                                        formErrors.description
-                                          ? formErrors.description.join(', ')
-                                          : portfolioErrors.description?.join(', ')
-                                      }
-                                    >
-                                      <TextArea
-                                        placeholder="Project description..."
-                                        rows={4}
-                                        value={portfolio.description}
-                                        onChange={e => updatePortfolio(portfolio.id, 'description', e.target.value)}
-                                        status={formErrors.description || portfolioErrors.description ? 'error' : ''}
-                                      />
-                                    </Form.Item>
-                                  </Col>
-                                </Row>
-                                <Divider />
-                                <Row gutter={24}>
-                                  <Col xs={24} md={12}>
-                                    <div className="mb-4">
-                                      <div className="flex justify-between items-center mb-3">
-                                        <Text strong>Video URLs</Text>
-                                        <Button
-                                          type="dashed"
-                                          icon={<PlusOutlined />}
-                                          onClick={() => addVideoField(portfolio.id)}
-                                          size="small"
-                                        >
-                                          Add Video URL
-                                        </Button>
-                                      </div>
-                                      {portfolioErrors.videoUrls && (
-                                        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded">
-                                          <Text type="danger">{portfolioErrors.videoUrls.join(', ')}</Text>
-                                        </div>
-                                      )}
-                                      <Space direction="vertical" className="w-full">
-                                        {portfolio.videoUrls.map((url, urlIndex) => (
-                                          <div key={urlIndex} className="flex items-center gap-2 w-full">
-                                            <Input
-                                              placeholder="https://example.com/video (optional)"
-                                              value={url}
-                                              onChange={e => updateVideoUrl(portfolio.id, urlIndex, e.target.value)}
-                                              className="flex-1"
-                                              size="large"
-                                              prefix={<PlayCircleOutlined className="text-gray-400" />}
-                                            />
-                                            {portfolio.videoUrls.length > 1 && (
-                                              <Button
-                                                type="text"
-                                                danger
-                                                icon={<CloseOutlined />}
-                                                onClick={() => removeVideoField(portfolio.id, urlIndex)}
-                                                className="w-10 h-10 flex items-center justify-center"
-                                              />
-                                            )}
-                                          </div>
-                                        ))}
-                                      </Space>
-                                    </div>
-                                  </Col>
-                                  <Col xs={24} md={12}>
-                                    <div className="mb-4">
-                                      <div className="flex justify-between items-center mb-3">
-                                        <Text strong>
-                                          Project Images <span className="text-red-500">*</span>
-                                        </Text>
-                                        <Tag color={portfolio.images.length > 0 ? "green" : "red"}>
-                                          {portfolio.images.length} uploaded
-                                        </Tag>
-                                      </div>
-                                      {(formErrors.fpo_img_file || portfolioErrors.images) && (
-                                        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded">
-                                          <Text type="danger">
-                                            {formErrors.fpo_img_file?.join(', ') || portfolioErrors.images?.join(', ')}
-                                          </Text>
-                                        </div>
-                                      )}
-                                      <div className="border border-dashed border-gray-300 rounded-lg p-4">
-                                        <Upload
-                                          listType="picture-card"
-                                          fileList={portfolio.images}
-                                          onChange={info => handleImageUpload(portfolio.id, info)}
-                                          onPreview={handlePreview}
-                                          onRemove={file => {
-                                            const index = portfolio.images.findIndex(img => img.uid === file.uid);
-                                            if (index > -1) removeImage(portfolio.id, index);
-                                            return false;
-                                          }}
-                                          beforeUpload={() => false}
-                                          multiple
-                                          accept="image/*"
-                                          showUploadList={{
-                                            showRemoveIcon: true,
-                                            removeIcon: <CloseOutlined />
-                                          }}
-                                        >
-                                          {portfolio.images.length >= 8 ? null : uploadButton}
-                                        </Upload>
-                                        {portfolio.images.length === 0 && (
-                                          <div className="text-center mt-2">
-                                            <Text type="danger">At least one image is required</Text>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </Col>
-                                </Row>
-                              </div>
-                            </Panel>
-                          );
-                        })}
-                      </Collapse>
-
-                      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <Checkbox checked={addAnotherPortfolio} onChange={e => {
-                          const checked = e.target.checked;
-                          setAddAnotherPortfolio(checked);
-                          if (checked) {
-                            // Clear previously added skills when switching into "add another" mode
-                            setSkills([]);
-                            setSkillsWithIds([]);
-                            setSkillsData(null);
-
-                            message.info('After saving, the form will be reset for your next portfolio item (skills optional).', 3);
-                            setSkillSeparateMode(true);
-                          } else {
-                            message.info('Final submission — skills are required for this submission.');
-                            setSkillSeparateMode(false);
-                          }
-                        }}>
-
-                          <span className="font-medium">Add another portfolio item after saving</span>
-                        </Checkbox>
-                        <Text type="secondary" className="text-sm">Check to add more portfolio items after submitting.</Text>
-                      </div>
-
-                      <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-                        <div>
-                          <Button size="large" onClick={handleCancelEditForm} disabled={isSubmitting}>Cancel</Button>
-                        </div>
-                        <div className="flex gap-2">
-                          {/* Always show back button if onBack is provided */}
-                          {onBack && (
-                            <Button size="large" icon={<ArrowLeftOutlined />} onClick={onBack} disabled={isSubmitting}>
-                              Back
-                            </Button>
-                          )}
-                          <Button 
-                            type="primary" 
-                            size="large" 
-                            icon={isSubmitting ? <LoadingOutlined /> : <CheckOutlined />} 
-                            onClick={e => { e.preventDefault(); e.stopPropagation(); handleInitialSubmit(e); }} 
-                            loading={isSubmitting} 
-                            disabled={isSubmitting} 
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            {addAnotherPortfolio ? 'Save & Add Another' : 'Save Portfolio'}
-                          </Button>
-                        </div>
-                      </div>
-                    </Form>
-                  </Spin>
-                ) : (
-                  <div>
-                    {skillsData && (
-                      <div className="mb-8">
-                        <div className="flex justify-between items-center mb-4">
-                          <Title level={4}>Your Skills</Title>
-                          {!editingSkills ? (
-                            <Button type="default" icon={<EditOutlined />} onClick={handleEditSkills}>Edit Skills</Button>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <Input placeholder="Add a new skill" value={newSkill} onChange={e => setNewSkill(e.target.value)} onPressEnter={addSkill} />
-                              <Button type="primary" icon={<PlusOutlined />} onClick={addSkill}>Add</Button>
-                              <Button type="default" icon={<CheckOutlined />} onClick={handleSaveSkills}>Save</Button>
+                            <div className="h-40 sm:h-48 bg-gray-100 flex items-center justify-center">
+                              <FileOutlined className="text-3xl sm:text-4xl text-gray-400" />
                             </div>
-                          )}
+                          )
+                        }
+                      >
+                        <div className="flex flex-col flex-1 justify-between h-full p-3 sm:p-4 md:p-5">
+                          <div>
+                            <Title level={5} className="!mb-1 sm:!mb-2 text-gray-900 font-semibold line-clamp-1 text-sm sm:text-base">{portfolio.title}</Title>
+                            <Text className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 block line-clamp-2 sm:line-clamp-3">
+                              {portfolio.description}
+                            </Text>
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-gray-500 pt-2 sm:pt-3 border-t border-gray-100 mt-auto">
+                            <span className="truncate text-xs">{portfolio.date}</span>
+                            <span className="text-xs">{portfolio.images?.length || 0} images</span>
+                          </div>
+                          <div className="flex justify-between items-center gap-1 sm:gap-2 mt-3 sm:mt-4">
+                            <Button
+                              type="text"
+                              icon={<EyeOutlined />}
+                              onClick={() => {
+                                const img = portfolio.images[0];
+                                if (img) handlePreview(img);
+                              }}
+                              className="text-gray-600 hover:text-gray-800 flex-1 text-xs sm:text-sm h-7 sm:h-8 p-1"
+                            >
+                              <span className="hidden sm:inline">View</span>
+                           
+                            </Button>
+                            <Button
+                              type="text"
+                              icon={<EditOutlined />}
+                              onClick={() => handleEditPortfolio(portfolio)}
+                              className="text-gray-600 hover:text-gray-800 flex-1 text-xs sm:text-sm h-7 sm:h-8 p-1"
+                            >
+                              <span className="hidden sm:inline">Edit</span>
+                         
+                            </Button>
+                            <Button
+                              type="text"
+                              icon={<DeleteOutlined />}
+                              onClick={() => {
+                                console.log('Portfolio object:', portfolio);
+                                console.log('Portfolio fpo_id:', portfolio.fpo_id);
+                                handleDeletePortfolio(portfolio.fpo_id);
+                              }}
+                              className="text-red-500 hover:text-red-700 flex-1 text-xs sm:text-sm h-7 sm:h-8 p-1"
+                            >
+                              <span className="hidden sm:inline">Delete</span>
+                             
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {(skillsData || skills).map((skill, index) => (
-                            <Tag key={index} color="blue" className="mb-2">{skill}</Tag>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="mb-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <Title level={4}>Portfolio Items</Title>
-                        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddMorePortfolio} className="bg-blue-600 hover:bg-blue-700">Add More Portfolio</Button>
-                      </div>
-                      <Table dataSource={portfolioData || []} columns={columns} pagination={false} rowKey="id" locale={{ emptyText: 'No portfolio items yet — add one using the form above.' }} />
-                    </div>
-                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-                      {/* Always show back button if onBack is provided */}
-                      {onBack && (
-                        <Button size="large" icon={<ArrowLeftOutlined />} onClick={onBack}>
-                          Back
-                        </Button>
-                      )}
-                      {onNext && (
-                        <Button 
-                          type="primary" 
-                          size="large" 
-                          onClick={onNext} 
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          Continue
-                        </Button>
-                      )}
-                    </div>
+                      </Card>
+                    ))}
                   </div>
+
+                  {portfolios.length === 0 && (
+                    <div className="text-center py-8 sm:py-12 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <FileOutlined className="text-3xl sm:text-4xl text-gray-400 mb-3 sm:mb-4" />
+                      <Text type="secondary" className="text-gray-500 text-sm sm:text-base">No portfolio items yet. Add your first project!</Text>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons for Registration Flow */}
+            {(onBack || onNext) && hasData && (
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200 gap-3 sm:gap-0">
+                {onBack && (
+                  <Button size="large" onClick={onBack} className="border-gray-300 text-gray-700 w-full sm:w-auto h-10 sm:h-12 text-sm sm:text-base">
+                    Back
+                  </Button>
                 )}
-              </>
+                {onNext && (
+                  <Button 
+                    type="primary" 
+                    size="large" 
+                    onClick={onNext}
+                    className="bg-blue-600 hover:bg-blue-700 border-blue-600 w-full sm:w-auto h-10 sm:h-12 text-sm sm:text-base"
+                  >
+                    Continue
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </Card>
 
-        <Modal open={previewVisible} title="Image Preview" footer={null} onCancel={() => setPreviewVisible(false)} width={800} centered>
-          <img alt="Preview" className="w-full max-h-[70vh] object-contain" src={previewImage} onError={() => { console.error('Preview image failed to load:', previewImage); message.error('Failed to load image preview'); }} />
-        </Modal>
-
-        <Modal title="Edit Portfolio Item" open={editModalVisible} onCancel={() => { setEditModalVisible(false); setEditingPortfolio(null); setDeletedImages([]); setDeletedVideos([]); }} footer={[
-          <Button key="cancel" onClick={() => { setEditModalVisible(false); setEditingPortfolio(null); setDeletedImages([]); setDeletedVideos([]); }}>Cancel</Button>,
-          <Button key="save" type="primary" onClick={handleEditSave} loading={isSubmitting} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">{isSubmitting ? 'Saving...' : 'Save Changes'}</Button>
-        ]} width={900} destroyOnClose>
-          {editingPortfolio && (
-            <div className="mt-4">
-              <Form layout="vertical" className="space-y-4">
-                <Form.Item label="Title" required validateStatus={!editingPortfolio.title ? 'error' : ''} help={!editingPortfolio.title ? 'Title is required' : ''}>
-                  <Input value={editingPortfolio.title} onChange={e => setEditingPortfolio(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter portfolio title" size="large" />
-                </Form.Item>
-                <Form.Item label="Description" required validateStatus={!editingPortfolio.description ? 'error' : ''} help={!editingPortfolio.description ? 'Description is required' : ''}>
-                  <TextArea rows={4} value={editingPortfolio.description} onChange={e => setEditingPortfolio(prev => ({ ...prev, description: e.target.value }))} placeholder="Enter portfolio description" />
-                </Form.Item>
-                <Divider />
-                <Row gutter={16}>
-                  <Col xs={24} md={12}>
-                    <Form.Item label="Video URLs">
-                      <div className="mb-2"><Button type="dashed" icon={<PlusOutlined />} onClick={addVideoFieldEdit} size="small">Add Video URL</Button></div>
-                      <Space direction="vertical" className="w-full">
-                        {(editingPortfolio.videoUrls || ['']).map((url, index) => (
-                          <div key={`video-${index}-${url}`} className="flex items-center gap-2 w-full">
-                            <Input placeholder="https://example.com/video (optional)" value={url} onChange={e => updateVideoUrlEdit(index, e.target.value)} prefix={<PlayCircleOutlined className="text-gray-400" />} />
-                            {(editingPortfolio.videoUrls || ['']).length > 1 && (<Button type="text" danger icon={<CloseOutlined />} onClick={() => removeVideoFieldEdit(index)} className="w-10 h-10 flex items-center justify-center" />)}
-                          </div>
-                        ))}
-                      </Space>
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Form.Item label="Project Images" required validateStatus={!editingPortfolio.images || editingPortfolio.images.length === 0 ? 'error' : ''} help={!editingPortfolio.images || editingPortfolio.images.length === 0 ? 'At least one image is required' : ''}>
-                      <div className="border border-dashed border-gray-300 rounded-lg p-4">
-                        <Upload listType="picture-card" fileList={editingPortfolio.images || []} onChange={handleEditImageUpload} onPreview={handlePreview} onRemove={removeEditImage} beforeUpload={() => false} multiple accept="image/*" showUploadList={{ showRemoveIcon: true, removeIcon: <CloseOutlined /> }}>
-                          {(editingPortfolio.images || []).length >= 8 ? null : uploadButton}
-                        </Upload>
-                        <div className="text-center mt-2"><Text type="secondary" className="text-xs">You can add new images or remove existing ones. Changes will be saved when you click "Save Changes".</Text></div>
-                        {(!editingPortfolio.images || editingPortfolio.images.length === 0) && (<div className="text-center mt-2"><Text type="danger">At least one image is required</Text></div>)}
-                      </div>
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </Form>
+        {/* Add Skill Modal */}
+        <Modal
+          title="Manage Skills"
+          open={skillModalVisible}
+          onCancel={() => {
+            setSkillModalVisible(false);
+            setNewSkill('');
+          }}
+          width="90%"
+          style={{ maxWidth: '500px', top: 20 }}
+          footer={[
+            <Button key="cancel" onClick={() => setSkillModalVisible(false)} className="border-gray-300 text-gray-700 w-full sm:w-auto h-10 sm:h-9 text-sm">
+              Cancel
+            </Button>,
+            <Button 
+              key="submit" 
+              type="primary" 
+              onClick={handleAddSkill}
+              disabled={!newSkill.trim()}
+              className="bg-blue-600 hover:bg-blue-700 border-blue-600 w-full sm:w-auto h-10 sm:h-9 text-sm"
+            >
+              Add Skill
+            </Button>
+          ]}
+        >
+          <div className="py-2 sm:py-4">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Add New Skill</label>
+              <Input
+                placeholder="Enter skill name (e.g., React, JavaScript, UI Design)"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                onPressEnter={handleAddSkill}
+                size="large"
+                className="h-10 sm:h-11 text-sm sm:text-base"
+              />
             </div>
-          )}
+            {skills.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Current Skills</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 sm:p-3 bg-gray-50 rounded-lg max-h-48 overflow-y-auto">
+                  {skills.map((skill, index) => (
+                    <div
+                      key={index}
+                      className="group relative bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1.5 sm:p-2 hover:shadow-sm transition-all duration-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-blue-800 truncate pr-1 flex-1">
+                          {skill}
+                        </span>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={() => handleRemoveSkill(skill)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-50 p-0 h-4 w-4 flex items-center justify-center flex-shrink-0"
+                          title="Delete skill"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </Modal>
 
-        <Modal title="Add New Portfolio Item" open={newPortfolioModalVisible} onCancel={() => { setNewPortfolioModalVisible(false); fetchPortfolioData(); }} footer={[
-          <Button key="cancel" onClick={() => { setNewPortfolioModalVisible(false); fetchPortfolioData(); }}>Cancel</Button>,
-          // NOTE: preserve skills by default. pass true to resetFormForNewPortfolio to clear skills.
-          <Button key="start" type="primary" onClick={() => { setNewPortfolioModalVisible(false); resetFormForNewPortfolio(true); }} className="bg-blue-600 hover:bg-blue-700">Start New Portfolio</Button>
+        {/* Add Portfolio Modal */}
+        <Modal
+          title="Add Portfolio Item"
+          open={portfolioModalVisible}
+          onCancel={() => {
+            setPortfolioModalVisible(false);
+            setCurrentPortfolio({ title: '', description: '', videoUrls: [''], images: [] });
+            setFormErrors({});
+          }}
+          width="95%"
+          style={{ maxWidth: '800px', top: 10 }}
+          footer={[
+            <Button key="cancel" onClick={() => setPortfolioModalVisible(false)} className="border-gray-300 text-gray-700 w-full sm:w-auto h-10 sm:h-9 text-sm">
+              Cancel
+            </Button>,
+            <Button 
+              key="submit" 
+              type="primary" 
+              loading={isSubmitting}
+              onClick={handleSavePortfolio}
+              className="bg-blue-600 hover:bg-blue-700 border-blue-600 w-full sm:w-auto h-10 sm:h-9 text-sm"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Portfolio'}
+            </Button>
+          ]}
+        >
+          <div className="py-2 sm:py-4 space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+              <Input
+                placeholder="Project title"
+                value={currentPortfolio.title}
+                onChange={(e) => setCurrentPortfolio(prev => ({ ...prev, title: e.target.value }))}
+                status={formErrors.title ? 'error' : ''}
+                className="h-10 sm:h-11 text-sm sm:text-base"
+              />
+              {formErrors.title && <Text type="danger" className="text-xs sm:text-sm">{formErrors.title}</Text>}
+            </div>
 
-        ]} width={500}>
-          <div className="p-4">
-            <Text>Your portfolio has been saved successfully!</Text><br />
-            <Text>Would you like to add another portfolio item now?</Text>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+              <TextArea
+                placeholder="Project description"
+                rows={3}
+                value={currentPortfolio.description}
+                onChange={(e) => setCurrentPortfolio(prev => ({ ...prev, description: e.target.value }))}
+                status={formErrors.description ? 'error' : ''}
+                className="text-sm sm:text-base"
+              />
+              {formErrors.description && <Text type="danger" className="text-xs sm:text-sm">{formErrors.description}</Text>}
+            </div>
+
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2 sm:gap-0">
+                <label className="block text-sm font-medium text-gray-700">Video URLs (Optional)</label>
+                <Button type="dashed" icon={<PlusOutlined />} size="small" onClick={addVideoField} className="h-8 text-xs">
+                  Add URL
+                </Button>
+              </div>
+              <Space direction="vertical" className="w-full">
+                {currentPortfolio.videoUrls.map((url, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      placeholder="https://example.com/video"
+                      value={url}
+                      onChange={(e) => updateVideoUrl(index, e.target.value)}
+                      prefix={<PlayCircleOutlined className="text-gray-400" />}
+                      className="h-9 sm:h-10 text-sm"
+                    />
+                    {currentPortfolio.videoUrls.length > 1 && (
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeVideoField(index)}
+                        className="h-9 w-9 p-0 flex items-center justify-center"
+                      />
+                    )}
+                  </div>
+                ))}
+              </Space>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Images *</label>
+              {formErrors.images && <Text type="danger" className="text-xs sm:text-sm block mb-2">{formErrors.images}</Text>}
+              <div className="upload-container">
+                <Upload
+                  listType="picture-card"
+                  fileList={currentPortfolio.images}
+                  onChange={handleImageUpload}
+                  onPreview={handlePreview}
+                  beforeUpload={() => false}
+                  multiple
+                  accept="image/*"
+                  className="upload-list-inline"
+                >
+                  {currentPortfolio.images.length >= 8 ? null : uploadButton}
+                </Upload>
+              </div>
+            </div>
           </div>
+        </Modal>
+
+        {/* Edit Portfolio Modal */}
+        <Modal
+          title="Edit Portfolio Item"
+          open={editPortfolioModalVisible}
+          onCancel={() => {
+            setEditPortfolioModalVisible(false);
+            setCurrentPortfolio({ title: '', description: '', videoUrls: [''], images: [] });
+            setFormErrors({});
+          }}
+          width="95%"
+          style={{ maxWidth: '800px', top: 10 }}
+          footer={[
+            <Button key="cancel" onClick={() => setEditPortfolioModalVisible(false)} className="border-gray-300 text-gray-700 w-full sm:w-auto h-10 sm:h-9 text-sm">
+              Cancel
+            </Button>,
+            <Button 
+              key="submit" 
+              type="primary" 
+              loading={isSubmitting}
+              onClick={handleUpdatePortfolio}
+              className="bg-blue-600 hover:bg-blue-700 border-blue-600 w-full sm:w-auto h-10 sm:h-9 text-sm"
+            >
+              {isSubmitting ? 'Updating...' : 'Update Portfolio'}
+            </Button>
+          ]}
+        >
+          <div className="py-2 sm:py-4 space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+              <Input
+                placeholder="Project title"
+                value={currentPortfolio.title}
+                onChange={(e) => setCurrentPortfolio(prev => ({ ...prev, title: e.target.value }))}
+                status={formErrors.title ? 'error' : ''}
+                className="h-10 sm:h-11 text-sm sm:text-base"
+              />
+              {formErrors.title && <Text type="danger" className="text-xs sm:text-sm">{formErrors.title}</Text>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+              <TextArea
+                placeholder="Project description"
+                rows={3}
+                value={currentPortfolio.description}
+                onChange={(e) => setCurrentPortfolio(prev => ({ ...prev, description: e.target.value }))}
+                status={formErrors.description ? 'error' : ''}
+                className="text-sm sm:text-base"
+              />
+              {formErrors.description && <Text type="danger" className="text-xs sm:text-sm">{formErrors.description}</Text>}
+            </div>
+
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2 sm:gap-0">
+                <label className="block text-sm font-medium text-gray-700">Video URLs (Optional)</label>
+                <Button type="dashed" icon={<PlusOutlined />} size="small" onClick={addVideoField} className="h-8 text-xs">
+                  Add URL
+                </Button>
+              </div>
+              <Space direction="vertical" className="w-full">
+                {currentPortfolio.videoUrls.map((url, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      placeholder="https://example.com/video"
+                      value={url}
+                      onChange={(e) => updateVideoUrl(index, e.target.value)}
+                      prefix={<PlayCircleOutlined className="text-gray-400" />}
+                      className="h-9 sm:h-10 text-sm"
+                    />
+                    {currentPortfolio.videoUrls.length > 1 && (
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeVideoField(index)}
+                        className="h-9 w-9 p-0 flex items-center justify-center"
+                      />
+                    )}
+                  </div>
+                ))}
+              </Space>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Images *</label>
+              {formErrors.images && <Text type="danger" className="text-xs sm:text-sm block mb-2">{formErrors.images}</Text>}
+              <div className="upload-container">
+                <Upload
+                  listType="picture-card"
+                  fileList={currentPortfolio.images}
+                  onChange={handleImageUpload}
+                  onPreview={handlePreview}
+                  beforeUpload={() => false}
+                  multiple
+                  accept="image/*"
+                  onRemove={(file) => {
+                    if (file.fpoi_id && file.dbStored) {
+                      handleDeleteImage(file.fpoi_id, currentPortfolio.id);
+                      return false; // Don't remove from UI immediately, let the API call handle it
+                    }
+                    return true; // Allow removal for new files
+                  }}
+                  showUploadList={{
+                    showPreviewIcon: true,
+                    showRemoveIcon: true,
+                    showDownloadIcon: false,
+                  }}
+                  className="upload-list-inline"
+                >
+                  {currentPortfolio.images.length >= 8 ? null : uploadButton}
+                </Upload>
+              </div>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Image Preview Modal */}
+        <Modal 
+          open={previewVisible} 
+          title="Image Preview" 
+          footer={null} 
+          onCancel={() => setPreviewVisible(false)}
+          width="95%"
+          style={{ maxWidth: '800px', top: 20 }}
+          centered
+        >
+          <img alt="Preview" className="w-full max-h-[60vh] sm:max-h-[70vh] object-contain" src={previewImage} />
         </Modal>
       </div>
     </div>

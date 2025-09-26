@@ -248,8 +248,28 @@ const Header = ({ params }) => {
     >
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 rounded-md hover:bg-white/10 transition-colors"
+            aria-label="Toggle menu"
+          >
+            <MenuIcon className="w-6 h-6" />
+          </button>
+
           {/* Logo and Categories Button (grouped together) */}
-          <div className="flex items-center space-x-4">
+          <div
+            className="flex items-center space-x-4 cursor-pointer"
+            onClick={() => router.push("/")}
+            role="button"
+            tabIndex={0}
+            aria-label="Go to home page"
+            onKeyDown={e => {
+              if (e.key === "Enter" || e.key === " ") {
+                router.push("/");
+              }
+            }}
+          >
             <Image
               src={Logo}
               alt="Hyrelancer Logo"
@@ -337,7 +357,7 @@ const Header = ({ params }) => {
         </div>
       </div>
 
-      {/* Mobile/Tablet Menu (shown from 200px to 1000px) */}
+      {/* Mobile/Tablet Menu (shown on mobile and tablet) */}
       <div
         className={`fixed inset-0 z-40 overflow-y-auto transition-all duration-300 ease-in-out transform ${isMobileMenuOpen
           ? "translate-x-0 opacity-100"

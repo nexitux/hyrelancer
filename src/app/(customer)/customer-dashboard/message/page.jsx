@@ -19,6 +19,63 @@ export default function MessageBox() {
     const currentUserId = user?.id;
     const authToken = token;
 
+    // Prefilled message templates
+    const prefilledMessages = [
+        {
+            category: "Greetings",
+            messages: [
+                "Hello! How are you doing today?",
+                "Hi there! Hope you're having a great day!",
+                "Good morning! How can I help you?",
+                "Hello! Nice to meet you!"
+            ]
+        },
+        {
+            category: "Project Related",
+            messages: [
+                "I'm interested in working on this project. Can we discuss the details?",
+                "I have experience with this type of work. Would you like to see my portfolio?",
+                "I can start working on this project immediately. What's the timeline?",
+                "I'd love to help with this project. Let me know your requirements."
+            ]
+        },
+        {
+            category: "Contact & Communication",
+            messages: [
+                "What's the best way to contact you for project updates?",
+                "I'm available for a call to discuss the project in detail.",
+                "Please let me know your preferred communication method.",
+                "I'm flexible with meeting times. When works best for you?"
+            ]
+        },
+        {
+            category: "Availability",
+            messages: [
+                "I'm available to start working on this project right away.",
+                "I can dedicate 20-30 hours per week to this project.",
+                "I'm flexible with deadlines. What's your preferred timeline?",
+                "I'm available for both short-term and long-term projects."
+            ]
+        },
+        {
+            category: "Pricing & Budget",
+            messages: [
+                "What's your budget range for this project?",
+                "I can work within your budget. Let's discuss the scope.",
+                "I offer competitive rates. Would you like a detailed quote?",
+                "I'm open to negotiating the price based on project requirements."
+            ]
+        }
+    ];
+
+    // Simple quick messages like in the image
+    const quickMessages = [
+        "Hello! How are you?",
+        "Are you available for a project?",
+        "What's your rate?",
+        "I'm interested in your services >"
+    ];
+
 
     // Get auth token 
     const getAuthToken = () => {
@@ -349,12 +406,22 @@ export default function MessageBox() {
         await sendMessage(selectedUser, messageText);
     };
 
+    // Handle prefilled message click
+    const handlePrefilledMessage = (prefilledText) => {
+        setMessage(prefilledText);
+    };
+
     // Handle key press (Enter to send)
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
         }
+    };
+
+    // Handle prefilled message selection
+    const handlePrefilledMessageSelect = (messageText) => {
+        setMessage(messageText);
     };
 
     // Auto-resize textarea
@@ -557,7 +624,7 @@ export default function MessageBox() {
                                         <div>
                                             <h2 className="text-base font-semibold text-gray-800">{selectedUserData.name}</h2>
                                             <p className="text-xs text-blue-600">
-                                                {selectedUserData.userType} • {selectedUserData.online ? 'Online' : 'Last seen recently'}
+                                                {selectedUserData.userType} 
                                             </p>
                                         </div>
                                     </div>
@@ -626,24 +693,40 @@ export default function MessageBox() {
                                             <div ref={messagesEndRef} />
                                         </div>
                                     )}
-                                </div>
+                                    {/* Quick Message Suggestions - Show only when no messages exist */}
+                                    {/* currentMessages.length === 30 && currentMessages.length < 20 && */}
+                                { (
+                                    <div className="flex-shrink-0 pt-20">
+                                        <div className="flex flex-wrap gap-2 justify-center">
+                                            {quickMessages.map((msg, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => handlePrefilledMessageSelect(msg)}
+                                                    className="px-4 py-2 bg-white border border-purple-300 rounded-full text-sm text-gray-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 shadow-sm"
+                                                >
+                                                    {msg}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                </div>  
+
+                                
 
                                 {/* Message Input */}
                                 <div className="flex-shrink-0 bg-white border-t border-gray-200 p-3">
                                     <div className="flex items-end space-x-2">
-                                     
-                                        
                                         <div className="flex-1 relative">
                                             <textarea
                                                 value={message}
                                                 onChange={handleTextareaChange}
                                                 onKeyPress={handleKeyPress}
                                                 placeholder={`Message ${selectedUserData.name}...`}
-                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all max-h-32 min-h-[44px] text-sm"
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all max-h-32 min-h-[44px] text-sm scrollbar-hide"
                                                 rows={1}
-                                                style={{ height: 'auto' }}
+                                                style={{ height: 'auto', overflow: 'hidden' }}
                                             />
-                                         
                                         </div>
 
                                         <button
