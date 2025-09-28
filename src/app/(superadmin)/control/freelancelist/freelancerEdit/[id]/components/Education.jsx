@@ -67,7 +67,7 @@ const FieldGroup = ({ title, children, onRemove, canRemove }) => (
 export default function AdminProfessionalPage() {
   const params = useParams();
   const router = useRouter();
-  const userIdBase64 = params?.id;
+  const userIdBase64 = params?.id ? decodeURIComponent(params.id) : null;
 
   // --- STATE MANAGEMENT ---
   const [allForm] = Form.useForm(); // Single form for initial submission

@@ -73,7 +73,7 @@ const TokenManager = {
 export default function SocialDisplayPage() {
   const params = useParams();
   const router = useRouter();
-  const userId = params?.id;
+  const userId = params?.id ? decodeURIComponent(params.id) : null;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

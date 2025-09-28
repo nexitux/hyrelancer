@@ -1,4 +1,4 @@
-import { FaTachometerAlt, FaBriefcase, FaUser,SupportIcon } from "react-icons/fa";
+import { FaTachometerAlt, FaBriefcase, FaUser } from "react-icons/fa";
 
 export const freelancerMenu = [
   {
@@ -8,20 +8,26 @@ export const freelancerMenu = [
       { name: "Analytics", path: "/freelancer-dashboard/analytics", pro: false },
       // { name: "Services", path: "/services", pro: false },
       { name: "Messages", path: "/freelancer-dashboard/message", pro: false },
-      { name: "Bookmarks", path: "/freelancer-dashboard/bookmarks", pro: false },
-      { name: "Job Alerts", path: "/freelancer-dashboard/job-alerts", pro: false },
-      { name: "Applied Jobs", path: "/freelancer-dashboard/applied-jobs", pro: false },
       // { name: "My Proposals", path: "/freelancer-dashboard/proposals", pro: false },
       // { name: "My Services", path: "/freelancer-dashboard/my-services", pro: false },
-      { name: "Active Works", path: "/freelancer-dashboard/active-works", pro: false },
       // { name: "Service Orders", path: "/freelancer-dashboard/service-orders", pro: false },
-      { name: "Job List", path: "/freelancer-dashboard/job-details", pro: false },
       // { name: "Profile", path: "/freelancer-dashboard/profileView", pro: false },
     ],
   },
   {
     icon: <FaBriefcase className="w-4 h-4" />,
-    name: "Account Settings",
+    name: "Manage Jobs",
+    subItems: [
+      { name: "Job List", path: "/freelancer-dashboard/job-details", pro: false },
+      { name: "Active Works", path: "/freelancer-dashboard/active-works", pro: false },
+      { name: "Applied Jobs", path: "/freelancer-dashboard/applied-jobs", pro: false },
+      { name: "Bookmarks", path: "/freelancer-dashboard/bookmarks", pro: false },
+      { name: "Job Alerts", path: "/freelancer-dashboard/job-alerts", pro: false },
+    ],
+  },
+  {
+    icon: <FaBriefcase className="w-4 h-4" />,
+    name: "Profile Settings",
     subItems: [
       { name: "My profile", path: "/profile-setup/my-profile", pro: false },
       { name: "Services", path: "/profile-setup/services", pro: false },
@@ -32,7 +38,7 @@ export const freelancerMenu = [
   },
   {
     icon: <FaUser className="w-4 h-4" />,
-    name: "Account",
+    name: "Account Settings",
     subItems: [{ name: "Change Password", path: "/freelancer-dashboard/Changepassword", pro: false },
                { name: "Delete Profile", path: "/freelancer-dashboard/Deleteprofile", pro: false },
                { name: "Deactivate Profile", path: "/freelancer-dashboard/acc-active", pro: false }

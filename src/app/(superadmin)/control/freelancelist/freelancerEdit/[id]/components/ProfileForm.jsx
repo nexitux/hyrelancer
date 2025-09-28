@@ -44,7 +44,7 @@ const TokenManager = {
 export default function ProfileForm() {
   const params = useParams();
   const router = useRouter();
-  const userIdBase64 = params?.id;
+  const userIdBase64 = params?.id ? decodeURIComponent(params.id) : null;
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);

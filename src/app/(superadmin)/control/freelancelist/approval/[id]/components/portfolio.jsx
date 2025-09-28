@@ -15,7 +15,7 @@ import { useParams, useRouter } from "next/navigation";
 const PortfolioDisplayPage = ({ isApprovalMode = false }) => {
   const params = useParams();
   const router = useRouter();
-  const userId = params?.id;
+  const userId = params?.id ? decodeURIComponent(params.id) : null;
 
   // State management
   const [userData, setUserData] = useState(null);

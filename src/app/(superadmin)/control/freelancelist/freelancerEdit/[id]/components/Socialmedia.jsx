@@ -87,7 +87,7 @@ const AdminSocialTab = ({ onBack, userName = "User" }) => {
   const [progressPercent, setProgressPercent] = useState(0);
 
   const params = useParams();
-  const userId = params?.id;
+  const userId = params?.id ? decodeURIComponent(params.id) : null;
 
   const calculateProgress = () => {
     const formElements = document.querySelectorAll('form input[name^="fp_"]');

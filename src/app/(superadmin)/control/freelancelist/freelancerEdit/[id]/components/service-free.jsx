@@ -40,7 +40,7 @@ const { Text } = Typography;
 export default function AdminServicePage() {
   const params = useParams();
   const router = useRouter();
-  const userIdBase64 = params?.id;
+  const userIdBase64 = params?.id ? decodeURIComponent(params.id) : null;
 
   const [form] = Form.useForm();
 

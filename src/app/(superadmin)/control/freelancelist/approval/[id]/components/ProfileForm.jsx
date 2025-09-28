@@ -18,7 +18,7 @@ const TokenManager = {
 export default function ProfileDisplay() {
   const params = useParams();
   const router = useRouter();
-  const userIdBase64 = params?.id;
+  const userIdBase64 = params?.id ? decodeURIComponent(params.id) : null;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

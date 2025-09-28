@@ -30,7 +30,7 @@ import { useParams } from "next/navigation";
 
 const AdminContentForm = () => {
   const params = useParams();
-  const userId = params?.id;
+  const userId = params?.id ? decodeURIComponent(params.id) : null;
 
   // State management
   const [userData, setUserData] = useState(null); // null = loading, false = new user, object = existing user

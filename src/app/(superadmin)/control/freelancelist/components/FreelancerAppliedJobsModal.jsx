@@ -1,129 +1,55 @@
 "use client";
 
-import React, { useState } from 'react';
-import { X, User, Calendar, Clock, Star, DollarSign, Eye, MapPin, FileText, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Calendar, Clock, Star, DollarSign, Eye, MapPin, FileText, Search, Filter, Loader2, Briefcase } from 'lucide-react';
+import adminApi from '@/config/adminApi';
+import { Base64 } from 'js-base64';
+import JobDetailsModal from './JobDetailsModal';
 
 const FreelancerAppliedJobsModal = ({ isOpen = true, onClose = () => {}, freelancer = null }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [jobApplications, setJobApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Job Details Modal state
+  const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
+  const [selectedJobData, setSelectedJobData] = useState(null);
 
-  // Sample freelancer data - this would come from props
-  const defaultFreelancer = {
-    id: 1,
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@email.com',
-    avatar: 'SJ',
-    rating: 4.8,
-    totalApplications: 18,
-    acceptedApplications: 5,
-    appliedJobs: [
-      {
-        id: 'APP-001',
-        jobId: 'JOB-001',
-        title: 'Senior React Developer',
-        customer: 'TechCorp Inc.',
-        customerId: 'CUST-001',
-        applicationStatus: 'under_review',
-        appliedDate: '2024-01-18',
-        location: 'San Francisco, CA',
-        jobType: 'Full-time',
-        salary: '$120,000 - $150,000',
-        description: 'We are looking for an experienced React developer to join our dynamic team and work on cutting-edge web applications.',
-        requirements: ['5+ years React experience', 'TypeScript proficiency', 'Team leadership skills'],
-        applicationMessage: 'I am excited to apply for this position. My 6 years of React experience and leadership background make me a perfect fit.',
-        postedDate: '2024-01-15',
-        deadline: '2024-02-15',
-        totalApplicants: 45,
-        companyRating: 4.5
-      },
-      {
-        id: 'APP-002',
-        jobId: 'JOB-002',
-        title: 'UI/UX Designer',
-        customer: 'DesignStudio Pro',
-        customerId: 'CUST-002',
-        applicationStatus: 'shortlisted',
-        appliedDate: '2024-01-20',
-        location: 'Remote',
-        jobType: 'Contract',
-        salary: '$80 - $120/hour',
-        description: 'Looking for a creative UI/UX designer to work on mobile and web application designs.',
-        requirements: ['Figma expertise', 'Mobile design experience', 'Portfolio required'],
-        applicationMessage: 'I have attached my portfolio showcasing mobile and web designs. I specialize in user-centered design.',
-        postedDate: '2024-01-17',
-        deadline: '2024-02-10',
-        totalApplicants: 23,
-        companyRating: 4.2
-      },
-      {
-        id: 'APP-003',
-        jobId: 'JOB-003',
-        title: 'Full Stack Developer',
-        customer: 'StartupXYZ',
-        customerId: 'CUST-003',
-        applicationStatus: 'rejected',
-        appliedDate: '2024-01-12',
-        location: 'New York, NY',
-        jobType: 'Full-time',
-        salary: '$90,000 - $130,000',
-        description: 'Join our startup team to build innovative web applications using modern technologies.',
-        requirements: ['Node.js & React', 'Database design', 'AWS experience'],
-        applicationMessage: 'I am passionate about startups and have the technical skills needed for this role.',
-        postedDate: '2024-01-10',
-        deadline: '2024-01-30',
-        totalApplicants: 67,
-        companyRating: 3.8,
-        rejectionReason: 'Looking for candidates with more startup experience'
-      },
-      {
-        id: 'APP-004',
-        jobId: 'JOB-004',
-        title: 'Frontend Team Lead',
-        customer: 'Enterprise Solutions',
-        customerId: 'CUST-004',
-        applicationStatus: 'interview_scheduled',
-        appliedDate: '2024-01-22',
-        location: 'Austin, TX',
-        jobType: 'Full-time',
-        salary: '$140,000 - $180,000',
-        description: 'Lead a team of frontend developers and drive technical decisions for our enterprise platform.',
-        requirements: ['Leadership experience', 'Advanced React/Vue', 'Agile methodology'],
-        applicationMessage: 'I have led frontend teams for 3 years and am excited about this leadership opportunity.',
-        postedDate: '2024-01-20',
-        deadline: '2024-02-20',
-        totalApplicants: 31,
-        companyRating: 4.7,
-        interviewDate: '2024-01-28',
-        interviewTime: '2:00 PM'
-      },
-      {
-        id: 'APP-005',
-        jobId: 'JOB-005',
-        title: 'Mobile App Developer',
-        customer: 'MobileFirst Co.',
-        customerId: 'CUST-005',
-        applicationStatus: 'accepted',
-        appliedDate: '2024-01-08',
-        location: 'Remote',
-        jobType: 'Contract',
-        salary: '$100 - $150/hour',
-        description: 'Develop cross-platform mobile applications using React Native and Flutter.',
-        requirements: ['React Native', 'Flutter experience', 'App Store deployment'],
-        applicationMessage: 'I have 4 years of mobile development experience and have published 12+ apps.',
-        postedDate: '2024-01-05',
-        deadline: '2024-01-25',
-        totalApplicants: 19,
-        companyRating: 4.3,
-        acceptedDate: '2024-01-25',
-        startDate: '2024-02-01'
-      }
-    ]
+  // Fetch job applications when modal opens and freelancer is provided
+  useEffect(() => {
+    console.log('Modal useEffect triggered:', { isOpen, freelancer });
+    if (isOpen && freelancer?.id) {
+      fetchJobApplications();
+    }
+  }, [isOpen, freelancer?.id]);
+
+  const fetchJobApplications = async () => {
+    if (!freelancer?.id) {
+      console.log('No freelancer ID provided:', freelancer);
+      return;
+    }
+    
+    console.log('Fetching job applications for freelancer ID:', freelancer.id);
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Base64 encode the freelancer ID as required by the API
+      const encodedFreelancerId = Base64.encode(freelancer.id.toString());
+      console.log('Encoded freelancer ID:', encodedFreelancerId);
+      
+      const response = await adminApi.get(`/getJobsReForFreelancer/${encodedFreelancerId}`);
+      console.log('API Response:', response.data);
+      setJobApplications(response.data.job_re_list || []);
+    } catch (err) {
+      console.error('Error fetching job applications:', err);
+      setError('Failed to fetch job applications. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const currentFreelancer = freelancer || defaultFreelancer;
-  const appliedJobs = Array.isArray(currentFreelancer?.appliedJobs)
-    ? currentFreelancer.appliedJobs
-    : [];
 
   const getApplicationStatusColor = (status) => {
     switch (status) {
@@ -149,22 +75,71 @@ const FreelancerAppliedJobsModal = ({ isOpen = true, onClose = () => {}, freelan
     }
   };
 
-  const filteredJobs = appliedJobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.customer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || job.applicationStatus === statusFilter;
+  const getApplicationStatus = (application) => {
+    if (application.sjr_is_reject === 'rejected') return 'rejected';
+    if (application.sjr_is_active === 0) return 'withdrawn';
+    
+    const jobData = application.get_job_data;
+    if (jobData.cuj_is_rejected === 1) return 'rejected';
+    if (jobData.cuj_fe_assigned === application.sjr_fe_u_id && jobData.cuj_is_assigned === 1) {
+      return 'accepted';
+    }
+    if (jobData.cuj_job_status === 1) return 'shortlisted';
+    
+    return 'under_review';
+  };
+
+  const filteredJobs = jobApplications.filter(job => {
+    const jobData = job.get_job_data;
+    const matchesSearch = jobData.cuj_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         jobData.cuj_contact_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const applicationStatus = getApplicationStatus(job);
+    const matchesStatus = statusFilter === 'all' || applicationStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const statusCounts = {
-    total: appliedJobs.length,
-    under_review: appliedJobs.filter(job => job.applicationStatus === 'under_review').length,
-    shortlisted: appliedJobs.filter(job => job.applicationStatus === 'shortlisted').length,
-    accepted: appliedJobs.filter(job => job.applicationStatus === 'accepted').length,
-    rejected: appliedJobs.filter(job => job.applicationStatus === 'rejected').length
+    total: jobApplications.length,
+    under_review: jobApplications.filter(job => getApplicationStatus(job) === 'under_review').length,
+    shortlisted: jobApplications.filter(job => getApplicationStatus(job) === 'shortlisted').length,
+    accepted: jobApplications.filter(job => getApplicationStatus(job) === 'accepted').length,
+    rejected: jobApplications.filter(job => getApplicationStatus(job) === 'rejected').length
+  };
+
+  const formatSalary = (from, to) => {
+    if (!from && !to) return 'Not specified';
+    if (!from) return `Up to ₹${to}`;
+    if (!to) return `From ₹${from}`;
+    return `₹${from} - ₹${to}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not specified';
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const openJobDetailsModal = (jobData) => {
+    setSelectedJobData(jobData);
+    setIsJobDetailsModalOpen(true);
+  };
+
+  const closeJobDetailsModal = () => {
+    setIsJobDetailsModalOpen(false);
+    setSelectedJobData(null);
   };
 
   if (!isOpen) return null;
+
+  console.log('Rendering modal with data:', { 
+    jobApplications: jobApplications.length, 
+    loading, 
+    error, 
+    freelancer 
+  });
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -174,19 +149,16 @@ const FreelancerAppliedJobsModal = ({ isOpen = true, onClose = () => {}, freelan
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-medium">
-              {currentFreelancer.avatar}
+              {freelancer?.name ? freelancer.name.charAt(0).toUpperCase() : 'F'}
             </div>
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900">{currentFreelancer.name}</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">{freelancer?.name || 'Freelancer'}</h2>
               <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <div className="flex items-center">
-                  <Star size={14} className="text-yellow-400 fill-current mr-1" />
-                  {currentFreelancer.rating}
-                </div>
+                <span>{freelancer?.email || 'No email provided'}</span>
                 <span>•</span>
-                <span>{currentFreelancer.totalApplications} applications sent</span>
+                <span>{statusCounts.total} applications sent</span>
                 <span>•</span>
-                <span>{currentFreelancer.acceptedApplications} accepted</span>
+                <span>{statusCounts.accepted} accepted</span>
               </div>
             </div>
           </div>
@@ -266,126 +238,106 @@ const FreelancerAppliedJobsModal = ({ isOpen = true, onClose = () => {}, freelan
           </div>
         </div>
 
-        {/* Applications List */}
-        <div className="p-6 overflow-y-auto max-h-96">
-          <div className="space-y-4">
-            {filteredJobs.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Applications Found</h3>
-                <p className="text-gray-500">No job applications match your current search criteria.</p>
-              </div>
-            ) : (
-              filteredJobs.map((application) => (
-                <div key={application.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="text-lg font-semibold text-gray-900">{application.title}</h4>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${getApplicationStatusColor(application.applicationStatus)}`}>
-                          <span className="mr-1">{getApplicationStatusIcon(application.applicationStatus)}</span>
-                          {application.applicationStatus.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                        <span>Company: <span className="text-gray-900 font-medium">{application.customer}</span></span>
-                        <span>•</span>
-                        <span className="flex items-center">
-                          <Star size={12} className="text-yellow-400 fill-current mr-1" />
-                          {application.companyRating}
-                        </span>
-                        <span>•</span>
-                        <span>{application.totalApplicants} applicants</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3 leading-relaxed">{application.description}</p>
-                    </div>
-                    <div className="text-right ml-6">
-                      <div className="text-lg font-bold text-gray-900">{application.salary}</div>
-                      <div className="text-xs text-gray-500">Salary Range</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-6 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar size={14} className="mr-2 text-purple-500" />
-                      <div>
-                        <div className="text-xs text-gray-500">Applied On</div>
-                        <div className="font-medium">{new Date(application.appliedDate).toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock size={14} className="mr-2 text-red-500" />
-                      <div>
-                        <div className="text-xs text-gray-500">Deadline</div>
-                        <div className="font-medium">{new Date(application.deadline).toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin size={14} className="mr-2 text-blue-500" />
-                      <div>
-                        <div className="text-xs text-gray-500">Location</div>
-                        <div className="font-medium">{application.location}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Application Message */}
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-xs text-gray-500 mb-1">Application Message:</div>
-                    <p className="text-sm text-gray-700 italic">"{application.applicationMessage}"</p>
-                  </div>
-
-                  {/* Status-specific information */}
-                  {application.applicationStatus === 'interview_scheduled' && (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="text-sm font-medium text-blue-900 mb-1">Interview Scheduled</div>
-                      <div className="text-sm text-blue-700">
-                        Date: {application.interviewDate} at {application.interviewTime}
-                      </div>
-                    </div>
-                  )}
-
-                  {application.applicationStatus === 'accepted' && (
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="text-sm font-medium text-green-900 mb-1">Application Accepted!</div>
-                      <div className="text-sm text-green-700">
-                        Accepted on: {application.acceptedDate} • Start Date: {application.startDate}
-                      </div>
-                    </div>
-                  )}
-
-                  {application.applicationStatus === 'rejected' && application.rejectionReason && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="text-sm font-medium text-red-900 mb-1">Application Status</div>
-                      <div className="text-sm text-red-700">{application.rejectionReason}</div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <div className="text-xs text-gray-500">
-                      Application ID: {application.id} • Job ID: {application.jobId}
-                    </div>
-                    <div className="flex space-x-2">
-                      <button className="px-3 py-1.5 text-xs bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100 transition-colors font-medium">
-                        View Job Details
-                      </button>
-                      {application.applicationStatus === 'under_review' && (
-                        <button className="px-3 py-1.5 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors font-medium">
-                          Withdraw Application
-                        </button>
-                      )}
-                      {application.applicationStatus === 'interview_scheduled' && (
-                        <button className="px-3 py-1.5 text-xs bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors font-medium">
-                          Interview Details
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={32} className="animate-spin text-purple-600" />
+            <span className="ml-2 text-gray-600">Loading job applications...</span>
           </div>
-        </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="p-6 text-center">
+            <div className="text-red-600 mb-4">{error}</div>
+            <button
+              onClick={fetchJobApplications}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Applications List */}
+        {!loading && !error && (
+          <div className="p-6 overflow-y-auto max-h-96">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredJobs.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Applications Found</h3>
+                  <p className="text-gray-500">No job applications match your current search criteria.</p>
+                </div>
+              ) : (
+                filteredJobs.map((application) => {
+                  const jobData = application.get_job_data;
+                  const applicationStatus = getApplicationStatus(application);
+                  
+                  return (
+                    <div 
+                      key={application.sjr_id} 
+                      className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                      onClick={() => openJobDetailsModal(application)}
+                    >
+                      {/* Card Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Briefcase size={16} className="text-blue-600" />
+                            <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">{jobData.cuj_title}</h4>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationStatusColor(applicationStatus)}`}>
+                            <span className="mr-1">{getApplicationStatusIcon(applicationStatus)}</span>
+                            {applicationStatus.replace('_', ' ').toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Job Description Preview */}
+                      <p className="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+                        {jobData.cuj_desc}
+                      </p>
+
+                      {/* Key Details */}
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Customer:</span>
+                          <span className="font-medium text-gray-900">{jobData.cuj_contact_name}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Salary:</span>
+                          <span className="font-medium text-green-600">
+                            {formatSalary(jobData.cuj_salary_range_from, jobData.cuj_salary_range_to)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Type:</span>
+                          <span className="font-medium text-gray-900">{jobData.cuj_job_type}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Mode:</span>
+                          <span className="font-medium text-gray-900">{jobData.cuj_work_mode}</span>
+                        </div>
+                      </div>
+
+                      {/* Applied Date */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar size={12} className="mr-1" />
+                          Applied: {formatDate(application.created_at)}
+                        </div>
+                        <div className="text-xs text-gray-400 group-hover:text-blue-600 transition-colors">
+                          Click to view details →
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-100 bg-gray-50">
@@ -397,6 +349,13 @@ const FreelancerAppliedJobsModal = ({ isOpen = true, onClose = () => {}, freelan
           </button>
         </div>
       </div>
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        isOpen={isJobDetailsModalOpen}
+        onClose={closeJobDetailsModal}
+        jobData={selectedJobData}
+      />
     </div>
   );
 };

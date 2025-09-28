@@ -17,9 +17,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Base64 } from "js-base64";
 import adminApi from "@/config/adminApi";
-import JobDetailModal from "./components/JobDetailModal";
 import EditJobModal from "./components/EditJobModal";
 import FreelancerListingModal from "./components/FreelancerListingModal";
+import RemoveReasonModal from "./components/RemoveReasonModal";
 
 const JobListingPage = () => {
     const router = useRouter();
@@ -28,13 +28,12 @@ const JobListingPage = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedJobs, setSelectedJobs] = useState([]);
-    const [selectedJob, setSelectedJob] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [jobToEdit, setJobToEdit] = useState(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isLoadingJobDetail, setIsLoadingJobDetail] = useState(false);
     const [isFreelancerModalOpen, setIsFreelancerModalOpen] = useState(false);
     const [selectedJobForFreelancers, setSelectedJobForFreelancers] = useState(null);
+    const [isRemoveReasonModalOpen, setIsRemoveReasonModalOpen] = useState(false);
+    const [selectedJobForRemoveReason, setSelectedJobForRemoveReason] = useState(null);
 
     const encodeId = (id) => Base64.encode(String(id));
 
@@ -191,23 +190,8 @@ const JobListingPage = () => {
         closeEditModal();
     };
 
-    const handleViewJob = async (jobId) => {
-        try {
-            setIsLoadingJobDetail(true);
-            const response = await adminApi.get(`/getJobData/${encodeId(jobId)}`);
-            setSelectedJob(response.data);
-            setIsModalOpen(true);
-        } catch (error) {
-            console.error("Error fetching job details:", error);
-            alert("Error loading job details. Please try again.");
-        } finally {
-            setIsLoadingJobDetail(false);
-        }
-    };
-
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedJob(null);
+    const handleViewJob = (jobId) => {
+        router.push(`/control/joblist/JobDetail?id=${jobId}`);
     };
 
     const openFreelancerModal = (job) => {
@@ -218,6 +202,16 @@ const JobListingPage = () => {
     const closeFreelancerModal = () => {
         setIsFreelancerModalOpen(false);
         setSelectedJobForFreelancers(null);
+    };
+
+    const openRemoveReasonModal = (job) => {
+        setSelectedJobForRemoveReason(job);
+        setIsRemoveReasonModalOpen(true);
+    };
+
+    const closeRemoveReasonModal = () => {
+        setIsRemoveReasonModalOpen(false);
+        setSelectedJobForRemoveReason(null);
     };
 
     const formatDate = (dateString) => {
@@ -530,18 +524,14 @@ const JobListingPage = () => {
                                                             onClick={() =>
                                                                 !isSoftDeleted && handleViewJob(job.cuj_id)
                                                             }
-                                                            disabled={isSoftDeleted || isLoadingJobDetail}
+                                                            disabled={isSoftDeleted}
                                                             className={`p-2 rounded-lg transition-colors ${isSoftDeleted
                                                                     ? "text-slate-300 cursor-not-allowed"
                                                                     : "text-blue-600 hover:bg-blue-50"
-                                                                } ${isLoadingJobDetail ? "opacity-50" : ""}`}
+                                                                }`}
                                                             title="View"
                                                         >
-                                                            {isLoadingJobDetail ? (
-                                                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                                            ) : (
-                                                                <MdVisibility size={16} />
-                                                            )}
+                                                            <MdVisibility size={16} />
                                                         </button>
 
                                                         {/* Edit */}
@@ -590,6 +580,19 @@ const JobListingPage = () => {
                                                             title="List Freelancers"
                                                         >
                                                             <MdGroup size={16} />
+                                                        </button>
+
+                                                        {/* Remove Reason */}
+                                                        <button
+                                                            onClick={() => !isSoftDeleted && openRemoveReasonModal(job)}
+                                                            disabled={isSoftDeleted}
+                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted
+                                                                    ? "text-slate-300 cursor-not-allowed"
+                                                                    : "text-orange-600 hover:bg-orange-50"
+                                                                }`}
+                                                            title="View Remove Reasons"
+                                                        >
+                                                            <MdCancel size={16} />
                                                         </button>
 
                                                         {/* Delete OR Restore */}
@@ -655,11 +658,6 @@ const JobListingPage = () => {
                     </div>
                 )}
             </div>
-            <JobDetailModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                jobData={selectedJob}
-            />
             <EditJobModal
                 isOpen={isEditOpen}
                 onClose={closeEditModal}
@@ -670,6 +668,11 @@ const JobListingPage = () => {
                 isOpen={isFreelancerModalOpen}
                 onClose={closeFreelancerModal}
                 jobData={selectedJobForFreelancers}
+            />
+            <RemoveReasonModal
+                isOpen={isRemoveReasonModalOpen}
+                onClose={closeRemoveReasonModal}
+                jobId={selectedJobForRemoveReason?.cuj_id}
             />
         </div>
     );
