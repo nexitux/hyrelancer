@@ -108,8 +108,8 @@ const CompleteSignupPage = () => {
                 console.warn('sessionStorage unavailable:', e);
             }
 
-            // Success - redirect to dashboard
-            router.push('/dashboard?message=registration-complete');
+            // Success - redirect to home
+            router.push('/?message=registration-complete');
             
         } catch (error) {
             console.error('Registration error:', error);

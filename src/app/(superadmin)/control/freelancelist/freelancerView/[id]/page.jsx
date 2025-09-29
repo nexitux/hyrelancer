@@ -16,6 +16,8 @@ import {
   ArrowLeftOutlined
 } from "@ant-design/icons";
 import Link from 'next/link';
+import FreelancerAssignedJobsModal from '../../components/FreelancerAssignedJobsModal';
+import FreelancerAppliedJobsModal from '../../components/FreelancerAppliedJobsModal';
 
 // --- API Configuration ---
 const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
@@ -111,6 +113,10 @@ const FreelancerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [freelancerData, setFreelancerData] = useState(null);
+
+  // Modal states for assigned and applied jobs
+  const [isAssignedModalOpen, setIsAssignedModalOpen] = useState(false);
+  const [isAppliedModalOpen, setIsAppliedModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchFreelancerData = async () => {
@@ -226,6 +232,22 @@ const FreelancerProfile = () => {
     router.push(`/control/freelancelist/freelancerEdit/${freelancerId}`);
   };
 
+  const openAssignedJobsModal = () => {
+    setIsAssignedModalOpen(true);
+  };
+
+  const closeAssignedJobsModal = () => {
+    setIsAssignedModalOpen(false);
+  };
+
+  const openAppliedJobsModal = () => {
+    setIsAppliedModalOpen(true);
+  };
+
+  const closeAppliedJobsModal = () => {
+    setIsAppliedModalOpen(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -298,61 +320,68 @@ const FreelancerProfile = () => {
           <p className="text-gray-600 mt-2">View and manage freelancer information</p>
         </div>
 
-        <Card className="overflow-hidden rounded-2xl border-0 shadow-lg">
-          {/* Profile Header */}
-          <div className="relative px-6 pt-10 pb-12 text-center bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-800">
-            <Avatar
-              size={120}
-              icon={<UserOutlined />}
-              className="border-4 border-white shadow-xl bg-purple-500"
-            />
-            <h2 className="mt-4 mb-2 text-2xl font-bold text-white drop-shadow-lg">
-              {freelancerData.name || 'N/A'}
-            </h2>
-            <p className="text-lg font-medium text-purple-100">{freelancerData.user_type || 'Freelancer'}</p>
-            <div className="flex absolute -bottom-9 left-1/2 space-x-3 transform -translate-x-1/2">
+        <Card className="overflow-hidden rounded-xl border-0 shadow-lg">
+          {/* Compact Profile Header */}
+          <div className="px-6 py-6 bg-gradient-to-r from-slate-700 to-slate-800">
+            <div className="flex items-center space-x-4">
+              <Avatar
+                size={80}
+                icon={<UserOutlined />}
+                className="border-2 border-white shadow-lg bg-slate-600"
+              />
+              <div className="flex-1 ml-4">
+                <h2 className="text-xl font-bold text-white">
+                  {freelancerData.name || 'N/A'}
+                </h2>
+                <p className="text-slate-200 text-sm">{freelancerData.user_type || 'Freelancer'}</p>
+                {/* <div className="mt-2">
+                  <Tag 
+                    color={statusInfo.color} 
+                    icon={statusInfo.icon}
+                    className="text-xs"
+                  >
+                    {statusInfo.status}
+                  </Tag>
+                </div> */}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons Section */}
+          <div className="px-6 py-4 bg-white border-b border-gray-200">
+            <div className="flex flex-wrap gap-3">
               <Button
                 icon={<EditOutlined />}
-                className="flex gap-1 items-center px-4 py-2 text-purple-600 bg-white rounded-lg border-none shadow-md transition-all hover:bg-gray-100 hover:scale-105"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white border-0 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 onClick={handleEdit}
               >
-                Edit
+                Edit Profile
               </Button>
               <Button 
                 icon={<MessageOutlined />}
-                className="flex gap-1 items-center px-4 py-2 text-white bg-green-600 rounded-lg border-none shadow-md transition-all hover:bg-green-700 hover:scale-105"
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white border-0 rounded-lg hover:bg-green-700 transition-colors font-medium"
               >
-                Message
+                Messages
+              </Button>
+              <Button 
+                icon={<IdcardOutlined />}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white border-0 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                onClick={openAssignedJobsModal}
+              >
+                Assigned Jobs
+              </Button>
+              <Button 
+                icon={<CalendarOutlined />}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white border-0 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                onClick={openAppliedJobsModal}
+              >
+                Applied Jobs
               </Button>
             </div>
           </div>
 
           {/* Content Section */}
-          <div className="p-8 mt-4">
-            {/* Status Tags */}
-            <div className="flex flex-wrap gap-3 justify-center mb-8">
-              <Tag 
-                color={statusInfo.color} 
-                icon={statusInfo.icon}
-                className="px-3 py-1 text-sm font-medium"
-              >
-                Status: {statusInfo.status}
-              </Tag>
-              <Tag 
-                color={registrationInfo.color} 
-                icon={freelancerData.is_regi_complete === '1' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                className="px-3 py-1 text-sm font-medium"
-              >
-                Registration: {registrationInfo.text}
-              </Tag>
-              <Tag 
-                color={freelancerData.is_active_acc === '1' ? 'green' : 'red'} 
-                icon={freelancerData.is_active_acc === '1' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                className="px-3 py-1 text-sm font-medium"
-              >
-                Account: {freelancerData.is_active_acc === '1' ? 'Active' : 'Blocked'}
-              </Tag>
-            </div>
+          <div className="p-6">
 
             <Divider />
 
@@ -391,11 +420,6 @@ const FreelancerProfile = () => {
                 </h3>
                 <div className="space-y-4">
                   <InfoItem 
-                    icon={<IdcardOutlined />} 
-                    label="Freelancer ID" 
-                    value={`#${freelancerData.id}`} 
-                  />
-                  <InfoItem 
                     icon={<UserOutlined />} 
                     label="Username" 
                     value={freelancerData.username} 
@@ -425,10 +449,6 @@ const FreelancerProfile = () => {
                   <p className="text-sm text-gray-500 font-medium">Account Type</p>
                   <p className="text-gray-800 font-medium">{freelancerData.user_type || 'N/A'}</p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500 font-medium">Status</p>
-                  <p className="text-gray-800 font-medium">{freelancerData.is_status || 'N/A'}</p>
-                </div>
                 {freelancerData.google_id && (
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-500 font-medium">Google Account</p>
@@ -440,6 +460,20 @@ const FreelancerProfile = () => {
           </div>
         </Card>
       </div>
+
+      {/* Assigned Jobs Modal */}
+      <FreelancerAssignedJobsModal
+        isOpen={isAssignedModalOpen}
+        onClose={closeAssignedJobsModal}
+        freelancerId={freelancerData?.id}
+      />
+      
+      {/* Applied Jobs Modal */}
+      <FreelancerAppliedJobsModal
+        isOpen={isAppliedModalOpen}
+        onClose={closeAppliedJobsModal}
+        freelancer={freelancerData}
+      />
     </div>
   );
 };

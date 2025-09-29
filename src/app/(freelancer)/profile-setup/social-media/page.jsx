@@ -293,7 +293,7 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
                   </div>
                   <Progress
                     percent={calculateProgress()}
-                    strokeColor="#2563eb"
+                    strokeColor="#52c41a"
                     trailColor="#f0f0f0"
                     showInfo={false}
                   />

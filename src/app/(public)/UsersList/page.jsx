@@ -581,11 +581,11 @@ const UsersList = () => {
                           <MapPin size={16} />
                           <span>{getLocationString(user)}</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        {/* <div className="flex items-center gap-1">
                           <Star size={16} className="text-yellow-400" />
                           <span className="text-gray-800 font-medium">{user.rating ?? "4.9"}</span>
                           <span>({user.reviews ?? 482} reviews)</span>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Headline / Tags */}
