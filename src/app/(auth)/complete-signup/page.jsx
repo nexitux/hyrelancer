@@ -22,17 +22,22 @@ const CompleteSignupPage = () => {
     };
     
     const mobileNumber = getMobileNumber();
+    
+    // Check for Google signup parameters
+    const googleId = searchParams.get('user_googleid');
+    const googleEmail = searchParams.get('user_email');
 
     const [formData, setFormData] = useState({
         name: '',
-        email: ''
+        email: googleEmail || '',
+        mobile: ''
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
-    // Redirect back if no mobile number - but only check once on mount
+    // Redirect back if no mobile number and not a Google signup - but only check once on mount
     useEffect(() => {
-        if (!mobileNumber) {
+        if (!mobileNumber && !googleId) {
             router.push('/Login');
         }
     }, []); // Remove mobileNumber and router from dependencies
@@ -60,10 +65,11 @@ const CompleteSignupPage = () => {
             newErrors.name = 'Name must be at least 2 characters';
         }
 
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Please enter a valid email address';
+        // Mobile number validation (required for Google signup users)
+        if (!mobileNumber && !formData.mobile.trim()) {
+            newErrors.mobile = 'Mobile number is required';
+        } else if (!mobileNumber && formData.mobile.trim() && !/^\d{10}$/.test(formData.mobile.trim())) {
+            newErrors.mobile = 'Please enter a valid 10-digit mobile number';
         }
 
         return newErrors;
@@ -89,11 +95,24 @@ const CompleteSignupPage = () => {
         setErrors({});
 
         try {
-            const response = await api.post('/signup/register', {
-                mobile: mobileNumber,
+            const requestData = {
                 name: formData.name.trim(),
                 email: formData.email.trim()
-            });
+            };
+            
+            // Add mobile number (from session or form input)
+            if (mobileNumber) {
+                requestData.mobile = mobileNumber;
+            } else if (formData.mobile.trim()) {
+                requestData.mobile = formData.mobile.trim();
+            }
+            
+            // Add Google ID if available (for Google signup)
+            if (googleId) {
+                requestData.google_id = googleId;
+            }
+            
+            const response = await api.post('https://test.hyrelancer.in/api/google-register', requestData);
 
             // Store token if provided
             if (response.data.token) {
@@ -136,7 +155,7 @@ const CompleteSignupPage = () => {
         }
     };
 
-    if (!mobileNumber) {
+    if (!mobileNumber && !googleId) {
         return null; // Will redirect via useEffect
     }
 
@@ -152,18 +171,32 @@ const CompleteSignupPage = () => {
                     <p className="text-gray-600">Just a few more details to get you started</p>
                 </div>
 
-                {/* Mobile Number Display */}
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <Phone className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-green-700 font-medium">Verified Mobile Number</p>
-                            <p className="text-green-800 font-semibold">+91 {mobileNumber}</p>
+                {/* Mobile Number Display or Google Signup Info */}
+                {mobileNumber ? (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <Phone className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-green-700 font-medium">Verified Mobile Number</p>
+                                <p className="text-green-800 font-semibold">+91 {mobileNumber}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : googleId ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Mail className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-blue-700 font-medium">Google Account Connected</p>
+                                <p className="text-blue-800 font-semibold">{googleEmail}</p>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
 
                 {/* Form */}
                 <div className="space-y-6">
@@ -193,25 +226,29 @@ const CompleteSignupPage = () => {
                         {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
                     </div>
 
-                    {/* Email Field */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Mail className="w-5 h-5 text-gray-400" />
+
+                    {/* Mobile Number Field (only show for Google signup users) */}
+                    {!mobileNumber && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Mobile Number <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Phone className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="tel"
+                                    value={formData.mobile}
+                                    onChange={(e) => handleInputChange('mobile', e.target.value)}
+                                    placeholder="Enter your 10-digit mobile number"
+                                    maxLength={10}
+                                    className={`w-full h-12 bg-gray-50 border ${errors.mobile ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-300 focus:ring-blue-100'} focus:ring-2 focus:bg-white rounded-xl pl-12 pr-4 text-gray-900 placeholder-gray-400 outline-none transition-all duration-200`}
+                                />
                             </div>
-                            <input
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => handleInputChange('email', e.target.value)}
-                                placeholder="Enter your email address"
-                                className={`w-full h-12 bg-gray-50 border ${errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-blue-300 focus:ring-blue-100'} focus:ring-2 focus:bg-white rounded-xl pl-12 pr-4 text-gray-900 placeholder-gray-400 outline-none transition-all duration-200`}
-                            />
+                            {errors.mobile && <p className="text-red-600 text-sm mt-1">{errors.mobile}</p>}
                         </div>
-                        {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
-                    </div>
+                    )}
 
                     {/* Submit Button */}
                     <button
