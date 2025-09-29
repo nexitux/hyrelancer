@@ -1,63 +1,120 @@
 "use client";
-import React, { useState } from 'react';
-import { Eye, MessageSquare, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
-import ChatModal from './components/ChatModal';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import SubmitWorkModal from './components/SubmitWorkModal';
-import JobModal from '../applied-jobs/components/JobModal';
+import { freelancerJobAPI } from '@/config/api';
 
 const ActiveWorkDashboard = () => {
     const [currentPage, setCurrentPage] = useState(1);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isWorkModalOpen, setIsWorkModalOpen] = useState(false);
-    const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+    const [selectedJob, setSelectedJob] = useState(null);
+    const [workItems, setWorkItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [notification, setNotification] = useState(null);
     const itemsPerPage = 10;
 
-    const workItems = [
-        {
-            id: 1,
-            title: "Full Stack Developer",
-            company: "PrimeEdge Solutions",
-            location: "Las Vegas, USA",
-            type: "Job",
-            pricing: "$410",
-            dueDate: "Mar 29, 2024",
-            status: "Doing",
-            icon: "🏢"
-        },
-        {
-            id: 2,
-            title: "Social Media Marketing",
-            company: "Apex Innovations",
-            location: "Las Vegas, USA",
-            type: "Job",
-            pricing: "$266",
-            dueDate: "Mar 29, 2024",
-            status: "Ended",
-            icon: "❄️"
-        },
-        {
-            id: 3,
-            title: "Need a UX designer to design a website on figma",
-            company: "GlobalTech Partners",
-            location: "Las Vegas, USA",
-            type: "Project",
-            pricing: "$470",
-            dueDate: "Mar 29, 2024",
-            status: "Approved",
-            icon: "💚"
-        },
-        {
-            id: 4,
-            title: "Figma and photoshop expert needed for fulltime/part time long term contract",
-            company: "Apex Innovations",
-            location: "Las Vegas, USA",
-            type: "Project",
-            pricing: "$470",
-            dueDate: "Mar 29, 2024",
-            status: "Approved",
-            icon: "✨"
+    // Fetch assigned jobs from API
+    useEffect(() => {
+        const fetchAssignedJobs = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await freelancerJobAPI.getFeAssignedJobList();
+                
+                if (response && response.job_assigned_list) {
+                    const formattedJobs = response.job_assigned_list.map(job => {
+                        // Calculate salary range
+                        const salaryFrom = job.cuj_salary_range_from;
+                        const salaryTo = job.cuj_salary_range_to;
+                        const budget = salaryFrom && salaryTo ? `$${salaryFrom} - $${salaryTo}` : 
+                                     salaryFrom ? `$${salaryFrom}+` : 'Not Specified';
+                        
+                        return {
+                            id: job.cuj_id,
+                            title: job.cuj_title || job.cuj_desc || 'Untitled Job',
+                            company: job.freelancer?.name || job.cuj_contact_name || 'Unknown Company',
+                            location: job.cuj_location || 'Remote',
+                            type: job.cuj_job_type || 'Full-Time',
+                            pricing: budget,
+                            dueDate: job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Not Set',
+                            status: mapJobStatus(job.cuj_job_status),
+                            icon: getJobIcon(job.cuj_job_type),
+                            originalData: job,
+                            // Additional API fields
+                            budget: budget,
+                            jobStatus: job.cuj_job_status,
+                            created_at: job.created_at,
+                            updated_at: job.updated_at,
+                            description: job.cuj_desc,
+                            contactName: job.cuj_contact_name,
+                            contactEmail: job.cuj_contact_email,
+                            contactMobile: job.cuj_contact_mobile,
+                            workMode: job.cuj_work_mode,
+                            languages: job.cuj_lang,
+                            experience: job.cuj_u_experience
+                        };
+                    });
+                    
+                    setWorkItems(formattedJobs);
+                }
+            } catch (err) {
+                console.error('Error fetching assigned jobs:', err);
+                setError('Failed to fetch job list. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAssignedJobs();
+    }, []);
+
+    // Helper function to map backend status to UI status
+    const mapJobStatus = (status) => {
+        switch (status) {
+            case 'in_progress':
+            case 'doing':
+            case 'started':
+                return 'Doing';
+            case 'completed':
+            case 'finished':
+            case 'approved':
+                return 'Approved';
+            case 'ended':
+            case 'cancelled':
+            case 'rejected':
+                return 'Ended';
+            default:
+                return status || 'Doing';
         }
-    ];
+    };
+
+    // Helper function to get job icon based on type
+    const getJobIcon = (type) => {
+        switch (type?.toLowerCase()) {
+            case 'design':
+            case 'ux':
+            case 'ui':
+                return '🎨';
+            case 'development':
+            case 'coding':
+                return '💻';
+            case 'marketing':
+            case 'social media':
+                return '📱';
+            case 'writing':
+            case 'content':
+                return '📝';
+            default:
+                return '🏢';
+        }
+    };
+
+    // Show notification
+    const showNotification = (message, type = 'success') => {
+        setNotification({ message, type });
+        setTimeout(() => setNotification(null), 5000);
+    };
 
     const getStatusBadge = (status) => {
         const statusStyles = {
@@ -81,17 +138,71 @@ const ActiveWorkDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
             <div className="max-w-[1600px] mx-auto">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Active Work</h1>
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Assigned Jobs</h1>
+                    <p className="text-gray-600">Manage your assigned freelance jobs and track progress</p>
+                </div>
+
+                {/* Notification */}
+                {notification && (
+                    <div className={`fixed top-4 right-4 z-50 flex items-center p-4 rounded-lg shadow-lg ${
+                        notification.type === 'success' 
+                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                            : 'bg-red-100 text-red-800 border border-red-200'
+                    }`}>
+                        {notification.type === 'success' ? (
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                        ) : (
+                            <AlertCircle className="w-5 h-5 mr-2" />
+                        )}
+                        <span>{notification.message}</span>
+                        <button
+                            onClick={() => setNotification(null)}
+                            className="ml-3 hover:text-red-600"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <span className="ml-3 text-lg text-gray-600">Loading jobs...</span>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && !loading && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        <div className="flex items-center">
+                            <AlertCircle className="w-5 h-5 mr-2" />
+                            {error}
+                        </div>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && !error && workItems.length === 0 && (
+                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                        <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Jobs</h3>
+                        <p className="text-gray-500">You don't have any assigned jobs at the moment.</p>
+                    </div>
+                )}
 
                 {/* Desktop Table */}
+                {!loading && !error && workItems.length > 0 && (
                 <div className="hidden lg:block bg-white rounded-lg shadow-sm overflow-hidden">
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Title</th>
+                                <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Job Title</th>
+                                <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Client</th>
                                 <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Type</th>
-                                <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Pricing</th>
-                                <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Due In</th>
+                                <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Salary Range</th>
+                                <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Location</th>
                                 <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Status</th>
                                 <th className="text-left py-4 px-6 font-medium text-gray-500 uppercase text-sm">Action</th>
                             </tr>
@@ -102,101 +213,97 @@ const ActiveWorkDashboard = () => {
                                     <td className="py-4 px-6">
                                         <div>
                                             <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
-                                            <div className="flex items-center text-gray-500 text-sm">
-                                                <span className="mr-2">{item.icon}</span>
-                                                <span className="mr-3">{item.company}</span>
-                                                <span className="flex items-center">
-                                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                                    </svg>
-                                                    {item.location}
-                                                </span>
-                                            </div>
+                                            {item.description && (
+                                                <p className="text-sm text-gray-600 line-clamp-2 mt-1">{item.description.substring(0, 60)}...</p>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-6">
+                                        <div className="text-gray-900">
+                                            <div className="font-medium">{item.company}</div>
+                                            {item.contactEmail && (
+                                                <div className="text-sm text-gray-600">{item.contactEmail}</div>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="py-4 px-6 text-gray-900">{item.type}</td>
                                     <td className="py-4 px-6 text-gray-900 text-sm font-medium">{item.pricing}</td>
-                                    <td className="py-4 px-6 text-gray-900 text-sm">{item.dueDate}</td>
+                                    <td className="py-4 px-6 text-gray-900 text-sm">{item.location}</td>
                                     <td className="py-4 px-6">{getStatusBadge(item.status)}</td>
                                     <td className="py-4 px-6">
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={() => setIsJobModalOpen(true)}
-                                                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer">
-                                                <Eye size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => setIsModalOpen(true)}
-                                                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer">
-                                                <MessageSquare size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => setIsWorkModalOpen(true)}
-                                                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer">
-                                                <FileText size={18} />
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedJob(item);
+                                                setIsWorkModalOpen(true);
+                                            }}
+                                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg transition-colors cursor-pointer">
+                                            Manage Job
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+                )}
 
                 {/* Mobile Cards */}
+                {!loading && !error && workItems.length > 0 && (
                 <div className="lg:hidden space-y-4">
                     {currentItems.map((item) => (
-                        <div key={item.id} className="bg-white rounded-lg shadow-sm p-4">
-                            <div className="flex justify-between items-start mb-3">
-                                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{item.title}</h3>
+                        <div key={item.id} className="bg-white rounded-lg shadow-sm p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-gray-900 text-lg mb-1">{item.title}</h3>
+                                    {item.contactEmail && (
+                                        <p className="text-sm text-gray-600 mb-2">{item.contactEmail}</p>
+                                    )}
+                                </div>
                                 {getStatusBadge(item.status)}
                             </div>
 
-                            <div className="flex items-center text-gray-500 text-sm mb-3">
-                                <span className="mr-2">{item.icon}</span>
-                                <span className="mr-3">{item.company}</span>
-                                <span className="flex items-center">
-                                    📍 {item.location}
-                                </span>
-                            </div>
+                            {item.description && (
+                                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-sm text-gray-700">{item.description}</p>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                                <div>
-                                    <span className="text-gray-500">Type:</span>
-                                    <span className="ml-2 text-gray-900">{item.type}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-gray-500 text-xs uppercase">Company</span>
+                                    <span className="text-gray-900 font-medium">{item.company}</span>
                                 </div>
-                                <div>
-                                    <span className="text-gray-500">Pricing:</span>
-                                    <span className="ml-2 text-gray-900 font-medium">{item.pricing}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-gray-500 text-xs uppercase">Type</span>
+                                    <span className="text-gray-900 font-medium">{item.type}</span>
                                 </div>
-                                <div className="col-span-2">
-                                    <span className="text-gray-500">Due:</span>
-                                    <span className="ml-2 text-gray-900">{item.dueDate}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-gray-500 text-xs uppercase">Salary Range</span>
+                                    <span className="text-gray-900 font-medium">{item.pricing}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-gray-500 text-xs uppercase">Location</span>
+                                    <span className="text-gray-900 font-medium">{item.location}</span>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end space-x-2">
+                            <div className="flex justify-end">
                                 <button
-                                    onClick={() => setIsJobModalOpen(true)}
-                                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                                    <Eye size={18} />
-                                </button>
-                                <button
-                                    onClick={() => setIsModalOpen(true)}
-                                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                                    <MessageSquare size={18} />
-                                </button>
-                                <button
-                                    onClick={() => setIsWorkModalOpen(true)}
-                                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                                    <FileText size={18} />
+                                    onClick={() => {
+                                        setSelectedJob(item);
+                                        setIsWorkModalOpen(true);
+                                    }}
+                                    className="w-full px-4 py-3 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg transition-colors cursor-pointer">
+                                    Manage Job
                                 </button>
                             </div>
                         </div>
                     ))}
                 </div>
+                )}
 
                 {/* Pagination */}
+                {!loading && !error && workItems.length > 0 && (
                 <div className="mt-8 flex items-center justify-between bg-white px-4 py-3 rounded-lg shadow-sm sm:px-6">
                     <div className="flex flex-1 justify-between items-center sm:hidden">
                         <button
@@ -263,20 +370,20 @@ const ActiveWorkDashboard = () => {
                         </div>
                     </div>
                 </div>
+                )}
             </div>
-            <JobModal
-                isOpen={isJobModalOpen}
-                onClose={() => setIsJobModalOpen(false)}
-            />
-            <ChatModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                companyName="PrimeEdge Solutions"
-                location="Las Vegas, USA"
-            />
             <SubmitWorkModal
                 isOpen={isWorkModalOpen}
-                onClose={() => setIsWorkModalOpen(false)} 
+                onClose={() => {
+                    setIsWorkModalOpen(false);
+                    setSelectedJob(null);
+                }}
+                jobData={selectedJob}
+                jobId={selectedJob?.id}
+                onJobStatusUpdate={() => {
+                    // Refresh the job list when status is updated
+                    window.location.reload();
+                }}
             />
         </div>
     );
