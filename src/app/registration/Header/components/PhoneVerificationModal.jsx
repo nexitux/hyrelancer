@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Phone, Check, RefreshCcw } from 'lucide-react';
 import api from '@/config/api';
 
-const PhoneVerificationModal = ({ isOpen, onClose }) => {
+const PhoneVerificationModal = ({ isOpen, onClose, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState('otp-input');
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
@@ -195,7 +195,11 @@ const PhoneVerificationModal = ({ isOpen, onClose }) => {
 
   // Handle continue after success
   const handleContinue = () => {
-    onClose();
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      onClose();
+    }
   };
 
   if (!isOpen) return null;

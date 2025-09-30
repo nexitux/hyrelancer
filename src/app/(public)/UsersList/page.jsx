@@ -45,6 +45,13 @@ const UsersList = () => {
   const [location, setLocation] = useState("City, State or Zip");
   const [openCategory, setOpenCategory] = useState(false);
   const [openLocation, setOpenLocation] = useState(false);
+  
+  // Filter states
+  const [workTime, setWorkTime] = useState("");
+  const [experience, setExperience] = useState("");
+  const [sortBy, setSortBy] = useState("Default");
+  const [allResults, setAllResults] = useState([]);
+  const [filteredResults, setFilteredResults] = useState([]);
 
   // small UI helpers
   const categoryRef = useRef(null);
@@ -136,7 +143,10 @@ const UsersList = () => {
 
       const data = await response.json();
       // API returns { results: [...] }
-      setResults(data.results || []);
+      const resultsData = data.results || [];
+      setAllResults(resultsData);
+      setFilteredResults(resultsData);
+      setResults(resultsData);
       setCurrentPage(1); // reset to page 1 on new results
     } catch (err) {
       console.error("Search error:", err);
@@ -216,11 +226,107 @@ const UsersList = () => {
       behavior: "smooth",
     });
 
+  // Filtering logic
+  const applyFilters = () => {
+    let filtered = [...allResults];
+
+    // Filter by salary range
+    filtered = filtered.filter(user => {
+      const userSalary = Number(user.fp_amt_hour) || 0;
+      return userSalary >= salaryRange.min && userSalary <= salaryRange.max;
+    });
+
+    // Filter by work time
+    if (workTime) {
+      filtered = filtered.filter(user => {
+        const completingTime = user.fp_completing_time?.toLowerCase() || "";
+        const workTimeLower = workTime.toLowerCase();
+        
+        if (workTimeLower === "in a week") {
+          return completingTime.includes("week") || completingTime.includes("7 days");
+        } else if (workTimeLower === "24 hours") {
+          return completingTime.includes("24") || completingTime.includes("1 day");
+        } else if (workTimeLower === "after 2 days") {
+          return completingTime.includes("2 day") || completingTime.includes("48");
+        } else if (workTimeLower === "tomorrow") {
+          return completingTime.includes("tomorrow") || completingTime.includes("1 day");
+        }
+        return true;
+      });
+    }
+
+    // Filter by experience
+    if (experience) {
+      filtered = filtered.filter(user => {
+        const userExperience = Number(user.fp_ex_year) || 0;
+        const experienceLower = experience.toLowerCase();
+        
+        if (experienceLower === "0-to-1-year") {
+          return userExperience >= 0 && userExperience <= 1;
+        } else if (experienceLower === "2-to-5-year") {
+          return userExperience >= 2 && userExperience <= 5;
+        } else if (experienceLower === "5-to-10-year") {
+          return userExperience >= 5 && userExperience <= 10;
+        } else if (experienceLower === "10-year") {
+          return userExperience > 10;
+        }
+        return true;
+      });
+    }
+
+    // Filter by experience level checkboxes
+    const hasExperienceLevelFilter = experienceLevel.entry || experienceLevel.intermediate || experienceLevel.expert;
+    if (hasExperienceLevelFilter) {
+      filtered = filtered.filter(user => {
+        const userExperience = Number(user.fp_ex_year) || 0;
+        
+        if (experienceLevel.entry && userExperience >= 0 && userExperience <= 2) return true;
+        if (experienceLevel.intermediate && userExperience >= 3 && userExperience <= 7) return true;
+        if (experienceLevel.expert && userExperience >= 8) return true;
+        
+        return false;
+      });
+    }
+
+    // Apply sorting
+    if (sortBy !== "Default") {
+      filtered.sort((a, b) => {
+        switch (sortBy) {
+          case "Newest":
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+          case "Price: Low to High":
+            return (Number(a.fp_amt_hour) || 0) - (Number(b.fp_amt_hour) || 0);
+          case "Price: High to Low":
+            return (Number(b.fp_amt_hour) || 0) - (Number(a.fp_amt_hour) || 0);
+          case "Rating":
+            return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+          default:
+            return 0;
+        }
+      });
+    }
+
+    setFilteredResults(filtered);
+    setResults(filtered);
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setSalaryRange({ min: 0, max: 3000 });
+    setWorkTime("");
+    setExperience("");
+    setExperienceLevel({ entry: false, intermediate: false, expert: false });
+    setSortBy("Default");
+    setFilteredResults(allResults);
+    setResults(allResults);
+    setCurrentPage(1);
+  };
+
   /* ------------------ Pagination ------------------ */
   const indexOfLastCard = currentPage * cardsPerPage;
   const indexOfFirstCard = indexOfLastCard - cardsPerPage;
-  const currentFreelancers = results.slice(indexOfFirstCard, indexOfLastCard);
-  const totalPages = Math.max(1, Math.ceil(results.length / cardsPerPage));
+  const currentFreelancers = filteredResults.slice(indexOfFirstCard, indexOfLastCard);
+  const totalPages = Math.max(1, Math.ceil(filteredResults.length / cardsPerPage));
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const nextPage = () => currentPage < totalPages && setCurrentPage((p) => p + 1);
@@ -306,7 +412,7 @@ const UsersList = () => {
             </div>
 
             {/* Location */}
-            <div>
+            {/* <div>
               <h3 className="font-semibold mb-3 text-gray-800">Location</h3>
               <div className="relative">
                 <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a] transition-all">
@@ -320,10 +426,10 @@ const UsersList = () => {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
-            </div>
+            </div> */}
 
             {/* Category */}
-            <div>
+            {/* <div>
               <h3 className="font-semibold mb-3 text-gray-800">Category</h3>
               <div className="relative">
                 <select
@@ -339,10 +445,10 @@ const UsersList = () => {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
-            </div>
+            </div> */}
 
             {/* Service */}
-            <div>
+            {/* <div>
               <h3 className="font-semibold mb-3 text-gray-800">Service</h3>
               <div className="relative">
                 <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a] transition-all">
@@ -353,10 +459,10 @@ const UsersList = () => {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
-            </div>
+            </div> */}
 
             {/* Job Types */}
-            <div>
+            {/* <div>
               <h3 className="font-semibold mb-3 text-gray-800">Job Types</h3>
               <div className="relative">
                 <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a] transition-all">
@@ -371,7 +477,7 @@ const UsersList = () => {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
-            </div>
+            </div> */}
 
             {/* Age Range */}
             {/* <div>
@@ -424,7 +530,7 @@ const UsersList = () => {
             </div>
 
             {/* Hourly Rate Filter */}
-            <div>
+            {/* <div>
               <h3 className="font-semibold mb-3 text-gray-800">Filter by Hourly</h3>
               <div className="flex justify-between mt-4 gap-2">
                 <div className="relative flex-1">
@@ -449,13 +555,17 @@ const UsersList = () => {
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-400">max</span>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Work Time */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-3 text-gray-800">Work Time</h3>
               <div className="relative">
-                <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a] transition-all">
+                <select 
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a] transition-all"
+                  value={workTime}
+                  onChange={(e) => setWorkTime(e.target.value)}
+                >
                   <option value="">Select Work Time</option>
                   <option value="In a Week">In a Week</option>
                   <option value="24 Hours">24 Hours</option>
@@ -470,7 +580,11 @@ const UsersList = () => {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-3 text-gray-800">Experience</h3>
               <div className="relative">
-                <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a] transition-all">
+                <select 
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a] transition-all"
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                >
                   <option value="">Select Experience</option>
                   <option value="0-To 1-Year">0 To 1 Year</option>
                   <option value="2-To-5-Year">2 To 5 Year</option>
@@ -500,9 +614,17 @@ const UsersList = () => {
             <button
               className="w-full py-3 text-white rounded-lg font-medium transition-colors shadow-sm"
               style={{ backgroundColor: primaryColor }}
-              onClick={() => fetchSearchResults(searchInfo.keyword, searchInfo.category)}
+              onClick={applyFilters}
             >
-              Find Candidates
+              Apply Filters
+            </button>
+            
+            {/* Clear Filters Button */}
+            <button
+              className="w-full py-2 text-gray-600 border border-gray-300 rounded-lg font-medium transition-colors shadow-sm hover:bg-gray-50"
+              onClick={clearFilters}
+            >
+              Clear Filters
             </button>
           </div>
         </aside>
@@ -514,7 +636,14 @@ const UsersList = () => {
             <div className="flex items-center gap-4">
               <span className="text-gray-600 text-sm">
                 Sort by:{" "}
-                <select className="ml-1 text-gray-800 font-medium border-none bg-transparent focus:outline-none">
+                <select 
+                  className="ml-1 text-gray-800 font-medium border-none bg-transparent focus:outline-none"
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    applyFilters();
+                  }}
+                >
                   <option>Default</option>
                   <option>Newest</option>
                   <option>Price: Low to High</option>
@@ -524,14 +653,14 @@ const UsersList = () => {
               </span>
             </div>
             <div className="text-gray-600 text-sm">
-              Showing {results.length === 0 ? 0 : indexOfFirstCard + 1}-
-              {Math.min(indexOfLastCard, results.length)} of {results.length} results
+              Showing {filteredResults.length === 0 ? 0 : indexOfFirstCard + 1}-
+              {Math.min(indexOfLastCard, filteredResults.length)} of {filteredResults.length} results
               {searchInfo.keyword && ` for "${searchInfo.keyword}"`}
             </div>
           </div>
 
           {/* Freelancer Cards Grid */}
-          {results.length > 0 ? (
+          {filteredResults.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {currentFreelancers.map((user) => (
@@ -632,12 +761,12 @@ const UsersList = () => {
                           View Profile
                         </button>
 
-                        <a
+                        {/* <a
                           href={`mailto:${user.email}`}
                           className="flex-1 py-3 text-center bg-[#3e5a9a] text-white rounded-lg hover:bg-[#2d477a] transition-colors font-medium"
                         >
                           Contact
-                        </a>
+                        </a> */}
                       </div>
                     </div>
                   </div>
@@ -702,6 +831,7 @@ const UsersList = () => {
                 className="px-4 py-2 bg-[#3e5a9a] text-white rounded-lg hover:bg-[#3e5a8a] transition-colors"
                 onClick={() => {
                   setSearchInfo({ keyword: "", category: "" });
+                  clearFilters();
                   fetchSearchResults("", "");
                 }}
               >
@@ -740,7 +870,7 @@ const UsersList = () => {
               </div>
 
               {/* Mobile Location */}
-              <div>
+              {/* <div>
                 <h3 className="font-semibold mb-2 text-gray-800">Location</h3>
                 <div className="relative">
                   <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a]">
@@ -753,10 +883,10 @@ const UsersList = () => {
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
-              </div>
+              </div> */}
 
               {/* Mobile Category */}
-              <div>
+              {/* <div>
                 <h3 className="font-semibold mb-2 text-gray-800">Category</h3>
                 <div className="relative">
                   <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a]">
@@ -768,7 +898,7 @@ const UsersList = () => {
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
-              </div>
+              </div> */}
 
               {/* Mobile Salary Filter */}
               <div>
@@ -802,6 +932,44 @@ const UsersList = () => {
                 </div>
               </div>
 
+              {/* Mobile Work Time */}
+              <div>
+                <h3 className="font-semibold mb-2 text-gray-800">Work Time</h3>
+                <div className="relative">
+                  <select 
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a]"
+                    value={workTime}
+                    onChange={(e) => setWorkTime(e.target.value)}
+                  >
+                    <option value="">Select Work Time</option>
+                    <option value="In a Week">In a Week</option>
+                    <option value="24 Hours">24 Hours</option>
+                    <option value="After 2 Days">After 2 Days</option>
+                    <option value="Tomorrow">Tomorrow</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              {/* Mobile Experience */}
+              <div>
+                <h3 className="font-semibold mb-2 text-gray-800">Experience</h3>
+                <div className="relative">
+                  <select 
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none bg-white focus:ring-2 focus:ring-[#3e5a9a] focus:border-[#3e5a9a]"
+                    value={experience}
+                    onChange={(e) => setExperience(e.target.value)}
+                  >
+                    <option value="">Select Experience</option>
+                    <option value="0-To 1-Year">0 To 1 Year</option>
+                    <option value="2-To-5-Year">2 To 5 Year</option>
+                    <option value="5-To-10-Year">5 To 10 Year</option>
+                    <option value="10-Year">More Than 10 Year</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
               {/* Mobile Experience Level */}
               <div>
                 <h3 className="font-semibold mb-2 text-gray-800">Experience Level</h3>
@@ -821,9 +989,25 @@ const UsersList = () => {
                 </div>
               </div>
 
-              <div className="sticky bottom-0 bg-white pt-4 pb-2">
-                <button onClick={toggleFilterModal} className="w-full py-3 text-white rounded-lg transition font-medium" style={{ backgroundColor: primaryColor }}>
+              <div className="sticky bottom-0 bg-white pt-4 pb-2 space-y-2">
+                <button 
+                  onClick={() => {
+                    applyFilters();
+                    toggleFilterModal();
+                  }} 
+                  className="w-full py-3 text-white rounded-lg transition font-medium" 
+                  style={{ backgroundColor: primaryColor }}
+                >
                   Apply Filters
+                </button>
+                <button 
+                  onClick={() => {
+                    clearFilters();
+                    toggleFilterModal();
+                  }} 
+                  className="w-full py-2 text-gray-600 border border-gray-300 rounded-lg transition font-medium hover:bg-gray-50"
+                >
+                  Clear Filters
                 </button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { Tabs, Button, Card, message, Spin, Badge, Space } from "antd";
 import {
   UserOutlined,
@@ -25,7 +25,8 @@ import Scoialmedia from "../[id]/components/Socialmedia";
 import Portfolio from "../[id]/components/portfolio";
 
 export default function FreelancerApprovalPage({ params }) {
-  const { id } = params;
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
   const router = useRouter();
   const [activeKey, setActiveKey] = useState("1");
   const [freelancerData, setFreelancerData] = useState(null);
@@ -59,8 +60,16 @@ export default function FreelancerApprovalPage({ params }) {
   const handleTabApprove = async (tabKey) => {
     try {
       setApproving(true);
+      
+      // Debug: Log the values being sent
+      console.log('Tab Key:', tabKey);
+      console.log('ID:', id);
+      console.log('Full URL:', `/approveFeUTabData/${tabKey}/${id}`);
+      
       // Backend expects GET with path params: /approveFeUTabData/{type}/{base64UserId}
-      await adminApi.get(`/approveFeUTabData/${tabKey}/${id}`);
+      const response = await adminApi.get(`/approveFeUTabData/${tabKey}/${id}`);
+      
+      console.log('API Response:', response);
       
       const tabNames = {
         '1': 'Profile',
@@ -77,7 +86,25 @@ export default function FreelancerApprovalPage({ params }) {
       
     } catch (error) {
       console.error('Error approving tab:', error);
-      message.error('Failed to approve section');
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url
+      });
+      
+      // Show more detailed error information
+      let errorMessage = 'Failed to approve section';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.status === 500) {
+        errorMessage = `Server error (500) for tab ${tabKey}. Check server logs for details.`;
+      }
+      
+      message.error(errorMessage);
     } finally {
       setApproving(false);
     }
