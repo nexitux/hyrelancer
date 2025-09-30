@@ -102,8 +102,7 @@ export default function WorldMap() {
   }
 
   const countryData = [
-    { country: "USA", customers: 2379, percentage: 79, flagCountry: "usa" },
-    { country: "India", customers: 445, percentage: 25, flagCountry: "india" }
+    { country: "India", customers: 445, percentage: 100, flagCountry: "india" }
   ];
 
   return (

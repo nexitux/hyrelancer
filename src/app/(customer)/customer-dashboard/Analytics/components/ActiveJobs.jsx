@@ -1,29 +1,75 @@
-import { Calendar, Users, Briefcase, ArrowUpRight } from "lucide-react"
+"use client";
+import { useState, useEffect } from "react";
+import { Calendar, Users, Briefcase, ArrowUpRight } from "lucide-react";
+import { dashboardService } from '@/services/dashboardService';
 
 export default function ActiveJobs() {
-  const jobs = [
-    { 
-      jobTitle: 'Senior Frontend Developer', 
-      postedDate: 'August 1', 
-      applicants: 21,
-      status: 'active',
-      priority: 'high'
-    },
-    { 
-      jobTitle: 'UX/UI Designer', 
-      postedDate: 'August 30', 
-      applicants: 11,
-      status: 'active',
-      priority: 'medium'
-    },
-    { 
-      jobTitle: 'Product Manager', 
-      postedDate: 'Applied 30', 
-      applicants: 8,
-      status: 'review',
-      priority: 'low'
-    }
-  ];
+  const [activeJobsData, setActiveJobsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const data = await dashboardService.getUserDashboard();
+        const transformedData = dashboardService.transformDashboardData(data);
+        
+        // Transform latest active jobs data
+        const jobs = transformedData?.latestActiveJobs ? 
+          transformedData.latestActiveJobs.map((job, index) => ({
+            jobTitle: job.cuj_title || `Job ${index + 1}`,
+            postedDate: job.created_at ? new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent',
+            applicants: job.cuj_fe_assigned || 0,
+            status: job.cuj_job_status === '0' ? 'active' : job.cuj_job_status === 'rejected' ? 'rejected' : 'pending',
+            priority: job.cuj_is_active === 1 ? 'high' : 'low'
+          })) : [];
+        
+        setActiveJobsData(jobs);
+      } catch (error) {
+        console.error('Error fetching active jobs data:', error);
+        // Fallback to sample data
+        setActiveJobsData([
+          { 
+            jobTitle: 'Senior Frontend Developer', 
+            postedDate: 'August 1', 
+            applicants: 21,
+            status: 'active',
+            priority: 'high'
+          },
+          { 
+            jobTitle: 'UX/UI Designer', 
+            postedDate: 'August 30', 
+            applicants: 11,
+            status: 'active',
+            priority: 'medium'
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border-0 shadow-md p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, index) => (
+              <div key={index} className="p-4 border rounded-lg">
+                <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const jobs = activeJobsData;
 
   const getPriorityColor = (priority) => {
     switch(priority) {
@@ -41,8 +87,8 @@ export default function ActiveJobs() {
   };
 
   return (
-    <div className="bg-white rounded-xl border-0 shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-xl border-0 shadow-md p-4 hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-50 rounded-lg">
             <Briefcase className="h-5 w-5 text-blue-600" />
@@ -57,11 +103,11 @@ export default function ActiveJobs() {
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {jobs.map((job, index) => (
           <div 
             key={index} 
-            className={`group p-4 rounded-lg border transition-all duration-200 hover:shadow-sm cursor-pointer ${getStatusColor(job.status)}`}
+            className={`group p-3 rounded-lg border transition-all duration-200 hover:shadow-sm cursor-pointer ${getStatusColor(job.status)}`}
           >
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
@@ -69,9 +115,6 @@ export default function ActiveJobs() {
                   <h4 className="font-medium text-gray-900 truncate">
                     {job.jobTitle}
                   </h4>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(job.priority)}`}>
-                    {job.priority}
-                  </span>
                 </div>
                 
                 <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -87,23 +130,12 @@ export default function ActiveJobs() {
                   </div>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2 ml-4">
-                <div className="text-right">
-                  <div className="text-lg font-semibold text-gray-900">
-                    {job.applicants}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {job.applicants > 15 ? 'High interest' : 'Moderate'}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-100">
+      <div className="mt-auto pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500">Total applicants this month</span>
           <span className="font-semibold text-gray-900">
