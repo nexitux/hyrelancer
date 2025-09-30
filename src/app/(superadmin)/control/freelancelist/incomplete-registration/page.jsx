@@ -85,7 +85,7 @@ export default function IncompleteRegistrationsPage() {
   // Get registration completion percentage
   const getCompletionPercentage = (regComplete) => {
     const percentage = (parseInt(regComplete) / 6) * 100;
-    return Math.min(percentage, 100);
+    return Math.round(Math.min(percentage, 100));
   };
 
   // Get completion status

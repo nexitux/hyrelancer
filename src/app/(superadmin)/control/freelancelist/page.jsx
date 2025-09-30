@@ -464,15 +464,14 @@ export default function ListFreelancerPage() {
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Mobile</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Registration</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Status</th>
-                <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">Account Control</th>
                 <th className="px-6 py-3 text-sm font-semibold text-right text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
-                <tr><td colSpan="7" className="py-12 text-center">Loading...</td></tr>
+                <tr><td colSpan="6" className="py-12 text-center">Loading...</td></tr>
               ) : error ? (
-                <tr><td colSpan="7" className="py-12 text-center text-red-500">{error}</td></tr>
+                <tr><td colSpan="6" className="py-12 text-center text-red-500">{error}</td></tr>
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((freelancer) => (
                   <tr key={freelancer.id} className="transition-colors hover:bg-slate-50">
@@ -521,27 +520,6 @@ export default function ListFreelancerPage() {
                         {freelancer.statusInfo.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <div className="flex gap-2 justify-center items-center">
-                        {freelancer.is_active_acc === '0' ? (
-                          <button
-                            className="px-3 py-1.5 text-sm text-white bg-green-600 rounded-lg transition-colors hover:bg-green-700"
-                            title="Activate Account"
-                            onClick={() => handleAccountStatus(freelancer.id, '1')}
-                          >
-                            Activate
-                          </button>
-                        ) : (
-                          <button
-                            className="px-3 py-1.5 text-sm text-white bg-red-600 rounded-lg transition-colors hover:bg-red-700"
-                            title="Deactivate Account"
-                            onClick={() => handleAccountStatus(freelancer.id, '0')}
-                          >
-                            Deactivate
-                          </button>
-                        )}
-                      </div>
-                    </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex gap-2 justify-end items-center">
                         <Link
@@ -563,7 +541,7 @@ export default function ListFreelancerPage() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="7" className="py-12 text-center">No freelancers found.</td></tr>
+                <tr><td colSpan="6" className="py-12 text-center">No freelancers found.</td></tr>
               )}
             </tbody>
           </table>

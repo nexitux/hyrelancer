@@ -71,7 +71,25 @@ export default function FreelancerApprovalOptionsPage({ params }) {
   const needsIndividualApproval = () => {
     if (!approvalData?.u_approval) return false;
     
+    // First check if any tab fields need approval - if so, individual approval should be disabled
+    const tabApprovals = [
+      approvalData.u_approval.fa_tab_1_app,
+      approvalData.u_approval.fa_tab_2_app,
+      approvalData.u_approval.fa_tab_3_app,
+      approvalData.u_approval.fa_tab_4_app,
+      approvalData.u_approval.fa_tab_5_app
+    ];
+    
+    // If any tab field needs approval, disable individual approval
+    if (tabApprovals.some(status => status === "0")) {
+      return false;
+    }
+    
+    // Only check individual fields if no tab fields need approval
     const individualApprovals = [
+      approvalData.u_approval.fa_ca_app,
+      approvalData.u_approval.fa_sc_app,
+      approvalData.u_approval.fa_se_app,
       approvalData.u_approval.fa_display_name_app,
       approvalData.u_approval.fa_img_app,
       approvalData.u_approval.fa_banner_app,
@@ -102,6 +120,11 @@ export default function FreelancerApprovalOptionsPage({ params }) {
     return individualApprovals.some(status => status === "0");
   };
 
+  // Check if any approval is needed (either tab-wise or individual)
+  const needsAnyApproval = () => {
+    return needsTabWiseApproval() || needsIndividualApproval();
+  };
+
   // Get pending tab count
   const getPendingTabCount = () => {
     if (!approvalData?.u_approval) return 0;
@@ -121,7 +144,25 @@ export default function FreelancerApprovalOptionsPage({ params }) {
   const getPendingIndividualCount = () => {
     if (!approvalData?.u_approval) return 0;
     
+    // First check if any tab fields need approval - if so, individual count should be 0
+    const tabApprovals = [
+      approvalData.u_approval.fa_tab_1_app,
+      approvalData.u_approval.fa_tab_2_app,
+      approvalData.u_approval.fa_tab_3_app,
+      approvalData.u_approval.fa_tab_4_app,
+      approvalData.u_approval.fa_tab_5_app
+    ];
+    
+    // If any tab field needs approval, return 0 for individual count
+    if (tabApprovals.some(status => status === "0")) {
+      return 0;
+    }
+    
+    // Only count individual fields if no tab fields need approval
     const individualApprovals = [
+      approvalData.u_approval.fa_ca_app,
+      approvalData.u_approval.fa_sc_app,
+      approvalData.u_approval.fa_se_app,
       approvalData.u_approval.fa_display_name_app,
       approvalData.u_approval.fa_img_app,
       approvalData.u_approval.fa_banner_app,
@@ -183,6 +224,7 @@ export default function FreelancerApprovalOptionsPage({ params }) {
 
   const tabWiseNeeded = needsTabWiseApproval();
   const individualNeeded = needsIndividualApproval();
+  const anyApprovalNeeded = needsAnyApproval();
   const pendingTabCount = getPendingTabCount();
   const pendingIndividualCount = getPendingIndividualCount();
 
@@ -298,6 +340,20 @@ export default function FreelancerApprovalOptionsPage({ params }) {
                     Start Individual Review
                   </Link>
                 </div>
+              ) : tabWiseNeeded ? (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 text-slate-500 mb-2">
+                    <MdPending size={16} />
+                    <span className="text-sm font-medium">Tab-wise approval required first</span>
+                  </div>
+                  <button
+                    disabled
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-slate-300 text-slate-500 rounded-lg cursor-not-allowed font-medium"
+                  >
+                    <MdApproval size={18} />
+                    Complete Tab-wise Review First
+                  </button>
+                </div>
               ) : (
                 <div className="mb-4">
                   <div className="flex items-center gap-2 text-green-600 mb-2">
@@ -329,12 +385,20 @@ export default function FreelancerApprovalOptionsPage({ params }) {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${individualNeeded ? 'bg-orange-500' : 'bg-green-500'}`}></div>
+            <div className={`w-3 h-3 rounded-full ${individualNeeded ? 'bg-orange-500' : tabWiseNeeded ? 'bg-slate-400' : 'bg-green-500'}`}></div>
             <span className="text-slate-700">
-              Individual Approval: {individualNeeded ? `${pendingIndividualCount} pending` : 'Complete'}
+              Individual Approval: {individualNeeded ? `${pendingIndividualCount} pending` : tabWiseNeeded ? 'Waiting for tab-wise completion' : 'Complete'}
             </span>
           </div>
         </div>
+        {!anyApprovalNeeded && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-green-700">
+              <MdCheckCircle size={16} />
+              <span className="text-sm font-medium">All approvals completed - Freelancer is fully approved</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

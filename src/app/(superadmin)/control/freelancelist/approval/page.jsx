@@ -16,8 +16,19 @@ import adminApi from '@/config/adminApi';
 
 // --- Status Check Helper ---
 const needsApproval = (freelancer) => {
-  // Only show freelancers with is_active = '2' (pending approval)
-  return freelancer.is_active === '2';
+  // Check if any of the fa_*_app fields have value "0" (pending approval)
+  const approvalFields = [
+    'fa_ca_app', 'fa_sc_app', 'fa_se_app', 'fa_display_name_app', 'fa_img_app',
+    'fa_banner_app', 'fa_headline_app', 'fa_desc_app', 'fa_lang_app', 'fa_occupation_app',
+    'fa_ex_year_app', 'fa_profile_tag_line_app', 'fa_working_location_app', 'fa_available_time_app',
+    'fa_completing_time_app', 'fa_payment_methode_app', 'fa_amount_for_app', 'fa_amt_hour_app',
+    'fa_co_id_app', 'fa_st_id_app', 'fa_ci_id_app', 'fa_fb_app', 'fa_Linkdein_app',
+    'fa_twitter_app', 'fa_pinterest_app', 'fa_instagram_app', 'fa_youtube_app', 'fa_Website_app',
+    'fa_tab_1_app', 'fa_tab_2_app', 'fa_tab_3_app', 'fa_tab_4_app', 'fa_tab_5_app'
+  ];
+  
+  // Return true if any of the approval fields has value "0"
+  return approvalFields.some(field => freelancer[field] === "0");
 };
 
 export default function FreelancerApprovalListPage() {
@@ -199,7 +210,7 @@ export default function FreelancerApprovalListPage() {
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <Link
-                        href={`/control/freelancelist/approval/${Base64.encode(freelancer.id.toString())}`}
+                        href={`/control/freelancelist/approval/${Base64.encode(freelancer.id.toString())}/options`}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                       >
                         <MdApproval size={16} />

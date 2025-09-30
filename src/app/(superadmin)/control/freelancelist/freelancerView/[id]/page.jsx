@@ -13,8 +13,10 @@ import {
   IdcardOutlined,
   EditOutlined,
   HomeOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  PoweroffOutlined
 } from "@ant-design/icons";
+import { Base64 } from 'js-base64';
 import Link from 'next/link';
 import FreelancerAssignedJobsModal from '../../components/FreelancerAssignedJobsModal';
 import FreelancerAppliedJobsModal from '../../components/FreelancerAppliedJobsModal';
@@ -248,6 +250,69 @@ const FreelancerProfile = () => {
     setIsAppliedModalOpen(false);
   };
 
+  // Check if all required fields are completed for activation
+  const isActivationAllowed = () => {
+    if (!freelancerData) return false;
+    
+    const requiredFields = [
+      'fa_tab_1_app',
+      'fa_tab_2_app', 
+      'fa_tab_3_app',
+      'fa_tab_4_app',
+      'fa_tab_5_app'
+    ];
+    
+    return requiredFields.every(field => freelancerData[field] === '1');
+  };
+
+  // Handle activate/deactivate account
+  const handleAccountStatus = async (status) => {
+    const actionText = status === '1' ? 'activate' : 'deactivate';
+    
+    // Check if activation is allowed when trying to activate
+    if (status === '1' && !isActivationAllowed()) {
+      message.warning('Cannot activate account. All required profile sections must be completed first.');
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to ${actionText} this freelancer account?`)) {
+      return;
+    }
+
+    try {
+      const encodedId = Base64.encode(freelancerData.id.toString());
+      const token = TokenManager.getToken();
+      
+      const response = await fetch(`${API_BASE_URL}/activeFeAccount/${status}/${encodedId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        if (responseData.message) {
+          message.success(responseData.message);
+          
+          // Update local state
+          setFreelancerData(prevData => ({
+            ...prevData,
+            is_active_acc: status
+          }));
+        }
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (err) {
+      console.error(`Error ${actionText}ing freelancer account:`, err);
+      const errorMessage = err.message || `Failed to ${actionText} freelancer account`;
+      message.error(errorMessage);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -323,26 +388,57 @@ const FreelancerProfile = () => {
         <Card className="overflow-hidden rounded-xl border-0 shadow-lg">
           {/* Compact Profile Header */}
           <div className="px-6 py-6 bg-gradient-to-r from-slate-700 to-slate-800">
-            <div className="flex items-center space-x-4">
-              <Avatar
-                size={80}
-                icon={<UserOutlined />}
-                className="border-2 border-white shadow-lg bg-slate-600"
-              />
-              <div className="flex-1 ml-4">
-                <h2 className="text-xl font-bold text-white">
-                  {freelancerData.name || 'N/A'}
-                </h2>
-                <p className="text-slate-200 text-sm">{freelancerData.user_type || 'Freelancer'}</p>
-                {/* <div className="mt-2">
-                  <Tag 
-                    color={statusInfo.color} 
-                    icon={statusInfo.icon}
-                    className="text-xs"
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Avatar
+                  size={80}
+                  icon={<UserOutlined />}
+                  className="border-2 border-white shadow-lg bg-slate-600"
+                />
+                <div className="flex-1 ml-4">
+                  <h2 className="text-xl font-bold text-white">
+                    {freelancerData.name || 'N/A'}
+                  </h2>
+                  <p className="text-slate-200 text-sm">{freelancerData.user_type || 'Freelancer'}</p>
+                  {/* <div className="mt-2">
+                    <Tag 
+                      color={statusInfo.color} 
+                      icon={statusInfo.icon}
+                      className="text-xs"
+                    >
+                      {statusInfo.status}
+                    </Tag>
+                  </div> */}
+                </div>
+              </div>
+              
+              {/* Account Control Button */}
+              <div className="flex items-center">
+                {freelancerData.is_active_acc === '0' ? (
+                  <Button
+                    icon={<PoweroffOutlined />}
+                    style={
+                      isActivationAllowed() 
+                        ? { backgroundColor: '#16a34a', color: 'white', border: 'none', fontWeight: 500 }
+                        : { backgroundColor: '#9ca3af', color: '#374151', border: '2px solid #6b7280', fontWeight: 500, cursor: 'not-allowed' }
+                    }
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
+                    onClick={() => handleAccountStatus('1')}
+                    disabled={!isActivationAllowed()}
+                    title={!isActivationAllowed() ? 'Complete all required profile sections to activate account' : 'Activate account'}
                   >
-                    {statusInfo.status}
-                  </Tag>
-                </div> */}
+                    Activate Account
+                  </Button>
+                ) : (
+                  <Button
+                    icon={<PoweroffOutlined />}
+                    style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', fontWeight: 500 }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
+                    onClick={() => handleAccountStatus('0')}
+                  >
+                    Deactivate Account
+                  </Button>
+                )}
               </div>
             </div>
           </div>
