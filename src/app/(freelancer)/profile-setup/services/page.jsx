@@ -20,7 +20,7 @@ const { Text, Title } = Typography;
 const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false, showCompletionModal }) => {
   const [form] = Form.useForm();
   const [categorySuggestionForm] = Form.useForm();
-  const [serviceSuggestionForm] = Form.useForm();
+  const [serviceSuggestionForm] = Form.useForm(); 
   const [serviceTypes, setServiceTypes] = useState([]);                                                   
   const [allServices, setAllServices] = useState([]);
   const [allCities, setAllCities] = useState([]);
@@ -36,6 +36,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
   const [deletingItems, setDeletingItems] = useState(new Set());
   const [isIdProofDeleted, setIsIdProofDeleted] = useState(false);
   const [isRemote, setIsRemote] = useState(false);
+  const [isIdProofApproved, setIsIdProofApproved] = useState(false);
 
   // State for service table - grouped by serviceType
   const [serviceTableData, setServiceTableData] = useState([]);
@@ -147,6 +148,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
   const fetchExistingServices = async () => {
     try {
       const response = await api.get("/getService");
+      console.log('Full API response:', response.data);
       if (response.data) {
         setServiceData(response.data);
         // Assuming backend provides 'fp_is_remote' flag (1 for true, 0 for false)
@@ -195,7 +197,12 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
         setAreaTableData(Object.values(areaGroups));
 
         if (response.data.fe_idproof_data) {
+          console.log('ID proof data received:', response.data.fe_idproof_data);
           setExistingIdProofId(response.data.fe_idproof_data.fi_id);
+          // Check if ID proof is approved (fi_is_active === "1" means approved)
+          setIsIdProofApproved(response.data.fe_idproof_data.fi_is_active === "1");
+        } else {
+          console.log('No ID proof data found in response');
         }
 
         // Load existing suggestions into separate tables
@@ -314,12 +321,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
       if (response.data) {
         message.success(`${itemType} deleted successfully!`);
 
-        // Corrected ID proof deletion to use type 9
-        if (type === 9) {
+        // ID proof deletion uses type 10
+        if (type === 10) {
           setIsIdProofDeleted(true);
           setExistingFileUrl(null);
           setFileList([]);
           setExistingIdProofId(null);
+          setIsIdProofApproved(false);
           form.setFieldsValue({
             idType: undefined,
             idNumber: "",
@@ -541,7 +549,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
       const index = newList.findIndex(item => item.serviceType === selectedServiceType);
 
       if (index >= 0) {
-        if (newList[index].services.sany(s => s.se_id === selectedService)) {
+        if (newList[index].services.some(s => s.se_id === selectedService)) {
           message.warning("This service is already in your list");
           return prev;
         }
@@ -693,9 +701,18 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
         services: serviceTableData.flatMap(group => group.services.map(serv => `${group.serviceType}_${serv.se_id}`)),
       };
 
-      if (existingIdProofId && !isIdProofDeleted) {
+      // Always include fi_id if it exists, regardless of deletion status
+      if (existingIdProofId) {
         payload.fi_id = existingIdProofId;
+      } else {
+        // If no existing ID proof, set fi_id to 0 to indicate new record
+        payload.fi_id = 0;
       }
+
+      // Debug logging
+      console.log('Payload being sent:', payload);
+      console.log('existingIdProofId:', existingIdProofId);
+      console.log('isIdProofDeleted:', isIdProofDeleted);
 
       let response;
       const hasNewFile = fileList.length > 0 && fileList[0].originFileObj;
@@ -718,7 +735,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
           if (existingFileUrl && !isIdProofDeleted) {
             payload.idFile = existingFileUrl;
           }
-          response = await api.put("/updateFeService", payload);
+          // Ensure fi_id is included in the payload for update operations
+          if (existingIdProofId) {
+            payload.fi_id = existingIdProofId;
+          } else {
+            payload.fi_id = 0;
+          }
+          response = await api.post("/updateFeService", payload);
         }
       } else {
         const formData = new FormData();
@@ -1428,6 +1451,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             <Tooltip title="Select the type of identification you are providing" placement="topLeft">
                               <span className="font-medium flex items-center">
                                 ID Type <InfoCircleOutlined className="ml-1 text-gray-400" />
+                                {isIdProofApproved && <span className="ml-2 text-green-600 text-xs">(Approved)</span>}
                               </span>
                             </Tooltip>
                           }
@@ -1436,6 +1460,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             placeholder="Select ID type"
                             className="w-full"
                             size="large"
+                            disabled={isIdProofApproved}
                           >
                             <Option value="Aadhaar Card">Aadhar Card</Option>
                             <Option value="PAN Card">PAN Card</Option>
@@ -1451,6 +1476,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             <Tooltip title="Enter the number of your identification document" placement="topLeft">
                               <span className="font-medium flex items-center">
                                 ID Number <InfoCircleOutlined className="ml-1 text-gray-400" />
+                                {isIdProofApproved && <span className="ml-2 text-green-600 text-xs">(Approved)</span>}
                               </span>
                             </Tooltip>
                           }
@@ -1504,6 +1530,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             placeholder="Enter ID number"
                             className="w-full"
                             size="large"
+                            disabled={isIdProofApproved}
                             onBlur={() => {
                               if (form.getFieldValue('idType') === 'PAN Card') {
                                 const cur = form.getFieldValue('idNumber') || '';
@@ -1523,6 +1550,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             <Tooltip title="Upload a clear image of your ID proof" placement="topLeft">
                               <span className="font-medium flex items-center">
                                 Upload ID Proof <InfoCircleOutlined className="ml-1 text-gray-400" />
+                                {isIdProofApproved && <span className="ml-2 text-green-600 text-xs">(Approved)</span>}
                               </span>
                             </Tooltip>
                           }
@@ -1534,7 +1562,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                                 <Text>Current ID Proof:</Text>
                                 <Popconfirm
                                   title="Are you sure you want to delete this ID proof?"
-                                  onConfirm={() => handleDelete(9, existingIdProofId, 'ID Proof')}
+                                  onConfirm={() => handleDelete(10, existingIdProofId, 'ID Proof')}
                                   okText="Yes"
                                   cancelText="No"
                                 >
@@ -1558,6 +1586,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             maxCount={1}
                             accept="image/*"
                             listType="picture"
+                            disabled={isIdProofApproved}
                             onRemove={() => {
                               setFileList([]);
                               return true;
@@ -1567,8 +1596,9 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                               icon={<UploadOutlined />}
                               className="w-full"
                               size="large"
+                              disabled={isIdProofApproved}
                             >
-                              {existingFileUrl && !isIdProofDeleted ? "Upload New ID Proof" : "Click to Upload"}
+                              {isIdProofApproved ? "ID Proof Approved" : (existingFileUrl && !isIdProofDeleted ? "Upload New ID Proof" : "Click to Upload")}
                             </Button>
                           </Upload>
                         </Form.Item>
@@ -1835,7 +1865,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                               <div className="mt-2">
                                 <Popconfirm
                                   title="Are you sure you want to delete your ID proof?"
-                                  onConfirm={() => handleDelete(9, serviceData.fe_idproof_data.fi_id, 'ID Proof')}
+                                  onConfirm={() => handleDelete(10, serviceData.fe_idproof_data.fi_id, 'ID Proof')}
                                   okText="Yes"
                                   cancelText="No"
                                 >

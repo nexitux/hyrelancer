@@ -169,7 +169,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
       const skillData = response.data.fe_skills?.find(skill => skill.fs_skill === skillToRemove);
       
       if (skillData) {
-        const encodedId = btoa(String(skillData.fs_id));
+        const encodedId = safeBtoa(String(skillData.fs_id));
         const res = await api.get(`/deleteItem/1/${encodedId}`);
         
         if (res.data?.message) message.success(res.data.message);
@@ -278,11 +278,6 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     try {
       const formData = new FormData();
 
-      // Add skills if any
-      if (skills.length > 0) {
-        skills.forEach(skill => formData.append('skillinput[]', skill));
-      }
-
       // Add portfolio data
       formData.append('title', currentPortfolio.title.trim());
       formData.append('description', currentPortfolio.description.trim());
@@ -366,7 +361,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append('fpo_id', btoa(String(currentPortfolio.fpo_id)));
+      formData.append('fpo_id', safeBtoa(String(currentPortfolio.fpo_id)));
       formData.append('title', currentPortfolio.title.trim());
       formData.append('description', currentPortfolio.description.trim());
       formData.append('_method', 'PUT');
@@ -402,58 +397,125 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
   const handleDeletePortfolio = async (portfolioId) => {
     console.log('Delete portfolio called with ID:', portfolioId);
     
+    if (!portfolioId) {
+      message.error('Portfolio ID is missing');
+      return;
+    }
+    
     Modal.confirm({
-      title: 'Delete Portfolio Item',
-      content: 'Are you sure you want to delete this portfolio item?',
+      title: (
+        <div className="flex items-center gap-2">
+          <DeleteOutlined className="text-red-500 text-lg" />
+          <span className="text-lg font-semibold">Delete Portfolio Item</span>
+        </div>
+      ),
+      content: (
+        <div className="py-4">
+          <p className="text-gray-700 mb-2">Are you sure you want to delete this portfolio item?</p>
+          <p className="text-sm text-gray-500">This action cannot be undone and will permanently remove the portfolio item and all its associated images.</p>
+        </div>
+      ),
       okText: 'Yes, Delete',
       cancelText: 'Cancel',
       okType: 'danger',
+      width: 400,
+      centered: true,
       onOk: async () => {
         try {
-          console.log('Portfolio ID to delete:', portfolioId);
-          const encodedId = btoa(String(portfolioId));
+          console.log('User confirmed deletion for portfolio ID:', portfolioId);
+          console.log('Attempting to delete portfolio with ID:', portfolioId);
+          
+          const encodedId = safeBtoa(String(portfolioId));
           console.log('Encoded ID:', encodedId);
-          console.log('API URL:', `/deleteItem/8/${encodedId}`);
+          console.log('API Base URL:', api.defaults.baseURL);
+          console.log('Full delete URL:', `${api.defaults.baseURL}/deleteItem/8/${encodedId}`);
+          
+          // Show loading message
+          const hideLoading = message.loading('Deleting portfolio item...', 0);
           
           const response = await api.get(`/deleteItem/8/${encodedId}`);
           console.log('Delete response:', response);
+          
+          hideLoading();
           
           if (response.data?.message) {
             message.success(response.data.message);
           } else {
             message.success('Portfolio deleted successfully!');
           }
+          
+          // Refresh the portfolio data
           await fetchPortfolioData();
+          
         } catch (error) {
           console.error('Error deleting portfolio:', error);
           console.error('Error response:', error.response);
+          console.error('Error status:', error.response?.status);
+          console.error('Error data:', error.response?.data);
+          
           if (error.response?.data?.message) {
             message.error(error.response.data.message);
+          } else if (error.response?.status === 404) {
+            message.error('Portfolio not found');
+          } else if (error.response?.status === 500) {
+            message.error('Server error occurred');
+          } else if (error.response?.status === 401) {
+            message.error('Authentication required');
+          } else if (error.response?.status === 403) {
+            message.error('Permission denied');
           } else {
-            message.error('Failed to delete portfolio');
+            message.error(`Failed to delete portfolio: ${error.message}`);
           }
         }
+      },
+      onCancel() {
+        console.log('User cancelled portfolio deletion');
       }
     });
   };
 
   const handleDeleteImage = async (imageId, portfolioId) => {
     Modal.confirm({
-      title: 'Delete Image',
-      content: 'Are you sure you want to delete this image?',
+      title: (
+        <div className="flex items-center gap-2">
+          <DeleteOutlined className="text-red-500 text-lg" />
+          <span className="text-lg font-semibold">Delete Image</span>
+        </div>
+      ),
+      content: (
+        <div className="py-4">
+          <p className="text-gray-700 mb-2">Are you sure you want to delete this image?</p>
+          <p className="text-sm text-gray-500">This action cannot be undone and will permanently remove the image from your portfolio.</p>
+        </div>
+      ),
       okText: 'Yes, Delete',
       cancelText: 'Cancel',
       okType: 'danger',
+      width: 400,
+      centered: true,
       onOk: async () => {
         try {
-          const encodedId = btoa(String(imageId));
+          console.log('User confirmed image deletion for ID:', imageId);
+          
+          const encodedId = safeBtoa(String(imageId));
+          console.log('Encoded image ID:', encodedId);
+          
+          // Show loading message
+          const hideLoading = message.loading('Deleting image...', 0);
+          
           const response = await api.get(`/deleteItem/9/${encodedId}`);
+          console.log('Delete image response:', response);
+          
+          hideLoading();
           message.success(response.data.message || 'Image deleted successfully!');
           await fetchPortfolioData();
         } catch (error) {
           console.error('Error deleting image:', error);
           message.error('Failed to delete image');
         }
+      },
+      onCancel() {
+        console.log('User cancelled image deletion');
       }
     });
   };
@@ -470,12 +532,10 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     let progress = 0;
     let totalItems = 2; // Skills and Portfolio items
     
-    // Check if skills exist
     if (skills.length > 0) {
       progress += 1;
     }
     
-    // Check if portfolio items exist
     if (portfolios.length > 0) {
       progress += 1;
     }
@@ -483,7 +543,6 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     return Math.round((progress / totalItems) * 100);
   };
 
-  // No data state - Show when no portfolios or skills
   const hasData = portfolios.length > 0 || skills.length > 0;
 
   return (
@@ -505,7 +564,6 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                 <Loader />
               </div>
             ) : !hasData ? (
-              // No Data State
               <div className="text-center py-8 sm:py-12 md:py-16 lg:py-20 px-4">
                 <div className="mb-6 sm:mb-8">
                   <div className="mx-auto w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-gray-100 rounded-full flex items-center justify-center">
@@ -540,7 +598,6 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                 </div>
               </div>
             ) : (
-              // Has Data State
               <div className="space-y-6 sm:space-y-8">
                 {/* Skills Section */}
                 <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg border border-gray-200">
@@ -623,6 +680,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                         key={portfolio.id}
                         className="group border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
                         bodyStyle={{ padding: 0 }}
+                        style={{ cursor: 'default' }}
                         cover={
                           portfolio.images?.length > 0 ? (
                             <div className="relative h-40 sm:h-48 w-full overflow-hidden">
@@ -633,30 +691,25 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
                               <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1 sm:gap-2 z-10">
-                                {/* <Button
-                                  type="text"
-                                  icon={<EyeOutlined />}
-                                  className="bg-white/90 hover:bg-white text-gray-600 h-7 w-7 sm:h-8 sm:w-8 p-0 flex items-center justify-center"
-                                  onClick={() => {
-                                    const img = portfolio.images[0];
-                                    if (img) handlePreview(img);
-                                  }}
-                                  title="View Image"
-                                /> */}
                                 <Button
                                   type="text"
                                   icon={<EditOutlined />}
                                   className="bg-white/90 hover:bg-white text-gray-600 h-7 w-7 sm:h-8 sm:w-8 p-0 flex items-center justify-center"
-                                  onClick={() => handleEditPortfolio(portfolio)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleEditPortfolio(portfolio);
+                                  }}
                                   title="Edit Portfolio"
                                 />
                                 <Button
                                   type="text"
                                   icon={<DeleteOutlined />}
                                   className="bg-white/90 hover:bg-white text-red-500 h-7 w-7 sm:h-8 sm:w-8 p-0 flex items-center justify-center"
-                                  onClick={() => {
-                                    console.log('Portfolio object:', portfolio);
-                                    console.log('Portfolio fpo_id:', portfolio.fpo_id);
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('Delete button clicked for portfolio:', portfolio.fpo_id);
                                     handleDeletePortfolio(portfolio.fpo_id);
                                   }}
                                   title="Delete Portfolio"
@@ -687,40 +740,31 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                             <span className="text-xs">{portfolio.images?.length || 0} images</span>
                           </div>
                           <div className="flex justify-between items-center gap-1 sm:gap-2 mt-3 sm:mt-4">
-                            {/* <Button
-                              type="text"
-                              icon={<EyeOutlined />}
-                              onClick={() => {
-                                const img = portfolio.images[0];
-                                if (img) handlePreview(img);
-                              }}
-                              className="text-gray-600 hover:text-gray-800 flex-1 text-xs sm:text-sm h-7 sm:h-8 p-1"
-                            >
-                              <span className="hidden sm:inline">View</span>
-                           
-                            </Button> */}
                             <Button
                               type="text"
                               icon={<EditOutlined />}
-                              onClick={() => handleEditPortfolio(portfolio)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleEditPortfolio(portfolio);
+                              }}
                               className="text-gray-600 hover:text-gray-800 flex-1 text-xs sm:text-sm h-7 sm:h-8 p-1"
                             >
                               <span className="hidden sm:inline">Edit</span>
-                         
                             </Button>
-                            <Button
+                            {/* <Button
                               type="text"
                               icon={<DeleteOutlined />}
-                              onClick={() => {
-                                console.log('Portfolio object:', portfolio);
-                                console.log('Portfolio fpo_id:', portfolio.fpo_id);
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Delete button clicked for portfolio:', portfolio.fpo_id);
                                 handleDeletePortfolio(portfolio.fpo_id);
                               }}
                               className="text-red-500 hover:text-red-700 flex-1 text-xs sm:text-sm h-7 sm:h-8 p-1"
                             >
                               <span className="hidden sm:inline">Delete</span>
-                             
-                            </Button>
+                            </Button> */}
                           </div>
                         </div>
                       </Card>
@@ -1045,9 +1089,9 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                   onRemove={(file) => {
                     if (file.fpoi_id && file.dbStored) {
                       handleDeleteImage(file.fpoi_id, currentPortfolio.id);
-                      return false; // Don't remove from UI immediately, let the API call handle it
+                      return false;
                     }
-                    return true; // Allow removal for new files
+                    return true;
                   }}
                   showUploadList={{
                     showPreviewIcon: true,
