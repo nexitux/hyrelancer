@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MoreHorizontal, ArrowUp, ArrowDown } from "lucide-react";
+import { freelancerDashboardService } from '@/services/freelancerDashboardService';
 
 // Dropdown component
 const Dropdown = ({ isOpen, onClose, className, children }) => {
@@ -126,12 +127,41 @@ const MetricItem = ({ label, value, trend, isLast = false }) => {
 // Main SalesTarget component
 export default function MonthlyTarget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  const percentage = 75.55;
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const data = await freelancerDashboardService.getFreelancerDashboard();
+        const transformedData = freelancerDashboardService.transformFreelancerDashboardData(data);
+        setDashboardData(transformedData);
+      } catch (error) {
+        console.error('Error fetching freelancer dashboard data:', error);
+        // Fallback to sample data
+        setDashboardData({
+          stats: {
+            assignedJobs: 2,
+            completedJobs: 1,
+          }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Calculate percentage based on completed vs assigned jobs
+  const assignedJobs = dashboardData?.stats?.assignedJobs || 0;
+  const completedJobs = dashboardData?.stats?.completedJobs || 0;
+  const percentage = assignedJobs > 0 ? Math.round((completedJobs / assignedJobs) * 100) : 0;
+  
   const metrics = [
-    { label: "Target", value: "$20K", trend: "down" },
-    { label: "Revenue", value: "$20K", trend: "up" },
-    { label: "Today", value: "$20K", trend: "up" }
+    { label: "Assigned", value: assignedJobs.toString(), trend: "up" },
+    { label: "Completed", value: completedJobs.toString(), trend: "up" },
+    { label: "Pending", value: (assignedJobs - completedJobs).toString(), trend: "down" }
   ];
 
   function toggleDropdown() {
@@ -142,13 +172,40 @@ export default function MonthlyTarget() {
     setIsOpen(false);
   }
 
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-white/[0.03] flex-1 flex flex-col">
+          <div className="px-5 pt-5 bg-white shadow-default rounded-2xl flex-1 flex flex-col dark:bg-gray-900">
+            <div className="animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-48 mb-4"></div>
+              <div className="flex justify-center">
+                <div className="w-60 h-60 bg-gray-200 rounded-full"></div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded w-64 mx-auto mt-4"></div>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-6 px-4 py-4 bg-gray-100 dark:bg-white/[0.03] rounded-b-2xl">
+            {[1, 2, 3].map((index) => (
+              <div key={index} className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-16 mb-1"></div>
+                <div className="h-6 bg-gray-200 rounded w-8"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
       <div className="rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-white/[0.03] flex-1 flex flex-col">
         <div className="px-5 pt-5 bg-white shadow-default rounded-2xl flex-1 flex flex-col dark:bg-gray-900">
           <ChartHeader
-            title="Monthly Target"
-            subtitle="Target you've set for each month"
+            title="Job Completion"
+            subtitle="Your job completion progress"
             onToggleDropdown={toggleDropdown}
           />
           
@@ -178,7 +235,7 @@ export default function MonthlyTarget() {
           </div>
           
           <p className="mx-auto mb-4 w-full max-w-[320px] text-center text-sm text-gray-500">
-            You earn $3287 today, it's higher than last month. Keep up your good work!
+            You completed {completedJobs} out of {assignedJobs} assigned jobs. Keep up your good work!
           </p>
         </div>
 
