@@ -24,6 +24,7 @@ const ActiveWorkDashboard = () => {
     const [removeHistory, setRemoveHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [removeLoading, setRemoveLoading] = useState(false);
+    const [actionComment, setActionComment] = useState('');
 
     const itemsPerPage = 10;
 
@@ -57,6 +58,7 @@ const ActiveWorkDashboard = () => {
             
             const transformedData = data.job_Re_list.map(item => ({
                 id: item.cuj_id,
+                sjrId: item.sjr_id, // Store SendJobRequest ID for reject API
                 title: item.cuj_title, // Job title for reference
                 freelancerName: item.name, // Freelancer name
                 company: item.cuj_title, // Job title as company
@@ -146,8 +148,11 @@ const ActiveWorkDashboard = () => {
         setPendingAction({ 
             jobId, 
             action: 'reject', 
-            message: 'Are you sure you want to reject this freelancer\'s request? This action cannot be undone.' 
+            message: 'Are you sure you want to reject this freelancer\'s request? This action cannot be undone.',
+            freelancerName: job.freelancerName,
+            jobTitle: job.title
         });
+        setActionComment('');
         setShowConfirmModal(true);
     };
 
@@ -158,8 +163,11 @@ const ActiveWorkDashboard = () => {
         setPendingAction({ 
             jobId, 
             action: 'accept', 
-            message: 'Are you sure you want to assign this freelancer to the job? This action cannot be undone.' 
+            message: 'Are you sure you want to assign this freelancer to the job? This action cannot be undone.',
+            freelancerName: job.freelancerName,
+            jobTitle: job.title
         });
+        setActionComment('');
         setShowConfirmModal(true);
     };
 
@@ -167,8 +175,7 @@ const ActiveWorkDashboard = () => {
         if (!pendingAction) return;
 
         try {
-            const { jobId, action } = pendingAction;
-            const encodedId = encodeId(jobId);
+            const { jobId, action, comment } = pendingAction;
             
             setActionLoading(prev => ({ ...prev, [`${action}_${jobId}`]: true }));
 
@@ -177,15 +184,17 @@ const ActiveWorkDashboard = () => {
                 if (!job || !job.freelancerId) {
                     throw new Error('Freelancer ID not found for this job');
                 }
+                // For assignFeJob: {id} = cuj_id (job ID), {fe_id} = freelancer ID
+                const encodedJobId = encodeId(jobId);
                 const encodedFreelancerId = encodeId(job.freelancerId);
-                await api.get(`/assignFeJob/${encodedId}/${encodedFreelancerId}`);
+                await api.get(`/assignFeJob/${encodedJobId}/${encodedFreelancerId}`);
                 setWorkItems(prev => prev.map(item => 
                     item.id === jobId 
                         ? { 
                             ...item, 
                             isAssigned: true,
                             isRejected: false,
-                            sjr_is_active: 1, // Keep as pending in SendJobRequest
+                            sjr_is_active: 1, 
                             cuj_is_assigned: 1, // Set as assigned
                             status: 'Assigned',
                             statusColor: getStatusColor('Assigned')
@@ -195,7 +204,13 @@ const ActiveWorkDashboard = () => {
                 setToastType("success");
                 setToastMessage("Freelancer assigned for this job successfully!");
             } else {
-                await api.get(`/rejectFeJobRequest/${encodedId}`);
+                // For rejectFeJobRequest: {id} = sjr_id (SendJobRequest ID)
+                const job = workItems.find(item => item.id === jobId);
+                if (!job || !job.sjrId) {
+                    throw new Error('SendJobRequest ID not found for this job');
+                }
+                const encodedSjrId = encodeId(job.sjrId);
+                await api.get(`/rejectFeJobRequest/${encodedSjrId}`);
                 setWorkItems(prev => prev.map(item => 
                     item.id === jobId 
                         ? { 
@@ -229,6 +244,7 @@ const ActiveWorkDashboard = () => {
     const cancelAction = () => {
         setShowConfirmModal(false);
         setPendingAction(null);
+        setActionComment('');
     };
 
     // Remove Freelancer Functions
@@ -475,58 +491,56 @@ const ActiveWorkDashboard = () => {
                                                 >
                                                     <MessageSquare className="w-4 h-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => setIsWorkModalOpen(true)}
-                                                    className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
-                                                    title="View Details"
-                                                    aria-label="View Details"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
+                                               
                                                 {(() => {
                                                     const isPending = item.sjr_is_active === 1 && item.cuj_is_assigned === 0;
                                                     const isAssigned = item.sjr_is_active === 1 && item.cuj_is_assigned === 1;
                                                     const isRejected = item.sjr_is_active === 2;
-                                                    const isDisabled = isAssigned || isRejected;
-                                                    return true; // Always show buttons
-                                                })() && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleAcceptJob(item.id)}
-                                                            disabled={actionLoading[`accept_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2}
-                                                            className={`p-1.5 rounded border ${
-                                                                actionLoading[`accept_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2
-                                                                    ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
-                                                                    : 'text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200'
-                                                            }`}
-                                                            title="Assign Freelancer"
-                                                            aria-label="Assign Freelancer"
-                                                        >
-                                                            {actionLoading[`accept_${item.id}`] ? (
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                                                            ) : (
-                                                                <CheckCircle className="w-4 h-4" />
-                                                            )}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleRejectJob(item.id)}
-                                                            disabled={actionLoading[`reject_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2}
-                                                            className={`p-1.5 rounded border ${
-                                                                actionLoading[`reject_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2
-                                                                    ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
-                                                                    : 'text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
-                                                            }`}
-                                                            title="Reject Request"
-                                                            aria-label="Reject Request"
-                                                        >
-                                                            {actionLoading[`reject_${item.id}`] ? (
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                                                            ) : (
-                                                                <XCircle className="w-4 h-4" />
-                                                            )}
-                                                        </button>
-                                                    </>
-                                                )}
+                                                    const isRemoved = item.sjr_is_active === 0;
+                                                    
+                                                    // Only show accept/reject buttons for pending requests
+                                                    if (isPending) {
+                                                        return (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleAcceptJob(item.id)}
+                                                                    disabled={actionLoading[`accept_${item.id}`]}
+                                                                    className={`p-1.5 rounded border ${
+                                                                        actionLoading[`accept_${item.id}`]
+                                                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
+                                                                            : 'text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200'
+                                                                    }`}
+                                                                    title="Assign Freelancer"
+                                                                    aria-label="Assign Freelancer"
+                                                                >
+                                                                    {actionLoading[`accept_${item.id}`] ? (
+                                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                                                                    ) : (
+                                                                        <CheckCircle className="w-4 h-4" />
+                                                                    )}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleRejectJob(item.id)}
+                                                                    disabled={actionLoading[`reject_${item.id}`]}
+                                                                    className={`p-1.5 rounded border ${
+                                                                        actionLoading[`reject_${item.id}`]
+                                                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
+                                                                            : 'text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
+                                                                    }`}
+                                                                    title="Reject Request"
+                                                                    aria-label="Reject Request"
+                                                                >
+                                                                    {actionLoading[`reject_${item.id}`] ? (
+                                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                                                    ) : (
+                                                                        <XCircle className="w-4 h-4" />
+                                                                    )}
+                                                                </button>
+                                                            </>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
                                                 {item.cuj_is_assigned === 1 && (
                                                     <button
                                                         onClick={() => handleRemoveFreelancer(item)}
@@ -618,46 +632,51 @@ const ActiveWorkDashboard = () => {
                                     const isPending = item.sjr_is_active === 1 && item.cuj_is_assigned === 0;
                                     const isAssigned = item.sjr_is_active === 1 && item.cuj_is_assigned === 1;
                                     const isRejected = item.sjr_is_active === 2;
-                                    const isDisabled = isAssigned || isRejected;
-                                    return true; // Always show buttons
-                                })() && (
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => handleAcceptJob(item.id)}
-                                            disabled={actionLoading[`accept_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2}
-                                            className={`p-1.5 rounded border ${
-                                                actionLoading[`accept_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2
-                                                    ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
-                                                    : 'text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200'
-                                            }`}
-                                            title="Assign Freelancer"
-                                            aria-label="Assign Freelancer"
-                                        >
-                                            {actionLoading[`accept_${item.id}`] ? (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                                            ) : (
-                                                <CheckCircle className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={() => handleRejectJob(item.id)}
-                                            disabled={actionLoading[`reject_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2}
-                                            className={`p-1.5 rounded border ${
-                                                actionLoading[`reject_${item.id}`] || (item.sjr_is_active === 1 && item.cuj_is_assigned === 1) || item.sjr_is_active === 2
-                                                    ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
-                                                    : 'text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
-                                            }`}
-                                            title="Reject Request"
-                                            aria-label="Reject Request"
-                                        >
-                                            {actionLoading[`reject_${item.id}`] ? (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                                            ) : (
-                                                <XCircle className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
+                                    const isRemoved = item.sjr_is_active === 0;
+                                    
+                                    // Only show accept/reject buttons for pending requests
+                                    if (isPending) {
+                                        return (
+                                            <div className="flex items-center space-x-2">
+                                                <button
+                                                    onClick={() => handleAcceptJob(item.id)}
+                                                    disabled={actionLoading[`accept_${item.id}`]}
+                                                    className={`p-1.5 rounded border ${
+                                                        actionLoading[`accept_${item.id}`]
+                                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
+                                                            : 'text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200'
+                                                    }`}
+                                                    title="Assign Freelancer"
+                                                    aria-label="Assign Freelancer"
+                                                >
+                                                    {actionLoading[`accept_${item.id}`] ? (
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                                                    ) : (
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRejectJob(item.id)}
+                                                    disabled={actionLoading[`reject_${item.id}`]}
+                                                    className={`p-1.5 rounded border ${
+                                                        actionLoading[`reject_${item.id}`]
+                                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
+                                                            : 'text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
+                                                    }`}
+                                                    title="Reject Request"
+                                                    aria-label="Reject Request"
+                                                >
+                                                    {actionLoading[`reject_${item.id}`] ? (
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                                    ) : (
+                                                        <XCircle className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 {item.cuj_is_assigned === 1 && (
                                     <button
                                         onClick={() => handleRemoveFreelancer(item)}
@@ -779,7 +798,7 @@ const ActiveWorkDashboard = () => {
             {/* Confirmation Modal */}
             {showConfirmModal && pendingAction && (
                 <div className="fixed inset-0 flex items-center justify-center z-[70] backdrop-blur-[1px]">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg border">
+                    <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-lg border">
                         <div className="flex items-center mb-4">
                             <div className={`p-2 rounded-full mr-3 ${
                                 pendingAction.action === 'accept' 
@@ -797,9 +816,35 @@ const ActiveWorkDashboard = () => {
                             </h3>
                         </div>
                         
-                        <p className="text-gray-600 mb-6">
+                        <div className="mb-4">
+                            <p className="text-sm text-gray-600 mb-2">
+                                <span className="font-medium">Freelancer:</span> {pendingAction.freelancerName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                                <span className="font-medium">Job:</span> {pendingAction.jobTitle}
+                            </p>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-4">
                             {pendingAction.message}
                         </p>
+
+                        {/* Comment Section */}
+                        <div className="mb-6">
+                            <label htmlFor="actionComment" className="block text-sm font-medium text-gray-700 mb-2">
+                                {pendingAction.action === 'accept' ? 'Assignment Note (Optional)' : 'Rejection Reason (Optional)'}
+                            </label>
+                            <textarea
+                                id="actionComment"
+                                value={actionComment}
+                                onChange={(e) => setActionComment(e.target.value)}
+                                placeholder={pendingAction.action === 'accept' 
+                                    ? 'Add a note about this assignment...' 
+                                    : 'Provide a reason for rejection...'}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                rows={3}
+                            />
+                        </div>
                         
                         <div className="flex justify-end space-x-3">
                             <button
