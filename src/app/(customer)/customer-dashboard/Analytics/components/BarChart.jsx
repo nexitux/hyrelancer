@@ -40,8 +40,17 @@ export default function EnhancedBarChart() {
         setYear(transformedData?.year || 2024);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        // Fallback to empty data
-        setChartData([]);
+        // Set zero data for all months on error
+        const zeroData = Array.from({ length: 12 }, (_, i) => {
+          const month = (i + 1).toString();
+          return {
+            month: getMonthName(parseInt(month)),
+            jobs: 0,
+            completed: 0
+          };
+        });
+        setChartData(zeroData);
+        setYear(2024);
       } finally {
         setLoading(false);
       }

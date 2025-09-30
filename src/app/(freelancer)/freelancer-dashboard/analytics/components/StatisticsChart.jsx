@@ -202,24 +202,24 @@ export default function StatisticsChart() {
                 <linearGradient id="fillAppliedJobs" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor={chartConfig.AppliedJobs.color}
+                    stopColor={chartConfig?.AppliedJobs?.color || "#3b82f6"}
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor={chartConfig.AppliedJobs.color}
+                    stopColor={chartConfig?.AppliedJobs?.color || "#3b82f6"}
                     stopOpacity={0.1}
                   />
                 </linearGradient>
                 <linearGradient id="fillAssignedJobs" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor={chartConfig.AssignedJobs.color}
+                    stopColor={chartConfig?.AssignedJobs?.color || "#10b981"}
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor={chartConfig.AssignedJobs.color}
+                    stopColor={chartConfig?.AssignedJobs?.color || "#10b981"}
                     stopOpacity={0.1}
                   />
                 </linearGradient>
@@ -259,7 +259,7 @@ export default function StatisticsChart() {
                 type="monotone"
                 fill="url(#fillAppliedJobs)"
                 fillOpacity={0.4}
-                stroke={chartConfig.AppliedJobs.color}
+                stroke={chartConfig?.AppliedJobs?.color || "#3b82f6"}
                 strokeWidth={2}
               />
 
@@ -268,7 +268,7 @@ export default function StatisticsChart() {
                 type="monotone"
                 fill="url(#fillAssignedJobs)"
                 fillOpacity={0.4}
-                stroke={chartConfig.AssignedJobs.color}
+                stroke={chartConfig?.AssignedJobs?.color || "#10b981"}
                 strokeWidth={2}
               />
             </AreaChart>

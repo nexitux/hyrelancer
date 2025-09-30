@@ -154,24 +154,9 @@ export default function Badges() {
         setError(null);
       } catch (err) {
         console.error('Error fetching badges:', err);
-        setError('Failed to load badges');
-        // Fallback to sample data - only active badges
-        setBadges([
-          {
-            fb_id: 3,
-            fb_u_id: "2",
-            fb_b_id: "4",
-            fb_is_active: 1,
-            get_fe_badge: {
-              b_id: 4,
-              b_name: "Sachill",
-              b_desc: "verfied",
-              b_type: "id_proof_verify",
-              b_point: "80",
-              b_is_active: 1
-            }
-          }
-        ]);
+        // Set empty badges array instead of error
+        setBadges([]);
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -210,19 +195,6 @@ export default function Badges() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-        <div className="text-center py-8">
-          <div className="text-red-500 mb-2">
-            <XCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Error Loading Badges</h3>
-          <p className="text-sm text-gray-500">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   const totalPoints = badges.reduce((sum, badge) => sum + parseInt(badge.get_fe_badge.b_point || 0), 0);
 
