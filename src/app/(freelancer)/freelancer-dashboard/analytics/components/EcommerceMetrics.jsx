@@ -1,5 +1,7 @@
 "use client";
-import { ArrowUp, ArrowDown, Users, Package, DollarSign, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowUp, ArrowDown, Users, Package, DollarSign, TrendingUp, CheckCircle, Clock, PlayCircle, Send } from "lucide-react";
+import { freelancerDashboardService } from '@/services/freelancerDashboardService';
 
 // Trend indicator component
 const TrendIndicator = ({ type, value }) => {
@@ -66,40 +68,101 @@ const MetricCard = ({
 
 // Main component
 export default function EcommerceMetrics() {
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const data = await freelancerDashboardService.getFreelancerDashboard();
+        const transformedData = freelancerDashboardService.transformFreelancerDashboardData(data);
+        setDashboardData(transformedData);
+      } catch (error) {
+        console.error('Error fetching freelancer dashboard data:', error);
+        // Fallback to sample data
+        setDashboardData({
+          stats: {
+            sentProposals: 0,
+            assignedJobs: 2,
+            completedJobs: 1,
+            startedJobs: 0,
+            pendingJobs: 0,
+          },
+          monthlyStats: {
+            sentProposals: 0,
+            assignedJobs: 2,
+            completedJobs: 1,
+            startedJobs: 0,
+            pendingJobs: 0,
+          }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   const metricsData = [
-  {
-    icon: Users,
-    title: "Profile Views",
-    value: "3,782",
-    changeType: "success",
-    changeValue: "11.01%",
-    gradient: "bg-gradient-to-br from-blue-100 to-blue-300"
-  },
-  {
-    icon: Package,
-    title: "Applied Jobs", 
-    value: "5,359",
-    changeType: "error",
-    changeValue: "9.05%",
-    gradient: "bg-gradient-to-br from-purple-100 to-purple-300"
-  },
-  {
-    icon: DollarSign,
-    title: "Service Revenue",
-    value: "$89,432",
-    changeType: "success", 
-    changeValue: "15.3%",
-    gradient: "bg-gradient-to-br from-amber-100 to-yellow-200"
-  },
-  {
-    icon: TrendingUp,
-    title: "Review Score",
-    value: "23.5%",
-    changeType: "success",
-    changeValue: "2.4%", 
-    gradient: "bg-gradient-to-br from-pink-100 to-rose-200"
+    {
+      icon: Send,
+      title: "Applied Jobs",
+      value: dashboardData?.stats?.sentProposals?.toString() || "0",
+      changeType: "success",
+      changeValue: `${dashboardData?.monthlyStats?.sentProposals || 0} this month`,
+      gradient: "bg-gradient-to-br from-blue-100 to-blue-300"
+    },
+    {
+      icon: Package,
+      title: "Assigned Jobs", 
+      value: dashboardData?.stats?.assignedJobs?.toString() || "0",
+      changeType: "success",
+      changeValue: `${dashboardData?.monthlyStats?.assignedJobs || 0} this month`,
+      gradient: "bg-gradient-to-br from-purple-100 to-purple-300"
+    },
+    {
+      icon: CheckCircle,
+      title: "Completed Jobs",
+      value: dashboardData?.stats?.completedJobs?.toString() || "0",
+      changeType: "success", 
+      changeValue: `${dashboardData?.monthlyStats?.completedJobs || 0} this month`,
+      gradient: "bg-gradient-to-br from-emerald-100 to-green-300"
+    },
+    {
+      icon: Clock,
+      title: "Pending Jobs",
+      value: dashboardData?.stats?.pendingJobs?.toString() || "0",
+      changeType: "error",
+      changeValue: `${dashboardData?.monthlyStats?.pendingJobs || 0} this month`,
+      gradient: "bg-gradient-to-br from-amber-100 to-yellow-200"
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-950">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((index) => (
+              <div key={index} className="group relative overflow-hidden rounded-xl bg-white border border-gray-100 dark:bg-gray-900/50 dark:border-gray-800/50">
+                <div className="relative p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col space-y-3">
+                      <div className="animate-pulse bg-gray-200 h-6 w-16 rounded"></div>
+                      <div className="animate-pulse bg-gray-200 h-4 w-24 rounded"></div>
+                      <div className="animate-pulse bg-gray-200 h-8 w-12 rounded"></div>
+                    </div>
+                    <div className="animate-pulse bg-gray-200 h-12 w-12 rounded-xl"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
-];
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950">
