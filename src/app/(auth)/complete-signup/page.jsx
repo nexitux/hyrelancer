@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, Mail, Phone, ArrowLeft, RefreshCcw } from 'lucide-react';
 import api from '@/config/api';
+import ErrorModal from '../../../components/ErorrModal/page';
 
 const CompleteSignupPage = () => {
     const router = useRouter();
@@ -34,6 +35,8 @@ const CompleteSignupPage = () => {
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorModalContent, setErrorModalContent] = useState('');
 
     // Redirect back if no mobile number and not a Google signup - but only check once on mount
     useEffect(() => {
@@ -136,14 +139,33 @@ const CompleteSignupPage = () => {
             if (error.response && error.response.data) {
                 const errorData = error.response.data;
                 
-                if (errorData.status === 'error') {
-                    setErrors({ general: errorData.message });
-                } else if (errorData.errors) {
+                // Handle specific "already registered" errors with modal
+                if (errorData.errors) {
                     const backendErrors = {};
                     Object.keys(errorData.errors).forEach(key => {
                         backendErrors[key] = errorData.errors[key][0];
                     });
+                    
+                    // Check for already registered email
+                    if (backendErrors.email && backendErrors.email.toLowerCase().includes('already')) {
+                        setErrorModalContent('This email is already registered. Please use a different email or try logging in.');
+                        setShowErrorModal(true);
+                        return; // Don't set form errors, just show modal
+                    } else if (backendErrors.mobile && backendErrors.mobile.toLowerCase().includes('already')) {
+                        setErrorModalContent('This phone number is already registered. Please use a different number.');
+                        setShowErrorModal(true);
+                        return; // Don't set form errors, just show modal
+                    }
+                    
                     setErrors(backendErrors);
+                } else if (errorData.status === 'error') {
+                    // Check if it's an already registered error
+                    if (errorData.message && errorData.message.toLowerCase().includes('already')) {
+                        setErrorModalContent(errorData.message);
+                        setShowErrorModal(true);
+                    } else {
+                        setErrors({ general: errorData.message });
+                    }
                 } else {
                     setErrors({ general: errorData.message || 'Failed to complete registration. Please try again.' });
                 }
@@ -278,6 +300,14 @@ const CompleteSignupPage = () => {
                     </button>
                 </div>
             </div>
+            
+            {/* Error Modal */}
+            <ErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                error={errorModalContent}
+                type="error"
+            />
         </div>
     );
 };
