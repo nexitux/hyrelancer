@@ -238,9 +238,11 @@ const AuthForm = () => {
             slug: data.fp_slug
           }));
 
-          // REMOVED: Let AuthWrapper handle the redirect
-          // const redirectPath = getRedirectPath(data.user);
-          // router.push(redirectPath);
+          // For Google signup, automatically redirect to select-user-type if no user_type
+          if (!data.user.user_type) {
+            router.push('/select-user-type');
+          }
+          // If user has user_type, let AuthWrapper handle the redirect
 
         } catch (apiError) {
           const errorMessage = apiError.response?.data?.error || 'Failed to complete Google login.';

@@ -240,9 +240,11 @@ function AuthWrapperInner({ children }) {
   // FIXED: New function that only returns a redirect path if user MUST be redirected
   const getMustRedirectPath = (currentPath, user) => {
     const userType = user?.user_type;
+    const emailVerified = user?.email_verified_at;
     
     // If user has no user_type and not on select-user-type page
-    if (!userType && currentPath !== "/select-user-type") {
+    // Only redirect to select-user-type if email is verified
+    if (!userType && currentPath !== "/select-user-type" && emailVerified) {
       return "/select-user-type";
     }                                                        
     

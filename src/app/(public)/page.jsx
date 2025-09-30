@@ -23,11 +23,12 @@ export default function HomePage() {
       return;
     }
 
-    // Check for registration-complete message and redirect to select-user-type
+    // Only redirect to select-user-type for Google signup completion, not regular email registration
+    // Regular email registration should stay on the homepage or go to login
     const message = searchParams.get('message');
     if (message === 'registration-complete') {
-      // Redirect to select-user-type page
-      router.replace('/select-user-type');
+      // Clear the URL parameters to prevent repeated redirects
+      router.replace('/');
       return;
     }
   }, [searchParams, router]);
