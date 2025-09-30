@@ -51,7 +51,11 @@ const PortfolioSection = ({
     profileData,
     profileSlug,
     allPortfolioItems,
-    pathname
+    pathname,
+    u_portfolio,
+    portfolio_img,
+    portfolio_vd,
+    portfolioEx
   });
 
   // Helper function to get image URL
@@ -59,36 +63,38 @@ const PortfolioSection = ({
     if (!imagePath || imagePath === '0') return null;
     // If it's already a full URL, return as is
     if (imagePath.startsWith('http')) return imagePath;
-    return `https://test.hyrelancer.in/${imagePath.split('--')[0]}`;
+    
+    // Handle the specific format from API: "uploads/freelancer/profile/f_profile_pic_1759086468.JPEG--f_profile_pic_1759086468.JPEG"
+    if (imagePath.includes('--')) {
+      return `https://test.hyrelancer.in/${imagePath.split('--')[0]}`;
+    }
+    
+    // For other formats, just prepend the base URL
+    return `https://test.hyrelancer.in/${imagePath}`;
   };
 
   // Process portfolio items from API
   const processedImages = allPortfolioItems && allPortfolioItems.length > 0 
-    ? allPortfolioItems.map((item, index) => ({
-        id: item.fpoi_id || index,
-        src: item.fpoi_type === 'Image' ? getImageUrl(item.fpoi_path) : null,
-        videoUrl: item.fpoi_type === 'Video' ? item.fpoi_path : null,
-        type: item.fpoi_type,
-        alt: profileData?.fp_headline || profileData?.fpo_title || `Portfolio item ${index + 1}`,
-        thumbnail: item.fpoi_thumb ? getImageUrl(item.fpoi_thumb) : (
-          item.fpoi_type === 'Image' ? getImageUrl(item.fpoi_path) : null
-        )
-      }))
-    : profileData?.fp_img ? [{
-        id: 1,
-        src: getImageUrl(profileData.fp_img),
-        type: 'Image',
-        alt: profileData?.fp_headline || profileData?.fpo_title || "Portfolio showcase",
-        thumbnail: getImageUrl(profileData.fp_img)
-      }] : [
-        {
-          id: 1,
-          src: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=800&fit=crop",
-          type: 'Image',
-          alt: profileData?.fp_headline || profileData?.fpo_title || "Portfolio showcase",
-          thumbnail: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=150&h=200&fit=crop"
-        }
-      ];
+    ? allPortfolioItems.map((item, index) => {
+        const processedItem = {
+          id: item.fpoi_id || index,
+          src: item.fpoi_type === 'Image' ? getImageUrl(item.fpoi_path) : null,
+          videoUrl: item.fpoi_type === 'Video' ? item.fpoi_path : null,
+          type: item.fpoi_type,
+          alt: profileData?.fp_headline || profileData?.fpo_title || `Portfolio item ${index + 1}`,
+          thumbnail: item.fpoi_thumb ? getImageUrl(item.fpoi_thumb) : (
+            item.fpoi_type === 'Image' ? getImageUrl(item.fpoi_path) : null
+          )
+        };
+        console.log(`Processing portfolio item ${index}:`, {
+          original: item,
+          processed: processedItem
+        });
+        return processedItem;
+      })
+    : []; // No portfolio items - return empty array
+
+  console.log("Final processedImages:", processedImages);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % processedImages.length);
@@ -146,7 +152,7 @@ const PortfolioSection = ({
             {/* Main Portfolio Display */}
             <div className="lg:col-span-2">
               {/* Main Image/Video Carousel */}
-              <div className="relativerounded-2xl overflow-hidden mb-6 aspect-[4/5]">
+              <div className="relative rounded-2xl overflow-hidden mb-6 aspect-[4/5]">
                 {currentItem.type === 'Video' ? (
                   <div className="w-full h-full flex items-center justify-center bg-gray-900">
                     {currentItem.videoUrl && currentItem.videoUrl.startsWith('http') ? (
@@ -337,14 +343,12 @@ const PortfolioSection = ({
             </div>
           </div>
         ) : (
-          // No portfolio items available
-          <div className="text-center py-12">
-            <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Portfolio Items</h3>
-            <p className="text-gray-600">This freelancer hasn't uploaded any portfolio items yet.</p>
-            {!profileSlug && (
-              <p className="text-red-600 text-sm mt-2">Debug: No slug available</p>
-            )}
+          <div className="text-center py-8">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800 text-sm">
+                <span className="font-medium">Note:</span> No portfolio items found.
+              </p>
+            </div>
           </div>
         )}
       </div>

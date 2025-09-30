@@ -124,7 +124,15 @@ export default function ListFreelancerPage() {
           statusInfo: getStatusInfo(freelancer)
         }));
 
-        setAllFreelancers(processedData);
+        // Sort by creation date (latest first)
+        const sortedData = processedData.sort((a, b) => {
+          // Try different possible date fields
+          const dateA = new Date(a.created_at || a.createdAt || a.date_created || a.registration_date || 0);
+          const dateB = new Date(b.created_at || b.createdAt || b.date_created || b.registration_date || 0);
+          return dateB - dateA; // Descending order (latest first)
+        });
+
+        setAllFreelancers(sortedData);
         // Reset to first page when data changes
         setCurrentPage(1);
 

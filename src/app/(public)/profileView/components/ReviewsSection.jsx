@@ -13,45 +13,19 @@ const ReviewsSection = ({ profileData }) => {
     }));
   };
 
-  // Mock review data - In a real app, you'd fetch this from an API
-  // You can extend this to use actual reviews data when available
-  const reviews = [
-    {
-      id: 1,
-      author: "Jeremy L.",
-      date: "August 24, 2024",
-      rating: 5,
-      verified: true,
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face",
-      text: `I really enjoyed working with ${profileData?.fp_display_name || 'this freelancer'}. They were very responsive and delivered high-quality work. I would definitely recommend them to anyone looking for professional services!`,
-      serviceImage: "https://images.unsplash.com/photo-1626785774625-0b1c2c4eab67?w=120&h=120&fit=crop",
-      serviceTitle: profileData?.fp_headline?.substring(0, 20) + "..." || "Professional Service",
-      servicePrice: profileData?.fp_amt_hour ? `From ₹${profileData.fp_amt_hour}` : "Contact for pricing"
-    },
-    {
-      id: 2,
-      author: "Leonardo D.",
-      date: "August 24, 2024", 
-      rating: 5,
-      verified: true,
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face",
-      text: `Very professional work. ${profileData?.fp_display_name || 'The freelancer'} has excellent skills and was able to deliver exactly what I needed. Their ability to understand requirements and execute them exceeded my expectations.`,
-      serviceImage: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=120&h=120&fit=crop",
-      serviceTitle: "Professional Consultation", 
-      servicePrice: profileData?.fp_amt_hour ? `From ₹${profileData.fp_amt_hour}` : "Contact for pricing"
-    }
-  ];
+  // TODO: Replace with actual reviews data from API
+  const reviews = []; // No reviews available yet
 
   const ratingDistribution = [
-    { stars: 5, percentage: 70, count: 1368 },
-    { stars: 4, percentage: 20, count: 392 },
-    { stars: 3, percentage: 10, count: 196 },
+    { stars: 5, percentage: 0, count: 0 },
+    { stars: 4, percentage: 0, count: 0 },
+    { stars: 3, percentage: 0, count: 0 },
     { stars: 2, percentage: 0, count: 0 },
     { stars: 1, percentage: 0, count: 0 }
   ];
 
-  const totalRatings = 1968;
-  const averageRating = 4.8;
+  const totalRatings = 0;
+  const averageRating = 0;
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, index) => (
@@ -99,43 +73,59 @@ const ReviewsSection = ({ profileData }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Rating Summary */}
-          <div className="lg:col-span-1">
-            <div className="text-center mb-6">
-              <div className="text-6xl font-bold text-gray-900 mb-2">{averageRating}</div>
-              <div className="flex justify-center mb-2">
-                {renderStars(averageRating)}
-              </div>
-              <div className="text-sm text-gray-600">({totalRatings.toLocaleString()} Ratings)</div>
-            </div>
-          </div>
-
-          {/* Rating Distribution */}
-          <div className="lg:col-span-2">
-            <div className="space-y-3">
-              {ratingDistribution.map((item) => (
-                <div key={item.stars} className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-1 w-8">
-                    <span className="text-sm font-medium text-gray-700">{item.stars}</span>
-                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                  </div>
-                  
-                  <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="h-full bg-blue-600 rounded-full transition-all duration-500"
-                      style={{ width: `${item.percentage}%` }}
-                    ></div>
-                  </div>
-                  
-                  <div className="text-sm font-medium text-gray-700 w-12 text-right">
-                    {item.percentage}%
-                  </div>
+        {totalRatings > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Rating Summary */}
+            <div className="lg:col-span-1">
+              <div className="text-center mb-6">
+                <div className="text-6xl font-bold text-gray-900 mb-2">{averageRating}</div>
+                <div className="flex justify-center mb-2">
+                  {renderStars(averageRating)}
                 </div>
-              ))}
+                <div className="text-sm text-gray-600">({totalRatings.toLocaleString()} Ratings)</div>
+              </div>
+            </div>
+
+            {/* Rating Distribution */}
+            <div className="lg:col-span-2">
+              <div className="space-y-3">
+                {ratingDistribution.map((item) => (
+                  <div key={item.stars} className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1 w-8">
+                      <span className="text-sm font-medium text-gray-700">{item.stars}</span>
+                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    </div>
+                    
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                        style={{ width: `${item.percentage}%` }}
+                      ></div>
+                    </div>
+                    
+                    <div className="text-sm font-medium text-gray-700 w-12 text-right">
+                      {item.percentage}%
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-8 mb-8">
+            <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Reviews Yet</h3>
+            <p className="text-gray-600 mb-4">
+              Be the first to leave a review for {profileData?.fp_display_name || 'this freelancer'}!
+            </p>
+            <button 
+              onClick={handleWriteReview}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
+            >
+              Write the First Review
+            </button>
+          </div>
+        )}
 
         {/* Reviews List */}
         <div className="space-y-6">
@@ -206,32 +196,18 @@ const ReviewsSection = ({ profileData }) => {
           ))}
         </div>
 
-        {/* See More Button */}
-        <div className="text-center mt-8">
-          <button className="group flex items-center justify-center mx-auto px-6 py-3 text-gray-700 font-semibold hover:text-blue-700 transition-colors duration-200">
-            <span className="border-b-2 border-gray-700 group-hover:border-blue-700 transition-colors duration-200">
-              See More Reviews (19)
-            </span>
-            <ChevronDown className="w-4 h-4 ml-2 group-hover:text-blue-700 transition-colors duration-200" />
-          </button>
-        </div>
-
-        {/* No Reviews State */}
-        {reviews.length === 0 && (
-          <div className="text-center py-12">
-            <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Reviews Yet</h3>
-            <p className="text-gray-600 mb-4">
-              Be the first to leave a review for {profileData?.fp_display_name || 'this freelancer'}!
-            </p>
-            <button 
-              onClick={handleWriteReview}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
-            >
-              Write the First Review
+        {/* See More Button - Only show if there are reviews */}
+        {reviews.length > 0 && (
+          <div className="text-center mt-8">
+            <button className="group flex items-center justify-center mx-auto px-6 py-3 text-gray-700 font-semibold hover:text-blue-700 transition-colors duration-200">
+              <span className="border-b-2 border-gray-700 group-hover:border-blue-700 transition-colors duration-200">
+                See More Reviews
+              </span>
+              <ChevronDown className="w-4 h-4 ml-2 group-hover:text-blue-700 transition-colors duration-200" />
             </button>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -216,30 +216,60 @@ const Header = ({ params }) => {
     }
   };
 
-  const userMenuItems = [
-    {
-      name: "Dashboard",
-      icon: <Layers className="w-4 h-4" />,
-      onClick: () => {
-        router.push("/freelancer-dashboard");
-        setShowUserDropdown(false);
+  // Get the correct dashboard path based on user type
+  const getDashboardPath = () => {
+    const userType = user?.user_type;
+    
+    if (userType === "Customer" || userType === "customer") {
+      return "/customer-dashboard";
+    } else if (userType === "Freelancer" || userType === "freelancer") {
+      return "/freelancer-dashboard";
+    }
+    
+    // Default fallback
+    return "/";
+  };
+
+  // Get user menu items based on user type
+  const getUserMenuItems = () => {
+    const userType = user?.user_type;
+    const isCustomer = userType === "Customer" || userType === "customer";
+    
+    const baseItems = [
+      {
+        name: "Dashboard",
+        icon: <Layers className="w-4 h-4" />,
+        onClick: () => {
+          router.push(getDashboardPath());
+          setShowUserDropdown(false);
+        },
       },
-    },
-    {
-      name: "My Profile",
-      icon: <Settings className="w-4 h-4" />,
-      onClick: () => {
-        const profileSlug = slug || user?.slug;
-        router.push(`/profileView/${profileSlug}`);
-        setShowUserDropdown(false);
-      },
-    },
-    {
+    ];
+
+    // Only add "My Profile" for non-customer users
+    if (!isCustomer) {
+      baseItems.push({
+        name: "My Profile",
+        icon: <Settings className="w-4 h-4" />,
+        onClick: () => {
+          const profileSlug = slug || user?.slug;
+          router.push(`/profileView/${profileSlug}`);
+          setShowUserDropdown(false);
+        },
+      });
+    }
+
+    // Always add logout
+    baseItems.push({
       name: "Logout",
       icon: <LogOut className="w-4 h-4" />,
       onClick: handleLogout,
-    },
-  ];
+    });
+
+    return baseItems;
+  };
+
+  const userMenuItems = getUserMenuItems();
 
   return (
     <header

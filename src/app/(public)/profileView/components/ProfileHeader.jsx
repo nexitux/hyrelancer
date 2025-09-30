@@ -27,13 +27,13 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
   };
 
   const getRating = () => {
-    // This would come from reviews data - using placeholder for now
-    return 4.8;
+    // TODO: This should come from reviews data when available
+    return null; // No rating available
   };
 
   const getReviewCount = () => {
-    // This would come from reviews data - using placeholder for now
-    return 751;
+    // TODO: This should come from reviews data when available
+    return 0; // No reviews available
   };
 
   const profileImage = getProfileImageUrl(profileData?.fp_img);
@@ -114,15 +114,24 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
                   {getLocationDisplay()}
                 </span>
               </div>
-              <div className="flex items-center">
-                <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
-                <span className="text-sm font-semibold text-gray-900">
-                  {getRating()}
-                </span>
-                <span className="text-sm text-gray-500 ml-1">
-                  ({getReviewCount()} reviews)
-                </span>
-              </div>
+              {getRating() && getReviewCount() > 0 ? (
+                <div className="flex items-center">
+                  <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
+                  <span className="text-sm font-semibold text-gray-900">
+                    {getRating()}
+                  </span>
+                  <span className="text-sm text-gray-500 ml-1">
+                    ({getReviewCount()} reviews)
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center text-gray-500">
+                  <Star className="w-4 h-4 text-gray-300 mr-1" />
+                  <span className="text-sm">
+                    No reviews yet
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Skills Preview */}
@@ -182,10 +191,13 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
         <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">
           About Me
         </h2>
-        <p className="text-gray-700 leading-relaxed text-sm">
-          {profileData?.fp_desc ||
-            "This freelancer is available for professional services. Contact them to discuss your project requirements and get started."}
-        </p>
+        <div 
+          className="text-gray-700 leading-relaxed text-sm"
+          dangerouslySetInnerHTML={{
+            __html: profileData?.fp_desc ||
+              "This freelancer is available for professional services. Contact them to discuss your project requirements and get started."
+          }}
+        />
 
         {/* Additional Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-100">

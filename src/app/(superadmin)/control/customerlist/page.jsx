@@ -11,7 +11,8 @@ import {
   MdCheckCircle,
   MdCancel,
   MdBusiness,
-  MdWork
+  MdWork,
+  MdAssignment
 } from 'react-icons/md';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -321,6 +322,13 @@ const handleDeleteSelected = async () => {
                           title="View"
                         >
                           <MdVisibility size={16} />
+                        </Link>
+                        <Link
+                          href={`/control/customerlist/customerJobs/${encodeId(customer.id)}`}
+                          className="p-2 text-green-600 rounded-lg transition-colors hover:bg-green-50"
+                          title="View Jobs"
+                        >
+                          <MdAssignment size={16} />
                         </Link>
                         <Link
                           href={`/control/customerlist/editCustomer/${encodeId(customer.id)}`}

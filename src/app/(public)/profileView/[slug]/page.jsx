@@ -42,6 +42,14 @@ export default function Page({ params }) {
 
         const data = await response.json();
         console.log("Profile API response:", data);
+        
+        // Check if profile is not active (customer profile pending approval)
+        if (data.message && data.message === "Please wait for approval.") {
+          setError("Please wait for approval.");
+          setProfileData(null);
+          return;
+        }
+        
         setProfileData(data);
       } catch (err) {
         console.error("Error fetching profile data:", err);
@@ -62,6 +70,27 @@ export default function Page({ params }) {
   }
 
   if (error) {
+    // Special handling for approval pending message
+    if (error === "Please wait for approval.") {
+      return (
+        <div className="min-h-screen bg-gray-50 py-8 px-4 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8">
+              <div className="flex justify-center mb-4">
+                <svg className="w-16 h-16 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Profile Under Review</h2>
+              <p className="text-gray-600 mb-6">This profile is currently under review and will be available once approved by our team.</p>
+              <p className="text-sm text-gray-500">Please check back later or contact support if you have any questions.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Regular error handling
     return (
       <div className="min-h-screen bg-gray-50 py-8 px-4 flex items-center justify-center">
         <div className="text-center">
@@ -105,13 +134,16 @@ export default function Page({ params }) {
                 services={profileData.fe_service_list}
                 cities={profileData.fe_city_list}
                 states={profileData.fe_state_list}
+                skills={profileData.u_skills}
               />
             </div>
 
             <div className="w-full">
               <PortfolioSection
-                portfolio={profileData.u_portfolio}
-                portfolioImages={profileData.portfolio_img}
+                u_profile={profileData.u_profile}
+                u_portfolio={profileData.u_portfolio}
+                portfolio_img={profileData.portfolio_img}
+                portfolio_vd={profileData.portfolio_vd}
                 portfolioEx={profileData.portfolio_ex}
               />
             </div>
@@ -136,6 +168,7 @@ export default function Page({ params }) {
                 cities={profileData.fe_city_list}
                 states={profileData.fe_state_list}
                 idProof={profileData.u_idproof}
+                languages={profileData.la_list}
               />
             </div>
           </div>

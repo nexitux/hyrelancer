@@ -5,8 +5,7 @@ import {
   UserOutlined, 
   MailOutlined, 
   LockOutlined, 
-  PhoneOutlined, 
-  HomeOutlined 
+  PhoneOutlined
 } from "@ant-design/icons";
 import { useRouter } from 'next/navigation'; // Import useRouter for redirection
 
@@ -36,8 +35,6 @@ export default function AddFreelancer() {
       name: values.name,
       email: values.email,
       mobile: values.mobile,
-      address: values.address,
-      username: values.username,
       password: values.password,
     };
 
@@ -138,28 +135,9 @@ export default function AddFreelancer() {
             </Col>
           </Row>
 
-          {/* Address */}
-          <Form.Item
-            name="address"
-            label="Address"
-            rules={[{ required: true, message: "Please enter address" }]}
-          >
-            {/* Input.TextArea doesn't typically use prefix, but leaving it as it was */}
-            <Input.TextArea rows={3} placeholder="Address" />
-          </Form.Item>
-
-          {/* Username, Password, Confirm Password */}
+          {/* Password, Confirm Password */}
           <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="username"
-                label="Username"
-                rules={[{ required: true, message: "Please enter username" }]}
-              >
-                <Input prefix={<UserOutlined />} placeholder="Username" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item
                 name="password"
                 label="Password"
@@ -168,7 +146,7 @@ export default function AddFreelancer() {
                 <Input.Password prefix={<LockOutlined />} placeholder="Password" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item
                 name="confirmPassword"
                 label="Confirm Password"

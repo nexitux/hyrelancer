@@ -1,13 +1,17 @@
-import { FaTachometerAlt, FaBriefcase, FaUser, FaHeadset } from "react-icons/fa";
+import { FaTachometerAlt, FaBriefcase, FaUser, FaHeadset, FaComments } from "react-icons/fa";
 
 export const customerMenu = [
   {
     icon: <FaTachometerAlt className="w-4 h-4" />,
     name: "Dashboard",
-    subItems: [
-      { name: "Analytics", path: "/customer-dashboard/Analytics", pro: false },
-      { name: "Message", path: "/customer-dashboard/message", pro: false },
-    ],
+    path: "/customer-dashboard/Analytics",
+    pro: false,
+  },
+  {
+    icon: <FaComments className="w-4 h-4" />,
+    name: "Messages",
+    path: "/customer-dashboard/message",
+    pro: false,
   },
   {
     icon: <FaBriefcase className="w-4 h-4" />,

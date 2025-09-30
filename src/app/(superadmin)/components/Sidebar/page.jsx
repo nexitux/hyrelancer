@@ -25,11 +25,17 @@ export default function Sidebar() {
   // Set initial active item based on current path
   useEffect(() => {
     const currentPath = pathname;
-    menuItems.forEach(item => {
+    const newOpenMenus = {};
+    
+    // Find the first matching menu item and open only that one
+    for (const item of menuItems) {
       if (currentPath.startsWith(item.href)) {
-        setOpenMenus(prev => ({ ...prev, [item.id]: true }));
+        newOpenMenus[item.id] = true;
+        break; // Only open the first matching menu
       }
-    });
+    }
+    
+    setOpenMenus(newOpenMenus);
   }, [pathname]);
 
   const toggleTheme = () => {
@@ -43,10 +49,19 @@ export default function Sidebar() {
   };
 
   const toggleMenu = (id) => {
-    setOpenMenus((prev) => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+    setOpenMenus((prev) => {
+      const isCurrentlyOpen = prev[id];
+      
+      // If the clicked menu is already open, close it
+      if (isCurrentlyOpen) {
+        return { ...prev, [id]: false };
+      }
+      
+      // If the clicked menu is closed, close all others and open this one
+      const newOpenMenus = {};
+      newOpenMenus[id] = true;
+      return newOpenMenus;
+    });
   };
 
   const navigateTo = (path) => {
@@ -58,10 +73,7 @@ export default function Sidebar() {
       id: 'dashboard', 
       label: 'Dashboard', 
       icon: MdDashboard, 
-      href: '/superadmin/control',
-      subLinks: [
-        { id: 'analytics', label: 'Analytics', href: '/control/analytics' },
-      ]
+      href: '/control/analytics'
     },
     { 
       id: 'categories', 
@@ -101,7 +113,7 @@ export default function Sidebar() {
         { id: 'freelancers-lists', label: 'Freelancer List', href: '/control/freelancelist' },
         { id: 'freelancers-add', label: 'Add Freelancer', href: '/control/freelancelist/addFreelancer' },
         { id: 'freelancers-reg-incomplete', label: 'Incomplete Registration', href: '/control/freelancelist/incomplete-registration' },
-        { id: 'freelancers-approval', label: 'Approve Freelancer', href: '/control/freelancelist/approval' },
+        { id: 'freelancers-approval', label: 'Pending Approval', href: '/control/freelancelist/approval' },
         { id: 'freelancers-suggestions', label: 'Freelancer Suggestions', href: '/control/freelancelist/SuggectionFreelancer' },
 
       ]

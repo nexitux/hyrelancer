@@ -1,18 +1,17 @@
-import { FaTachometerAlt, FaBriefcase, FaUser } from "react-icons/fa";
+import { FaTachometerAlt, FaBriefcase, FaUser, FaComments } from "react-icons/fa";
 
 export const freelancerMenu = [
   {
     icon: <FaTachometerAlt className="w-4 h-4" />,
     name: "Dashboard",
-    subItems: [
-      { name: "Analytics", path: "/freelancer-dashboard/analytics", pro: false },
-      // { name: "Services", path: "/services", pro: false },
-      { name: "Messages", path: "/freelancer-dashboard/message", pro: false },
-      // { name: "My Proposals", path: "/freelancer-dashboard/proposals", pro: false },
-      // { name: "My Services", path: "/freelancer-dashboard/my-services", pro: false },
-      // { name: "Service Orders", path: "/freelancer-dashboard/service-orders", pro: false },
-      // { name: "Profile", path: "/freelancer-dashboard/profileView", pro: false },
-    ],
+    path: "/freelancer-dashboard/analytics",
+    pro: false,
+  },
+  {
+    icon: <FaComments className="w-4 h-4" />,
+    name: "Messages",
+    path: "/freelancer-dashboard/message",
+    pro: false,
   },
   {
     icon: <FaBriefcase className="w-4 h-4" />,

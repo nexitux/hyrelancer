@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, BookOpen, Briefcase, Star, Plus } from 'lucide-react';
 
-const ProfileDetails = ({ profileData, experience, certificates, services, cities, states }) => {
+const ProfileDetails = ({ profileData, experience, certificates, services, cities, states, skills }) => {
   const [expandedExperience, setExpandedExperience] = useState({});
   const [showAllSkills, setShowAllSkills] = useState(false);
 
@@ -43,17 +43,24 @@ const ProfileDetails = ({ profileData, experience, certificates, services, citie
         }
       ];
 
-  // Get skills from services and create a comprehensive skills array
+  // Get skills from u_skills data
+  const userSkills = skills && skills.length > 0 
+    ? skills.map(skill => skill.fs_skill)
+    : [];
+  
+  // Use user skills or fallback to service names
   const serviceSkills = services && services.length > 0 
     ? services.map(service => service.se_name)
     : [];
   
-  // Combine with any additional skills or use fallback
-  const skills = serviceSkills.length > 0 
+  // Combine user skills with service skills or use fallback
+  const allSkills = userSkills.length > 0 
+    ? userSkills 
+    : serviceSkills.length > 0 
     ? serviceSkills 
     : ["Professional Services", "Client Consultation"];
 
-  const visibleSkills = showAllSkills ? skills : skills.slice(0, 7);
+  const visibleSkills = showAllSkills ? allSkills : allSkills.slice(0, 7);
 
   return (
     <div className="mx-auto space-y-8">
@@ -144,26 +151,26 @@ const ProfileDetails = ({ profileData, experience, certificates, services, citie
           ))}
         </div>
 
-        {/* Location Information */}
-        {cities && cities.length > 0 && (
+        {/* Skills Information */}
+        {allSkills.length > 0 && (
           <div className="bg-blue-50 rounded-lg p-4 mb-6">
-            <h4 className="font-semibold text-gray-900 mb-2">Service Areas</h4>
+            <h4 className="font-semibold text-gray-900 mb-2">Skills & Expertise</h4>
             <div className="flex flex-wrap gap-2">
-              {cities.slice(0, 5).map((city, index) => (
-                <span key={city.frc_id} className="text-sm bg-white px-3 py-1 rounded-full text-gray-700">
-                  {city.cit_name}
+              {allSkills.slice(0, 8).map((skill, index) => (
+                <span key={index} className="text-sm bg-white px-3 py-1 rounded-full text-gray-700">
+                  {skill}
                 </span>
               ))}
-              {cities.length > 5 && (
+              {allSkills.length > 8 && (
                 <span className="text-sm text-blue-600 font-medium">
-                  +{cities.length - 5} more cities
+                  +{allSkills.length - 8} more skills
                 </span>
               )}
             </div>
           </div>
         )}
         
-        {skills.length > 7 && (
+        {allSkills.length > 7 && (
           <button
             onClick={() => setShowAllSkills(!showAllSkills)}
             className="group flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold transition-all duration-200 hover:bg-blue-700 hover:shadow-md"
