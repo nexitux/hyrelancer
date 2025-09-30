@@ -235,26 +235,23 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
 
     // Process education data
     educationData.forEach((edu, index) => {
-      if (edu.fc_type === 'High School') {
-        formData.highSchoolYear = edu.fc_year;
-      } else {
-        const fieldKey = `${edu.fc_type.toLowerCase()}-${index}`;
-        eduFields.push({
-          key: fieldKey,
-          type: edu.fc_type,
-          label: edu.fc_type === 'UG' ? 'Education' :
-            edu.fc_type === 'PG' ? 'Postgraduate' : 'Freelancer Expertise',
-          fc_id: btoa(edu.fc_id.toString())
-        });
+      const fieldKey = `education-${index}`;
+      eduFields.push({
+        key: fieldKey,
+        type: edu.fc_type,
+        label: edu.fc_type === 'UG' ? 'Education' :
+          edu.fc_type === 'PG' ? 'Postgraduate' : 
+          edu.fc_type === 'High School' ? 'High School' : 'Freelancer Expertise',
+        fc_id: btoa(edu.fc_id.toString())
+      });
 
-        // include type in the nested form object so Select shows current type
-        formData[`education_${fieldKey}`] = {
-          specialized: edu.fc_title,
-          year: edu.fc_year,
-          college: edu.fc_collage,
-          type: edu.fc_type
-        };
-      }
+      // include type in the nested form object so Select shows current type
+      formData[`education_${fieldKey}`] = {
+        specialized: edu.fc_title,
+        year: edu.fc_year,
+        college: edu.fc_collage,
+        type: edu.fc_type
+      };
     });
 
     // If no education fields, add default one
@@ -383,17 +380,6 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
         // Handle education update
         const educationItems = [];
 
-        // Add high school if provided
-        if (values.highSchoolYear) {
-          const existingHighSchool = educationData.find(e => e.fc_type === 'High School');
-          educationItems.push({
-            type: 'High School',
-            title: 'High School',
-            year: values.highSchoolYear,
-            college: 'N/A',
-            fc_id: existingHighSchool ? btoa(existingHighSchool.fc_id.toString()) : null
-          });
-        }
 
         // Process education fields (prefer form values for `type`)
         educationFields.forEach(field => {
@@ -455,13 +441,6 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
           fp_add_edu_profile: addEducationToProfile ? "1" : "0"
         };
 
-        // Process high school
-        if (values.highSchoolYear) {
-          formattedData.type.push('High School');
-          formattedData.title.push('High School');
-          formattedData.year.push(values.highSchoolYear);
-          formattedData.collage.push('N/A');
-        }
 
         // Process education fields (prefer form values for `type`)
         educationFields.forEach(field => {
@@ -540,9 +519,6 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
       
       if (!editingSection || editingSection === 'education') {
         // Check education fields
-        if (values.highSchoolYear && values.highSchoolYear.trim() !== '') filledFields++;
-        totalFields++;
-        
         educationFields.forEach(field => {
           const eduData = values[`education_${field.key}`] || {};
           if (eduData.specialized && eduData.specialized.trim() !== '') filledFields++;
@@ -981,27 +957,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                       >
                         {/* Education Section */}
                         {(!editingSection || editingSection === 'education') && (
-                          <>
-                            {/* High School Education */}
-                            <Panel header={<span className="font-medium text-sm sm:text-base"><BookOutlined className="mr-2" /> High School</span>} key="highschool">
-                              <Row gutter={[16, 16]}>
-                                <Col xs={24}>
-                                  <Form.Item
-                                    name="highSchoolYear"
-                                    label={<span className="font-medium text-sm sm:text-base">Graduation Year</span>}
-                                  >
-                                    <Input
-                                      placeholder="Enter graduation year"
-                                      size="middle"
-                                      className="w-full"
-                                    />
-                                  </Form.Item>
-                                </Col>
-                              </Row>
-                            </Panel>
-
-                            {/* Higher Education */}
-                            <Panel header={<span className="font-medium text-sm sm:text-base"><BookOutlined className="mr-2" /> Higher Education</span>} key="education">
+                          <Panel header={<span className="font-medium text-sm sm:text-base"><BookOutlined className="mr-2" /> Education</span>} key="education">
                               <div className="mb-4">
                                 {educationFields.map((field, index) => (
                                   <FieldGroup
@@ -1061,7 +1017,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                           label={<span className="font-medium text-sm sm:text-base">
                                             {field.type === 'UG' ? 'Specialization' :
                                               field.type === 'PG' ? 'Specialization' :
-                                                'Expertise/Skill'}
+                                                field.type === 'High School' ? 'High School' :
+                                                  'Expertise/Skill'}
                                           </span>}
                                           rules={[{ required: false, message: "This field is required" }]}
                                         >
@@ -1069,7 +1026,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                             placeholder={
                                               field.type === 'UG' ? "e.g., Computer Science" :
                                                 field.type === 'PG' ? "e.g., MBA, M.Tech" :
-                                                  "e.g., Web Development, Graphic Design"
+                                                  field.type === 'High School' ? "High School" :
+                                                    "e.g., Web Development, Graphic Design"
                                             }
                                             size="middle"
                                           />
@@ -1079,7 +1037,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                         <Form.Item
                                           name={[`education_${field.key}`, 'college']}
                                           label={<span className="font-medium text-sm sm:text-base">
-                                            {field.type === 'Other' ? 'Institution/Platform' : 'Institution'}
+                                            {field.type === 'Other' ? 'Institution/Platform' : 
+                                              field.type === 'High School' ? 'School' : 'Institution'}
                                           </span>}
                                           rules={[{ required: false, message: "Please enter institution name" }]}
                                         >
@@ -1087,7 +1046,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                             placeholder={
                                               field.type === 'Other' ?
                                                 "e.g., Coursera, Udemy, Self-taught" :
-                                                "University or College name"
+                                                field.type === 'High School' ? "School name" :
+                                                  "University or College name"
                                             }
                                             size="middle"
                                           />
@@ -1134,7 +1094,6 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
 
                               </div>
                             </Panel>
-                          </>
                         )}
 
                         {/* Experience Section */}
