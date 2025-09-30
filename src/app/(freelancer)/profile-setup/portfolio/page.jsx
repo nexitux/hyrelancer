@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Form, Input, Button, Card, Row, Col, Divider,
-  Upload, Modal, Typography, Space, message, Tag, Spin
+  Upload, Modal, Typography, Space, message, Tag, Spin, Progress, Tooltip
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, CheckOutlined,
@@ -465,6 +465,24 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     </div>
   );
 
+  // Calculate progress for portfolio completion
+  const calculateProgress = () => {
+    let progress = 0;
+    let totalItems = 2; // Skills and Portfolio items
+    
+    // Check if skills exist
+    if (skills.length > 0) {
+      progress += 1;
+    }
+    
+    // Check if portfolio items exist
+    if (portfolios.length > 0) {
+      progress += 1;
+    }
+    
+    return Math.round((progress / totalItems) * 100);
+  };
+
   // No data state - Show when no portfolios or skills
   const hasData = portfolios.length > 0 || skills.length > 0;
 
@@ -615,7 +633,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
                               <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1 sm:gap-2 z-10">
-                                <Button
+                                {/* <Button
                                   type="text"
                                   icon={<EyeOutlined />}
                                   className="bg-white/90 hover:bg-white text-gray-600 h-7 w-7 sm:h-8 sm:w-8 p-0 flex items-center justify-center"
@@ -624,7 +642,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                                     if (img) handlePreview(img);
                                   }}
                                   title="View Image"
-                                />
+                                /> */}
                                 <Button
                                   type="text"
                                   icon={<EditOutlined />}
@@ -669,7 +687,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                             <span className="text-xs">{portfolio.images?.length || 0} images</span>
                           </div>
                           <div className="flex justify-between items-center gap-1 sm:gap-2 mt-3 sm:mt-4">
-                            <Button
+                            {/* <Button
                               type="text"
                               icon={<EyeOutlined />}
                               onClick={() => {
@@ -680,7 +698,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                             >
                               <span className="hidden sm:inline">View</span>
                            
-                            </Button>
+                            </Button> */}
                             <Button
                               type="text"
                               icon={<EditOutlined />}
@@ -718,6 +736,22 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                 </div>
               </div>
             )}
+
+            {/* Progress Bar */}
+            <div className="mb-6">
+              <Tooltip title="Your progress in completing the portfolio and skills" placement="top">
+                <div className="flex justify-between items-center mb-1">
+                  <Text className="text-sm font-medium">Portfolio & Skills Completion</Text>
+                  <Text className="text-sm">{calculateProgress()}%</Text>
+                </div>
+              </Tooltip>
+              <Progress
+                percent={calculateProgress()}
+                strokeColor="#52c41a"
+                trailColor="#f0f0f0"
+                showInfo={false}
+              />
+            </div>
 
             {/* Action Buttons for Registration Flow */}
             {(onBack || onNext) && hasData && (

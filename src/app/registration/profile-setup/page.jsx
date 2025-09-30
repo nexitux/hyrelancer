@@ -106,8 +106,8 @@ export default function RegistrationProfileSetup() {
       content: <TermsTab 
         form={form} 
         onNext={() => {
-          // Registration complete, redirect to dashboard
-          router.replace('/freelancer-dashboard');
+          // Registration complete, redirect to home
+          router.replace('/');
         }} 
         onBack={() => setCurrent(4)}
         isRegistrationFlow={true}
@@ -133,15 +133,15 @@ export default function RegistrationProfileSetup() {
     console.log("Registration flow - User status:", { is_status, completionLevel: parsedLevel });
 
     if (is_status === "old") {
-      console.log("Old user in registration → redirecting to dashboard");
-      router.replace("/freelancer-dashboard");
+      console.log("Old user in registration → redirecting to home");
+      router.replace("/");
       return;
     }
 
     if (is_status === "new") {
       if (parsedLevel === 0) {
-        console.log("Registration complete → redirecting to dashboard");
-        router.replace("/freelancer-dashboard");
+        console.log("Registration complete → redirecting to home");
+        router.replace("/");
         return;
       }
 

@@ -1,75 +1,19 @@
 "use client";
-import React, { useState } from 'react';
-import { Search, Plus, Eye, Edit3, Trash2, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Eye, Edit3, Trash2, ChevronDown, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import EditAlertsModal from './components/EditAlertsModal'
+import { freelancerJobAPI } from '../../../../config/api';
+
 
 const JobAlerts = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('Default');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [alerts, setAlerts] = useState([
-        {
-            id: 1,
-            title: 'Website design',
-            status: 'Enabled',
-            region: 'United States',
-            categories: ['UX/UI design'],
-            tags: ['web', 'landing'],
-            type: 'Parttime',
-            jobsFound: 32,
-            frequency: 'Weekly',
-            enabled: true
-        },
-        {
-            id: 2,
-            title: 'UX/UI design',
-            status: 'Disabled',
-            region: 'United Kingdom',
-            categories: ['UX/UI design'],
-            tags: ['app', 'mobile'],
-            type: 'Parttime',
-            jobsFound: 8,
-            frequency: 'Daily',
-            enabled: false
-        },
-        {
-            id: 3,
-            title: 'App design',
-            status: 'Disabled',
-            region: 'South Korea',
-            categories: ['UX/UI design'],
-            tags: ['logo', 'mockup'],
-            type: 'Parttime',
-            jobsFound: 24,
-            frequency: 'Daily',
-            enabled: false
-        },
-        {
-            id: 4,
-            title: 'Logo branding',
-            status: 'Enabled',
-            region: 'United States',
-            categories: ['UX/UI design'],
-            tags: ['logo', 'mockup'],
-            type: 'Parttime',
-            jobsFound: 16,
-            frequency: 'Daily',
-            enabled: true
-        },
-        {
-            id: 5,
-            title: 'Frontend development',
-            status: 'Enabled',
-            region: 'Canada',
-            categories: ['Web development'],
-            tags: ['react', 'javascript'],
-            type: 'Fulltime',
-            jobsFound: 45,
-            frequency: 'Weekly',
-            enabled: true
-        }
-    ]);
+    const [alerts, setAlerts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [userProfile, setUserProfile] = useState(null);
+    const [appliedJobs, setAppliedJobs] = useState([]);
 
     const toggleAlert = (id) => {
         setAlerts(alerts.map(alert =>
@@ -83,7 +27,93 @@ const JobAlerts = () => {
         setAlerts(alerts.filter(alert => alert.id !== id));
     };
 
+    // Fetch applied job alerts from API
+    useEffect(() => {
+        const fetchAppliedJobAlerts = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                console.log('Fetching applied job alerts...');
+                const response = await freelancerJobAPI.getAppliedJobAlert();
+                console.log('API Response:', response);
+                
+                if (response) {
+                    console.log('Response structure:', {
+                        hasJobAppList: !!response.job_App_list,
+                        jobAppListType: typeof response.job_App_list,
+                        jobAppListValue: response.job_App_list
+                    });
+                    
+                    setUserProfile(response.u_profile);
+                    
+                    // Handle different response structures
+                    let jobList = [];
+                    if (response.job_App_list) {
+                        if (Array.isArray(response.job_App_list)) {
+                            jobList = response.job_App_list;
+                        } else if (response.job_App_list.data && Array.isArray(response.job_App_list.data)) {
+                            jobList = response.job_App_list.data;
+                        } else {
+                            // Handle case where Laravel didn't call ->get()
+                            console.warn('job_App_list is not an array, this might be a query builder object. Adding empty array as fallback.');
+                            jobList = [];
+                        }
+                    }
+                    
+                    console.log('Processed job list:', jobList);
+                    
+                    // If we don't have jobs, show empty state but don't treat as error
+                    if (!jobList || jobList.length === 0) {
+                        console.log('No applied jobs found or empty response');
+                        setAlerts([]);
+                        return;
+                    }
+                    
+                    // Transform API data to match our alert structure
+                    const transformedAlerts = jobList.map((job, index) => ({
+                        id: job.cuj_id || job.id || (index + 1),
+                        title: job.cuj_title || job.title || `Applied Job ${index + 1}`,
+                        status: 'Applied',
+                        region: job.user?.country || job.country || 'Not specified',
+                        categories: job.cuj_category ? [job.cuj_category] : (job.category ? [job.category] : ['General']),
+                        tags: job.cuj_skills ? job.cuj_skills.split(',').map(skill => skill.trim()) : 
+                              (job.skills ? job.skills.split(',').map(skill => skill.trim()) : ['applied']),
+                        type: job.cuj_job_type || job.job_type || 'Contract',
+                        jobsFound: 1, // Each job represents one applied position
+                        frequency: 'Applied',
+                        enabled: true,
+                        applied_at: job.created_at || job.applied_at,
+                        job_data: job // Store original job data for reference
+                    }));
+                    
+                    console.log('Transformed alerts:', transformedAlerts);
+                    setAlerts(transformedAlerts);
+                } else {
+                    console.log('No response data received');
+                    setAlerts([]);
+                }
+            } catch (err) {
+                console.error('Error fetching applied job alerts:', err);
+                console.error('Error details:', {
+                    message: err.message,
+                    status: err.response?.status,
+                    statusText: err.response?.statusText,
+                    data: err.response?.data
+                });
+                setError(`Failed to load applied job alerts: ${err.message || 'Unknown error'}. Please try again.`);
+                setAlerts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAppliedJobAlerts();
+    }, []);
+
     const getStatusBadge = (status) => {
+        if (status === 'Applied') {
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Applied</span>;
+        }
         return status === 'Enabled'
             ? <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Enabled</span>
             : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Disabled</span>;
@@ -94,18 +124,53 @@ const JobAlerts = () => {
         alert.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="flex items-center space-x-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-800" />
+                    <span className="text-gray-600">Loading applied job alerts...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="text-center max-w-md mx-auto p-6">
+                    <div className="text-red-600 text-lg font-medium mb-2">Error Loading Data</div>
+                    <div className="text-gray-500 mb-4">{error}</div>
+                    <div className="space-y-2">
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 transition-colors w-full mb-2"
+                        >
+                            Retry
+                        </button>
+                        <button 
+                            onClick={() => {
+                                // Fallback: set empty alerts to show the interface
+                                setError(null);
+                                setAlerts([]);
+                            }}
+                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full"
+                        >
+                            View Empty List
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-100">
             {/* Header */}
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Jobs Alerts</h1>
-                    <Link href={`job-alerts/add-job-alerts`}>
-                        <button className="inline-flex items-center justify-center px-4 py-2.5 sm:py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors w-full sm:w-auto">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add New Alert
-                        </button>
-                    </Link>
+                <div className="mb-6">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Applied Job Alerts</h1>
+                    <p className="text-gray-600 mt-2">View your recently applied job positions</p>
                 </div>
             </div>
 
@@ -129,21 +194,7 @@ const JobAlerts = () => {
                                 />
                             </div>
 
-                            {/* Sort Dropdown */}
-                            <div className="relative w-full sm:w-auto">
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 sm:py-2.5 pr-8 text-sm focus:ring-2 focus:ring-blue-800 focus:border-blue-800 w-full sm:w-auto"
-                                >
-                                    <option>Sort By (Default)</option>
-                                    <option>Name A-Z</option>
-                                    <option>Name Z-A</option>
-                                    <option>Most Jobs</option>
-                                    <option>Least Jobs</option>
-                                </select>
-                                <ChevronDown className="absolute right-2 top-2.5 sm:top-3 h-4 w-4 text-gray-400 pointer-events-none" />
-                            </div>
+                          
                         </div>
                     </div>
                 </div>
@@ -154,13 +205,13 @@ const JobAlerts = () => {
                     <div className="bg-gray-50 border-b border-gray-200">
                         <div className="grid grid-cols-12 gap-4 px-6 py-4">
                             <div className="col-span-6">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</h3>
+                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Job Title</h3>
                             </div>
                             <div className="col-span-2 text-center">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Number Jobs</h3>
+                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Job Type</h3>
                             </div>
                             <div className="col-span-1 text-center">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Times</h3>
+                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Applied Date</h3>
                             </div>
                             <div className="col-span-1 text-center">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</h3>
@@ -201,55 +252,36 @@ const JobAlerts = () => {
                                     </div>
                                 </div>
 
-                                {/* Number Jobs Column */}
+                                {/* Job Type Column */}
                                 <div className="col-span-2 flex items-center justify-center">
                                     <div className="text-center">
-                                        <div className="text-gray-900">Jobs found {alert.jobsFound}</div>
+                                        <div className="text-gray-900 font-medium">{alert.type}</div>
                                     </div>
                                 </div>
 
-                                {/* Times Column */}
+                                {/* Applied Date Column */}
                                 <div className="col-span-1 flex items-center justify-center">
                                     <div className="text-center">
-                                        <div className="text-base font-medium text-blue-800">{alert.frequency}</div>
+                                        <div className="text-base font-medium text-blue-800">
+                                            {alert.applied_at ? new Date(alert.applied_at).toLocaleDateString() : 'N/A'}
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Status Column */}
-                                <div className="col-span-1 flex items-center justify-center">
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={alert.enabled}
-                                            onChange={() => toggleAlert(alert.id)}
-                                        />
-                                        <div className={`w-11 h-6 peer-focus:outline-none rounded-full peer transition-colors ${alert.enabled ? 'bg-blue-600' : 'bg-gray-200'}`}>
-                                            <div className={`absolute top-[2px] left-[2px] bg-white rounded-full h-5 w-5 transition-transform ${alert.enabled ? 'translate-x-5 border-blue-600' : 'translate-x-0'}`}></div>
-                                        </div>
-                                    </label>
-                                </div>
+                               
 
                                 {/* Action Column */}
                                 <div className="col-span-2 flex items-center justify-center">
                                     <div className="flex items-center space-x-3">
-                                        <Link href={`job-alerts/696`}>
-                                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                        <Link href={{
+                                            pathname: '/job-details',
+                                            query: { id: alert.id }
+                                        }}>
+                                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Job Details">
                                                 <Eye className="w-4 h-4" />
                                             </button>
                                         </Link>
-                                        <button
-                                            onClick={() => setIsModalOpen(true)} 
-                                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                        >
-                                            <Edit3 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => deleteAlert(alert.id)}
-                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -269,22 +301,11 @@ const JobAlerts = () => {
                                         {getStatusBadge(alert.status)}
                                     </div>
                                     <div className="text-sm text-gray-500">
-                                        <span className="font-medium text-blue-800">{alert.frequency}</span> • {alert.jobsFound} jobs found
+                                        <span className="font-medium text-blue-800">
+                                            Applied: {alert.applied_at ? new Date(alert.applied_at).toLocaleDateString() : 'N/A'}
+                                        </span>
                                     </div>
                                 </div>
-                                
-                                {/* Toggle Switch */}
-                                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only"
-                                        checked={alert.enabled}
-                                        onChange={() => toggleAlert(alert.id)}
-                                    />
-                                    <div className={`w-11 h-6 peer-focus:outline-none rounded-full peer transition-colors ${alert.enabled ? 'bg-blue-600' : 'bg-gray-200'}`}>
-                                        <div className={`absolute top-[2px] left-[2px] bg-white rounded-full h-5 w-5 transition-transform ${alert.enabled ? 'translate-x-5 border-blue-600' : 'translate-x-0'}`}></div>
-                                    </div>
-                                </label>
                             </div>
 
                             {/* Card Details */}
@@ -307,45 +328,33 @@ const JobAlerts = () => {
 
                             {/* Card Actions */}
                             <div className="flex items-center justify-end space-x-2 pt-4 border-t border-gray-200">
-                                <Link href={`/job-alerts/696`}>
-                                    <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                <Link href={{
+                                    pathname: '/job-details',
+                                    query: { id: alert.id }
+                                }}>
+                                    <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Job Details">
                                         <Eye className="w-4 h-4" />
                                     </button>
                                 </Link>
-                                <button
-                                    onClick={() => setIsModalOpen(true)} 
-                                    className="p-2.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                >
-                                    <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => deleteAlert(alert.id)}
-                                    className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
 
                 {/* Empty State */}
-                {filteredAlerts.length === 0 && (
+                {filteredAlerts.length === 0 && !loading && (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 text-center py-12">
-                        <div className="text-gray-500 text-lg">No job alerts found</div>
-                        <div className="text-gray-400 text-sm mt-1">Try adjusting your search criteria</div>
+                        <div className="text-gray-500 text-lg">No  jobs Alerts found</div>
+                        <div className="text-gray-400 text-sm mt-1">Start applying to jobs to see them here</div>
                     </div>
                 )}
 
                 {/* Footer Info */}
                 <div className="mt-4 sm:mt-6 text-center text-sm text-gray-500">
-                    Showing {filteredAlerts.length} of {alerts.length} job alerts
+                    Showing {filteredAlerts.length} of {alerts.length} applied jobs
                 </div>
             </div>
-            <EditAlertsModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-            />
+         
         </div>
     );
 };

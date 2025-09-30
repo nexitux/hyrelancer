@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import {
   Form, Input, Button, Collapse, Card, Row, Col, Divider,
-  Table, Typography, Descriptions, Space, message, Select, Spin, Checkbox, Popconfirm
+  Table, Typography, Descriptions, Space, message, Select, Spin, Checkbox, Popconfirm, Progress, Tooltip
 } from "antd";
 import {
   PlusOutlined, CloseOutlined, EditOutlined, CheckOutlined,
@@ -510,6 +510,68 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
     }
   };
 
+  // Calculate progress for education and experience completion
+  const calculateProgress = () => {
+    if (currentView === 'education') {
+      // For education view, check if we have education data
+      const hasEducationData = educationData && educationData.length > 0 && 
+        educationData.some(edu => 
+          edu.fc_title && edu.fc_title.trim() !== '' && 
+          edu.fc_title !== 'null' && edu.fc_title !== 'undefined'
+        );
+      return hasEducationData ? 100 : 0;
+    } else if (currentView === 'experience') {
+      // For experience view, check if we have experience data
+      const hasExperienceData = experienceData && experienceData.length > 0 && 
+        experienceData.some(exp => 
+          exp.fj_position && exp.fj_position.trim() !== '' && 
+          exp.fj_position !== 'null' && exp.fj_position !== 'undefined'
+        );
+      const hasProfileData = profileData && (
+        (profileData.fp_occupation && profileData.fp_occupation.trim() !== '' && profileData.fp_occupation !== '0') ||
+        (profileData.fp_ex_year && profileData.fp_ex_year.trim() !== '' && profileData.fp_ex_year !== '0')
+      );
+      return (hasExperienceData && hasProfileData) ? 100 : 0;
+    } else if (currentView === 'form') {
+      // For form view, calculate based on filled fields
+      const values = form.getFieldsValue();
+      let filledFields = 0;
+      let totalFields = 0;
+      
+      if (!editingSection || editingSection === 'education') {
+        // Check education fields
+        if (values.highSchoolYear && values.highSchoolYear.trim() !== '') filledFields++;
+        totalFields++;
+        
+        educationFields.forEach(field => {
+          const eduData = values[`education_${field.key}`] || {};
+          if (eduData.specialized && eduData.specialized.trim() !== '') filledFields++;
+          if (eduData.year && eduData.year.trim() !== '') filledFields++;
+          if (eduData.college && eduData.college.trim() !== '') filledFields++;
+          totalFields += 3;
+        });
+      }
+      
+      if (!editingSection || editingSection === 'experience') {
+        // Check experience fields
+        if (values.occupation && values.occupation.trim() !== '') filledFields++;
+        if (values.yearsOfExperience && values.yearsOfExperience.trim() !== '') filledFields++;
+        totalFields += 2;
+        
+        experienceFields.forEach(field => {
+          const expData = values[`experience_${field.key}`] || {};
+          if (expData.position && expData.position.trim() !== '') filledFields++;
+          if (expData.duration && expData.duration.trim() !== '') filledFields++;
+          if (expData.description && expData.description.trim() !== '') filledFields++;
+          totalFields += 3;
+        });
+      }
+      
+      return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
+    }
+    return 0;
+  };
+
   // Navigation functions
   const showEducationReview = () => setCurrentView('education');
   const showExperienceReview = () => setCurrentView('experience');
@@ -766,6 +828,22 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                       </div>
                     </div>
 
+                    {/* Progress Bar */}
+                    <div className="mb-6">
+                      <Tooltip title="Your progress in completing the education and experience details" placement="top">
+                        <div className="flex justify-between items-center mb-1">
+                          <Text className="text-sm font-medium">Education & Experience Completion</Text>
+                          <Text className="text-sm">{calculateProgress()}%</Text>
+                        </div>
+                      </Tooltip>
+                      <Progress
+                        percent={calculateProgress()}
+                        strokeColor="#52c41a"
+                        trailColor="#f0f0f0"
+                        showInfo={false}
+                      />
+                    </div>
+
                     <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
                       <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         {/* Always show back button if onBack is provided */}
@@ -836,6 +914,22 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                           }}
                         />
                       </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mb-6">
+                      <Tooltip title="Your progress in completing the education and experience details" placement="top">
+                        <div className="flex justify-between items-center mb-1">
+                          <Text className="text-sm font-medium">Education & Experience Completion</Text>
+                          <Text className="text-sm">{calculateProgress()}%</Text>
+                        </div>
+                      </Tooltip>
+                      <Progress
+                        percent={calculateProgress()}
+                        strokeColor="#52c41a"
+                        trailColor="#f0f0f0"
+                        showInfo={false}
+                      />
                     </div>
 
                     <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
@@ -1205,6 +1299,22 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                           </Panel>
                         )}
                       </Collapse>
+
+                      {/* Progress Bar */}
+                      <div className="mb-6">
+                        <Tooltip title="Your progress in completing the education and experience details" placement="top">
+                          <div className="flex justify-between items-center mb-1">
+                            <Text className="text-sm font-medium">Education & Experience Completion</Text>
+                            <Text className="text-sm">{calculateProgress()}%</Text>
+                          </div>
+                        </Tooltip>
+                        <Progress
+                          percent={calculateProgress()}
+                          strokeColor="#52c41a"
+                          trailColor="#f0f0f0"
+                          showInfo={false}
+                        />
+                      </div>
 
                       {/* Action Buttons */}
                       <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 sm:mt-8">

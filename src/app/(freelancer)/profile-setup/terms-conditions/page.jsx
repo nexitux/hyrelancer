@@ -104,7 +104,7 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
         }
 
         // Redirect only after Redux/user has been updated
-        router.replace('/freelancer-dashboard');
+        router.replace('/');
         return;
       }
 

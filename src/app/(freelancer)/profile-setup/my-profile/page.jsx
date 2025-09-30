@@ -13,6 +13,8 @@ import {
   Space,
   Divider,
   Spin,
+  Progress,
+  Tooltip,
 } from "antd";
 import ImgCrop from "antd-img-crop";
 import {
@@ -540,6 +542,22 @@ export default function ProfileTab({
                   </div>
                 </div>
 
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <Tooltip title="Your progress in completing the profile details" placement="top">
+                    <div className="flex justify-between items-center mb-1">
+                      <Text className="text-sm font-medium">Profile Completion</Text>
+                      <Text className="text-sm">{calculateProgress()}%</Text>
+                    </div>
+                  </Tooltip>
+                  <Progress
+                    percent={calculateProgress()}
+                    strokeColor="#52c41a"
+                    trailColor="#f0f0f0"
+                    showInfo={false}
+                  />
+                </div>
+
                 <div className="flex justify-end gap-4 mt-6">
                   <Button
                     onClick={handleEdit}
@@ -732,6 +750,21 @@ export default function ProfileTab({
                   />
                 </Form.Item>
 
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <Tooltip title="Your progress in completing the profile details" placement="top">
+                    <div className="flex justify-between items-center mb-1">
+                      <Text className="text-sm font-medium">Profile Completion</Text>
+                      <Text className="text-sm">{calculateProgress()}%</Text>
+                    </div>
+                  </Tooltip>
+                  <Progress
+                    percent={calculateProgress()}
+                    strokeColor="#52c41a"
+                    trailColor="#f0f0f0"
+                    showInfo={false}
+                  />
+                </div>
 
                 <div className="flex justify-end gap-4 mt-6">
                   <Button
@@ -799,7 +832,21 @@ export default function ProfileTab({
                   </div>
                 </div>
 
-                
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <Tooltip title="Your progress in completing the profile details" placement="top">
+                    <div className="flex justify-between items-center mb-1">
+                      <Text className="text-sm font-medium">Profile Completion</Text>
+                      <Text className="text-sm">{calculateProgress()}%</Text>
+                    </div>
+                  </Tooltip>
+                  <Progress
+                    percent={calculateProgress()}
+                    strokeColor="#52c41a"
+                    trailColor="#f0f0f0"
+                    showInfo={false}
+                  />
+                </div>
 
                 {onNext && (
                   <div className="flex justify-end">

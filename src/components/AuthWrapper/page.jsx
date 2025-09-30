@@ -258,12 +258,12 @@ function AuthWrapperInner({ children }) {
       
       // FIXED: Old users should not be in registration flow
       if (is_status === "old" && currentPath.startsWith("/registration")) {
-        return "/freelancer-dashboard";
+        return "/";
       }
       
       // FIXED: New users with completed registration (completionLevel === 0) should not be in registration flow
       if (is_status === "new" && completionLevel === 0 && currentPath.startsWith("/registration")) {
-        return "/freelancer-dashboard";
+        return "/";
       }
       
       // FIXED: New users with incomplete registration (completionLevel > 0) should be in registration flow
@@ -291,9 +291,9 @@ function AuthWrapperInner({ children }) {
       
       console.log('User registration status:', { is_status, is_regi_complete });
       
-      // If user status is "old", go directly to dashboard
+      // If user status is "old", go directly to home
       if (is_status === "old") {
-        return "/freelancer-dashboard";
+        return "/";
       }
       
       // If user status is "new", check completion level
@@ -301,8 +301,8 @@ function AuthWrapperInner({ children }) {
         const completionLevel = parseInt(is_regi_complete || 0);
         
         if (completionLevel === 0) {
-          // Registration completed - go to dashboard
-          return "/freelancer-dashboard";
+          // Registration completed - go to home
+          return "/";
         } else {
           // Registration in progress - go to profile setup
           return "/registration/profile-setup";
@@ -314,7 +314,7 @@ function AuthWrapperInner({ children }) {
     } 
     
     if (userType === "Customer" || userType === "customer") {
-      return "/customer-dashboard";
+      return "/";
     }
     
     // Final fallback

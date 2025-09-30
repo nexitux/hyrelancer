@@ -1586,7 +1586,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                   </Tooltip>
                   <Progress
                     percent={calculateProgress()}
-                    strokeColor="#1890ff"
+                    strokeColor="#52c41a"
                     trailColor="#f0f0f0"
                     showInfo={false}
                   />

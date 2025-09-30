@@ -21,8 +21,6 @@ import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
 import { message } from 'antd';
 import adminApi from '@/config/adminApi';
-import FreelancerAssignedJobsModal from './components/FreelancerAssignedJobsModal';
-import FreelancerAppliedJobsModal from './components/FreelancerAppliedJobsModal';
 
 // --- Status Mapping Helper ---
 const getStatusInfo = (freelancer) => {
@@ -31,7 +29,7 @@ const getStatusInfo = (freelancer) => {
   const isRegiComplete = freelancer.is_regi_complete;
   
   // Priority order: Account status -> Active status -> Registration status
-  if (isActiveAcc === '0' ) {
+  if (isActiveAcc === '0') {
     return { 
       status: 'Inactive', 
       color: 'bg-red-100 text-red-800',
@@ -43,7 +41,7 @@ const getStatusInfo = (freelancer) => {
     return { 
       status: 'Active', 
       color: 'bg-green-100 text-green-800',
-      icon: <MdBlock size={12} />
+      icon: <MdCheckCircle size={12} />
     };
   }
   
@@ -99,13 +97,6 @@ export default function ListFreelancerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Assigned Jobs Modal state
-  const [isAssignedModalOpen, setIsAssignedModalOpen] = useState(false);
-  const [selectedFreelancerForJobs, setSelectedFreelancerForJobs] = useState(null);
-
-  // Applied Jobs Modal state
-  const [isAppliedModalOpen, setIsAppliedModalOpen] = useState(false);
-  const [selectedFreelancerForApplied, setSelectedFreelancerForApplied] = useState(null);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -231,6 +222,44 @@ export default function ListFreelancerPage() {
     setSelectedFreelancers([]);
   };
 
+  // Handle activate/deactivate account
+  const handleAccountStatus = async (freelancerId, status) => {
+    const actionText = status === '1' ? 'activate' : 'deactivate';
+    if (!window.confirm(`Are you sure you want to ${actionText} this freelancer account?`)) {
+      return;
+    }
+
+    try {
+      const encodedId = Base64.encode(freelancerId.toString());
+      const response = await adminApi.get(`/activeFeAccount/${status}/${encodedId}`);
+      
+      if (response.data.message) {
+        message.success(response.data.message);
+        
+        // Update local state
+        setAllFreelancers(prevFreelancers =>
+          prevFreelancers.map(freelancer => {
+            if (freelancer.id === freelancerId) {
+              const updatedFreelancer = {
+                ...freelancer,
+                is_active_acc: status
+              };
+              return {
+                ...updatedFreelancer,
+                statusInfo: getStatusInfo(updatedFreelancer)
+              };
+            }
+            return freelancer;
+          })
+        );
+      }
+    } catch (err) {
+      console.error(`Error ${actionText}ing freelancer account:`, err);
+      const errorMessage = err.response?.data?.message || err.message || `Failed to ${actionText} freelancer account`;
+      message.error(errorMessage);
+    }
+  };
+
   const handleSelectFreelancer = (freelancerId) => {
     setSelectedFreelancers(prev =>
       prev.includes(freelancerId)
@@ -257,25 +286,6 @@ export default function ListFreelancerPage() {
     setSelectedFreelancers([]); // Clear selections when changing page
   };
 
-  const openAssignedJobsModal = (freelancer) => {
-    setSelectedFreelancerForJobs(freelancer);
-    setIsAssignedModalOpen(true);
-  };
-
-  const closeAssignedJobsModal = () => {
-    setIsAssignedModalOpen(false);
-    setSelectedFreelancerForJobs(null);
-  };
-
-  const openAppliedJobsModal = (freelancer) => {
-    setSelectedFreelancerForApplied(freelancer);
-    setIsAppliedModalOpen(true);
-  };
-
-  const closeAppliedJobsModal = () => {
-    setIsAppliedModalOpen(false);
-    setSelectedFreelancerForApplied(null);
-  };
 
   // Get unique status options for filter dropdown
   const statusOptions = useMemo(() => {
@@ -446,16 +456,15 @@ export default function ListFreelancerPage() {
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Mobile</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Registration</th>
                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">Status</th>
-                <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">Assigned Jobs</th>
-                <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">Applied Jobs</th>
+                <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">Account Control</th>
                 <th className="px-6 py-3 text-sm font-semibold text-right text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
-                <tr><td colSpan="8" className="py-12 text-center">Loading...</td></tr>
+                <tr><td colSpan="7" className="py-12 text-center">Loading...</td></tr>
               ) : error ? (
-                <tr><td colSpan="8" className="py-12 text-center text-red-500">{error}</td></tr>
+                <tr><td colSpan="7" className="py-12 text-center text-red-500">{error}</td></tr>
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((freelancer) => (
                   <tr key={freelancer.id} className="transition-colors hover:bg-slate-50">
@@ -505,22 +514,25 @@ export default function ListFreelancerPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <button
-                        onClick={() => openAssignedJobsModal(freelancer)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors text-xs font-medium"
-                        title="View Assigned Jobs"
-                      >
-                        Assigned Jobs
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <button
-                        onClick={() => openAppliedJobsModal(freelancer)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors text-xs font-medium"
-                        title="View Applied Jobs"
-                      >
-                        Applied Jobs
-                      </button>
+                      <div className="flex gap-2 justify-center items-center">
+                        {freelancer.is_active_acc === '0' ? (
+                          <button
+                            className="px-3 py-1.5 text-sm text-white bg-green-600 rounded-lg transition-colors hover:bg-green-700"
+                            title="Activate Account"
+                            onClick={() => handleAccountStatus(freelancer.id, '1')}
+                          >
+                            Activate
+                          </button>
+                        ) : (
+                          <button
+                            className="px-3 py-1.5 text-sm text-white bg-red-600 rounded-lg transition-colors hover:bg-red-700"
+                            title="Deactivate Account"
+                            onClick={() => handleAccountStatus(freelancer.id, '0')}
+                          >
+                            Deactivate
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex gap-2 justify-end items-center">
@@ -538,29 +550,12 @@ export default function ListFreelancerPage() {
                         >
                           <MdEdit size={16} />
                         </Link>
-                        {freelancer.statusInfo.status !== 'Inactive' ? (
-                          <button
-                            className="p-2 text-red-600 rounded-lg transition-colors hover:bg-red-50"
-                            title="Deactivate"
-                            onClick={() => handleStatusUpdate([freelancer.id], 'deactivate')}
-                          >
-                            <MdDelete size={16} />
-                          </button>
-                        ) : (
-                          <button
-                            className="p-2 text-green-600 rounded-lg transition-colors hover:bg-green-50"
-                            title="Activate"
-                            onClick={() => handleStatusUpdate([freelancer.id], 'activate')}
-                          >
-                            <MdCheckCircle size={16} />
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="9" className="py-12 text-center">No freelancers found.</td></tr>
+                <tr><td colSpan="7" className="py-12 text-center">No freelancers found.</td></tr>
               )}
             </tbody>
           </table>
@@ -622,18 +617,6 @@ export default function ListFreelancerPage() {
           </div>
         )}
       </div>
-      {/* Assigned Jobs Modal */}
-      <FreelancerAssignedJobsModal
-        isOpen={isAssignedModalOpen}
-        onClose={closeAssignedJobsModal}
-        freelancerId={selectedFreelancerForJobs?.id}
-      />
-      {/* Applied Jobs Modal */}
-      <FreelancerAppliedJobsModal
-        isOpen={isAppliedModalOpen}
-        onClose={closeAppliedJobsModal}
-        freelancer={selectedFreelancerForApplied}
-      />
     </div>
   );
 }

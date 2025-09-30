@@ -39,9 +39,9 @@ export default function SelectUserTypePage() {
           // For freelancers, they typically need to complete registration first
           router.replace('/registration/profile-setup');
         } else if (userType === 'customer') {
-          console.log('👔 Redirecting customer to dashboard');
-          // For customers, go directly to dashboard
-          router.replace('/customer-dashboard');
+          console.log('👔 Redirecting customer to home');
+          // For customers, go directly to home
+          router.replace('/');
         }
       } else {
         console.error('❌ User type submission failed:', result.error);
