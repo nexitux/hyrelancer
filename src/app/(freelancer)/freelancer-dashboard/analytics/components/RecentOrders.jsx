@@ -1,6 +1,7 @@
 import { Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import { freelancerJobAPI } from "@/config/api";
+import { freelancerDashboardService } from '@/services/freelancerDashboardService';
 import Link from "next/link";
 
 // Badge component with different color variants
@@ -128,7 +129,7 @@ const ActionButtons = () => {
         <Filter className="w-4 h-4" />
         Filter
       </button>
-      <Link href="/freelancer-dashboard/applied-jobs">
+      <Link href="/freelancer-dashboard/active-works">
         <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
           See all
         </button>
@@ -157,13 +158,13 @@ export default function RecentOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Function to fetch applied job alerts from API
-  const fetchAppliedJobAlerts = async () => {
+  // Function to fetch active job list from API
+  const fetchActiveJobList = async () => {
     try {
       setLoading(true);
-      const data = await freelancerJobAPI.getAppliedJobAlert();
+      const data = await freelancerDashboardService.getFreelancerDashboard();
       
-      const list = Array.isArray(data?.job_App_list) ? data.job_App_list : [];
+      const list = Array.isArray(data?.$active_job_list) ? data.$active_job_list : [];
       
       // Transform API data to match the table structure
       const transformedData = list.slice(0, 5).map((job, index) => {
@@ -191,16 +192,19 @@ export default function RecentOrders() {
           return from === to ? `₹${from}` : `₹${from} - ₹${to}`;
         };
 
-        // Format status
+        // Format status based on job status
         const formatStatus = () => {
-          if (job.cuj_is_rejected === 1 && job.cuj_is_active === 1) {
-            return 'In Progress';
-          } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 1) {
-            return 'Rejected';
-          } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 0) {
-            return 'Deleted';
-          } else {
-            return 'Pending';
+          switch (job.cuj_job_status) {
+            case 'completed':
+              return 'Completed';
+            case 'in_progress':
+              return 'In Progress';
+            case 'pending':
+              return 'Pending';
+            case 'rejected':
+              return 'Rejected';
+            default:
+              return 'Active';
           }
         };
 
@@ -212,35 +216,24 @@ export default function RecentOrders() {
           price: formatSalary(),
           status: formatStatus(),
           imageColor: colorClass
-
-
         };
       });
 
       setTableData(transformedData);
       setError(null);
     } catch (err) {
-      console.error('Error fetching applied job alerts:', err);
-      setError('Failed to load recent applications');
+      console.error('Error fetching active job list:', err);
+      setError('Failed to load active jobs');
       // Fallback to sample data
       setTableData([
         {
           id: 1,
-          name: "React Native E-commerce App",
-          variants: "Today",
-          category: "Mobile Development",
-          price: "₹75,000",
-          status: "In Progress",
+          name: "Software Developers",
+          variants: "4 days ago",
+          category: "Full-Time",
+          price: "₹30,000 - ₹39,000",
+          status: "Completed",
           imageColor: "#8b5cf6"
-        },
-        {
-          id: 2,
-          name: "Website Redesign (Startup)",
-          variants: "2 days ago",
-          category: "Web Development",
-          price: "₹40,000",
-          status: "Pending Payment",
-          imageColor: "#ef4444"
         }
       ]);
     } finally {
@@ -250,7 +243,7 @@ export default function RecentOrders() {
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchAppliedJobAlerts();
+    fetchActiveJobList();
   }, []);
 
 
@@ -258,7 +251,7 @@ export default function RecentOrders() {
   if (loading) {
     return (
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
-        <TableHeaderSection title="Recent Job Applications" />
+        <TableHeaderSection title="Active Jobs" />
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -268,7 +261,7 @@ export default function RecentOrders() {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
-      <TableHeaderSection title="Recent Job Applications" />
+      <TableHeaderSection title="Active Jobs" />
       
       <div className="max-w-full overflow-x-auto">
         <Table>
@@ -285,7 +278,7 @@ export default function RecentOrders() {
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400"
               >
-                Applied Date
+                Created Date
               </TableCell>
               <TableCell
                 isHeader

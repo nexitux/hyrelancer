@@ -125,9 +125,9 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
         setInitialData(socialFields);
         form.setFieldsValue(socialFields);
 
-        // Format data for display
+        // Format data for display - only show platforms with actual data
         const formattedData = Object.entries(socialFields)
-          .filter(([_, value]) => value && value.trim() !== "" && value !== "0")
+          .filter(([_, value]) => value && value.trim() !== "" && value !== "0" && value !== null && value !== undefined)
           .map(([key, value]) => {
             const platform = socialPlatforms.find(p => p.key === key);
             return {
@@ -165,9 +165,9 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
       const response = await api.post('/storeFeSocial', values);
 
       if (response.status === 200 || response.status === 201) {
-        // Format data for display
+        // Format data for display - only show platforms with actual data
         const formattedData = Object.entries(values)
-          .filter(([_, value]) => value && value.trim() !== "")
+          .filter(([_, value]) => value && value.trim() !== "" && value !== "0" && value !== null && value !== undefined)
           .map(([key, value]) => {
             const platform = socialPlatforms.find(p => p.key === key);
             return {
@@ -204,7 +204,7 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
   const calculateProgress = () => {
     const values = form.getFieldsValue();
     const filled = Object.values(values).filter(
-      (val) => val && val.trim() !== ""
+      (val) => val && val.trim() !== "" && val !== "0" && val !== null && val !== undefined
     );
     return Math.round((filled.length / socialPlatforms.length) * 100);
   };

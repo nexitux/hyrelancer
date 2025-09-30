@@ -364,7 +364,7 @@ const JobListingsPage = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    {/* <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Avg. Salary</p>
@@ -374,7 +374,7 @@ const JobListingsPage = () => {
                                 <CurrencyDollar size={24} className="text-amber-600" />
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between">
