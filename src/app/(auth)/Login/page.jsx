@@ -252,7 +252,15 @@ const AuthForm = () => {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
       } else if (urlError) {
-        const errorMessage = decodeURIComponent(urlError);
+        let errorMessage = decodeURIComponent(urlError);
+        
+        // Handle specific error types from backend
+        if (urlError === 'user_exists') {
+          errorMessage = 'This email is already registered. Please try logging in instead.';
+        } else if (urlError === 'email_already_registered') {
+          errorMessage = 'This email is already registered. Please try logging in instead.';
+        }
+        
         dispatch(loginFailure(errorMessage));
         setErrorModalContent(errorMessage);
         setShowErrorModal(true);
