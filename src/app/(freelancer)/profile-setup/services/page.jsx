@@ -1381,29 +1381,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                   </Row>
 
                   <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        name="worktime"
-                        label={
-                          <Tooltip title="Select the typical time to complete a service" placement="topLeft">
-                            <span className="font-medium flex items-center">
-                              Work Completion Time <InfoCircleOutlined className="ml-1 text-gray-400" />
-                            </span>
-                          </Tooltip>
-                        }
-                      >
-                        <Select
-                          placeholder="Select time"
-                          className="w-full"
-                          size="large"
-                        >
-                          <Option value="In a Week">In a Week</Option>
-                          <Option value="24 Hours">24 Hours</Option>
-                          <Option value="After 2 Days">After 2 Days</Option>
-                          <Option value="Tomorrow">Tomorrow</Option>
-                        </Select>
-                      </Form.Item>
-                    </Col>
+                   
                     <Col xs={24} md={12}>
                       <Form.Item
                         name="amount"
@@ -1432,6 +1410,29 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                           className="w-full"
                           size="large"
                         />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        name="worktime"
+                        label={
+                          <Tooltip title="Select the typical time to complete a service" placement="topLeft">
+                            <span className="font-medium flex items-center">
+                              Work Completion Time <InfoCircleOutlined className="ml-1 text-gray-400" />
+                            </span>
+                          </Tooltip>
+                        }
+                      >
+                        <Select
+                          placeholder="Select time"
+                          className="w-full"
+                          size="large"
+                        >
+                          <Option value="In a Week">In a Week</Option>
+                          <Option value="24 Hours">24 Hours</Option>
+                          <Option value="After 2 Days">After 2 Days</Option>
+                          <Option value="Tomorrow">Tomorrow</Option>
+                        </Select>
                       </Form.Item>
                     </Col>
                   </Row>
@@ -1558,19 +1559,6 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                         >
                           {existingFileUrl && !isIdProofDeleted && (
                             <div className="mb-4">
-                              <div className="flex items-center justify-between">
-                                <Text>Current ID Proof:</Text>
-                                <Popconfirm
-                                  title="Are you sure you want to delete this ID proof?"
-                                  onConfirm={() => handleDelete(10, existingIdProofId, 'ID Proof')}
-                                  okText="Yes"
-                                  cancelText="No"
-                                >
-                                  <Button type="link" danger icon={<DeleteOutlined />}>
-                                    Delete Current ID Proof
-                                  </Button>
-                                </Popconfirm>
-                              </div>
                               <Image
                                 width={100}
                                 src={existingFileUrl}
@@ -1586,7 +1574,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             maxCount={1}
                             accept="image/*"
                             listType="picture"
-                            disabled={isIdProofApproved}
+                            disabled={true}
                             onRemove={() => {
                               setFileList([]);
                               return true;
@@ -1596,7 +1584,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                               icon={<UploadOutlined />}
                               className="w-full"
                               size="large"
-                              disabled={isIdProofApproved}
+                              disabled={true}
                             >
                               {isIdProofApproved ? "ID Proof Approved" : (existingFileUrl && !isIdProofDeleted ? "Upload New ID Proof" : "Click to Upload")}
                             </Button>

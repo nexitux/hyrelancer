@@ -27,13 +27,13 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
   };
 
   const getRating = () => {
-    // This would come from reviews data - using placeholder for now
-    return 4.8;
+    // This should come from actual reviews data
+    return profileData?.fp_rating || 0;
   };
 
   const getReviewCount = () => {
-    // This would come from reviews data - using placeholder for now
-    return 751;
+    // This should come from actual reviews data
+    return profileData?.fp_review_count || 0;
   };
 
   const profileImage = getProfileImageUrl(profileData?.fp_img);
@@ -114,15 +114,19 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
                   {getLocationDisplay()}
                 </span>
               </div>
-              <div className="flex items-center">
-                <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
-                <span className="text-sm font-semibold text-gray-900">
-                  {getRating()}
-                </span>
-                <span className="text-sm text-gray-500 ml-1">
-                  ({getReviewCount()} reviews)
-                </span>
-              </div>
+              {getRating() > 0 && (
+                <div className="flex items-center">
+                  <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
+                  <span className="text-sm font-semibold text-gray-900">
+                    {getRating()}
+                  </span>
+                  {getReviewCount() > 0 && (
+                    <span className="text-sm text-gray-500 ml-1">
+                      ({getReviewCount()} reviews)
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Skills Preview */}
