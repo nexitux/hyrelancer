@@ -8,14 +8,9 @@ const CountryMap = ({ mapColor = "#e4e4e4" }) => {
   const [selectedCountry, setSelectedCountry] = useState(null);
   const geoJsonLayerRef = useRef(null);
 
-  // Sample customer data
+  // Sample customer data - India only
   const customerData = {
-    "United States": { customers: 2379, percentage: 79 },
-    "France": { customers: 589, percentage: 23 },
-    "India": { customers: 445, percentage: 15 },
-    "Germany": { customers: 332, percentage: 11 },
-    "United Kingdom": { customers: 287, percentage: 9 },
-    "Canada": { customers: 156, percentage: 5 }
+    "India": { customers: 445, percentage: 100 }
   };
 
   // Load GeoJSON on mount

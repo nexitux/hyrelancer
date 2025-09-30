@@ -1,4 +1,7 @@
 import { Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import { freelancerJobAPI } from "@/config/api";
+import Link from "next/link";
 
 // Badge component with different color variants
 const Badge = ({ color, size = "md", children }) => {
@@ -125,9 +128,11 @@ const ActionButtons = () => {
         <Filter className="w-4 h-4" />
         Filter
       </button>
-      <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
-        See all
-      </button>
+      <Link href="/freelancer-dashboard/applied-jobs">
+        <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+          See all
+        </button>
+      </Link>
     </div>
   );
 };
@@ -148,59 +153,122 @@ const TableHeaderSection = ({ title }) => {
 
 // Main RecentOrders component
 export default function RecentOrders() {
-  // Define the table data
-  const tableData = [
-  {
-    id: 1,
-    name: "React Native E-commerce App",
-    variants: "3 Bids",
-    category: "Mobile Development",
-    price: "₹75,000",
-    status: "In Progress",
-    imageColor: "#8b5cf6"
-  },
-  {
-    id: 2,
-    name: "Website Redesign (Startup)",
-    variants: "5 Bids",
-    category: "Web Development",
-    price: "₹40,000",
-    status: "Pending Payment",
-    imageColor: "#ef4444"
-  },
-  {
-    id: 3,
-    name: "SEO Optimization — 6 Months",
-    variants: "2 Bids",
-    category: "Digital Marketing",
-    price: "₹18,500",
-    status: "Completed",
-    imageColor: "#64748b"
-  },
-  {
-    id: 4,
-    name: "Landing Page → Conversion",
-    variants: "1 Bid",
-    category: "UI/UX Design",
-    price: "₹8,500",
-    status: "Canceled",
-    imageColor: "#374151"
-  },
-  {
-    id: 5,
-    name: "Monthly Maintenance Retainer",
-    variants: "0 Bids",
-    category: "DevOps",
-    price: "₹25,000",
-    status: "Active",
-    imageColor: "#d1d5db"
-  }
-];
+  const [tableData, setTableData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Function to fetch applied job alerts from API
+  const fetchAppliedJobAlerts = async () => {
+    try {
+      setLoading(true);
+      const data = await freelancerJobAPI.getAppliedJobAlert();
+      
+      const list = Array.isArray(data?.job_App_list) ? data.job_App_list : [];
+      
+      // Transform API data to match the table structure
+      const transformedData = list.slice(0, 5).map((job, index) => {
+        // Create color for each job
+        const colors = ["#8b5cf6", "#ef4444", "#64748b", "#374151", "#d1d5db"];
+        const colorClass = colors[index % colors.length];
+
+        // Format date
+        const formatDate = (dateString) => {
+          if (!dateString) return 'Recent';
+          const date = new Date(dateString);
+          const now = new Date();
+          const diffTime = Math.abs(now - date);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 0) return 'Today';
+          if (diffDays === 1) return 'Yesterday';
+          return `${diffDays} days ago`;
+        };
+
+        // Format salary range
+        const formatSalary = () => {
+          const from = job.cuj_salary_range_from || '0';
+          const to = job.cuj_salary_range_to || '0';
+          return from === to ? `₹${from}` : `₹${from} - ₹${to}`;
+        };
+
+        // Format status
+        const formatStatus = () => {
+          if (job.cuj_is_rejected === 1 && job.cuj_is_active === 1) {
+            return 'In Progress';
+          } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 1) {
+            return 'Rejected';
+          } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 0) {
+            return 'Deleted';
+          } else {
+            return 'Pending';
+          }
+        };
+
+        return {
+          id: job.cuj_id,
+          name: job.cuj_title || 'Untitled Job',
+          variants: `${formatDate(job.created_at)}`,
+          category: job.cuj_job_type || 'General',
+          price: formatSalary(),
+          status: formatStatus(),
+          imageColor: colorClass
+
+
+        };
+      });
+
+      setTableData(transformedData);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching applied job alerts:', err);
+      setError('Failed to load recent applications');
+      // Fallback to sample data
+      setTableData([
+        {
+          id: 1,
+          name: "React Native E-commerce App",
+          variants: "Today",
+          category: "Mobile Development",
+          price: "₹75,000",
+          status: "In Progress",
+          imageColor: "#8b5cf6"
+        },
+        {
+          id: 2,
+          name: "Website Redesign (Startup)",
+          variants: "2 days ago",
+          category: "Web Development",
+          price: "₹40,000",
+          status: "Pending Payment",
+          imageColor: "#ef4444"
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchAppliedJobAlerts();
+  }, []);
+
+
+  // Loading component
+  if (loading) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+        <TableHeaderSection title="Recent Job Applications" />
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
-      <TableHeaderSection title="Recent Orders" />
+      <TableHeaderSection title="Recent Job Applications" />
       
       <div className="max-w-full overflow-x-auto">
         <Table>
@@ -211,19 +279,19 @@ export default function RecentOrders() {
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400"
               >
-                Products
+                Job Title
               </TableCell>
               <TableCell
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400"
               >
-                Category
+                Applied Date
               </TableCell>
               <TableCell
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400"
               >
-                Price
+                Budget
               </TableCell>
               <TableCell
                 isHeader
@@ -236,19 +304,34 @@ export default function RecentOrders() {
 
           {/* Table Body */}
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {tableData.map((product) => (
-              <TableRow key={product.id}>
+            {tableData.map((application) => (
+              <TableRow key={application.id}>
                 <TableCell className="py-3">
-                  <ProductCell product={product} />
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="h-[50px] w-[50px] rounded-md flex items-center justify-center text-white text-sm font-medium"
+                      style={{ backgroundColor: application.imageColor }}
+                    >
+                      {application.name.split(' ').map(word => word[0]).join('').substring(0, 2)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm dark:text-white/90">
+                        {application.name}
+                      </p>
+                      <span className="text-gray-500 text-xs dark:text-gray-400">
+                        {application.category}
+                      </span>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell className="py-3 text-gray-500 text-sm dark:text-gray-400">
-                  {product.category}
+                  {application.variants}
                 </TableCell>
                 <TableCell className="py-3 text-gray-500 text-sm dark:text-gray-400">
-                  {product.price}
+                  {application.price}
                 </TableCell>
                 <TableCell className="py-3 text-gray-500 text-sm dark:text-gray-400">
-                  <StatusBadge status={product.status} />
+                  <StatusBadge status={application.status} />
                 </TableCell>
               </TableRow>
             ))}

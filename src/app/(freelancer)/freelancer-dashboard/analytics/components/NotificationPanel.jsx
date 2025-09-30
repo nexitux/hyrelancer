@@ -1,12 +1,51 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { freelancerJobAPI } from "@/config/api";
 
 const NotificationPanel = () => {
-  const [notifications, setNotifications] = useState([
-    {
-    id: 1,
-    type: 'info',
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch applied job alerts to generate notifications
+  const fetchAppliedJobAlerts = async () => {
+    try {
+      setLoading(true);
+      const data = await freelancerJobAPI.getAppliedJobAlert();
+      
+      const list = Array.isArray(data?.job_App_list) ? data.job_App_list : [];
+      
+      // Generate notifications based on recent applications
+      const alertNotifications = list.slice(0, 3).map((job, index) => {
+        const formatTime = (dateString) => {
+          if (!dateString) return 'Recently';
+          const date = new Date(dateString);
+          const now = new Date();
+          const diffTime = Math.abs(now - date);
+          const diffMinutes = Math.floor(diffTime / (1000 * 60));
+          const diffHours = Math.floor(diffMinutes / 60);
+          const diffDays = Math.floor(diffHours / 24);
+          
+          if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+          if (diffHours < 24) return `${diffHours} hours ago`;
+          return `${diffDays} days ago`;
+        };
+
+        return {
+          id: `alert-${job.cuj_id}`,
+          type: 'info',
+          title: 'Job Application Update',
+          message: `Your application for "${job.cuj_title}" status: ${job.cuj_is_rejected === 0 ? 'Under Review' : 'Active'}`,
+          time: formatTime(job.created_at),
+          unread: true
+        };
+      });
+
+      // Default notifications
+      const defaultNotifications = [
+        {
+          id: 1,
+          type: 'info',
     title: 'New Project Match',
     message: 'A new project "React Native e-commerce" matches your skills. Bid now!',
     time: 'just now',
@@ -64,11 +103,44 @@ const NotificationPanel = () => {
     id: 8,
     type: 'warning',
     title: 'Payment Issue',
-    message: 'A payout to your bank failed — please update payment details to avoid delays.',
-    time: '2 days ago',
-    unread: false
-  }
-  ]);
+          message: 'A payout to your bank failed — please update payment details to avoid delays.',
+          time: '2 days ago',
+          unread: false
+        }
+      ];
+
+      // Combine job alerts with default notifications
+      const allNotifications = [...alertNotifications, ...defaultNotifications].slice(0, 6);
+      setNotifications(allNotifications);
+    } catch (err) {
+      console.error('Error fetching applied job alerts:', err);
+      // Fallback to default notifications
+      setNotifications([
+        {
+          id: 1,
+          type: 'info',
+          title: 'New Project Match',
+          message: 'A new project "React Native e-commerce" matches your skills. Bid now!',
+          time: 'just now',
+          unread: true
+        },
+        {
+          id: 2,
+          type: 'success',
+          title: 'Proposal Accepted',
+          message: 'Your proposal for "Landing Page Redesign" was accepted by Priya.',
+          time: '12 minutes ago',
+          unread: true
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppliedJobAlerts();
+  }, []);
 
   const getIcon = (type) => {
     switch (type) {
@@ -111,8 +183,13 @@ const NotificationPanel = () => {
         </div>
       </div>
 
-      <div className="space-y-3 max-h-128 overflow-y-auto scrollbar-hide">
-        {notifications.map((notification) => (
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="space-y-3 max-h-128 overflow-y-auto scrollbar-hide">
+          {notifications.map((notification) => (
           <div
             key={notification.id}
             className={`p-3 rounded-lg border transition-colors ${
@@ -154,10 +231,11 @@ const NotificationPanel = () => {
               </div>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {notifications.length === 0 && (
+      {!loading && notifications.length === 0 && (
         <div className="h-full flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
           <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>No notifications</p>

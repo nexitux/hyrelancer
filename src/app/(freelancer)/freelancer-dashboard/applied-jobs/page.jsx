@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import CommonTable from "@/components/ui/CommonTable";
 import JobModal from "./components/JobModal";
-import api from "@/config/api";
+import { freelancerJobAPI } from "@/config/api";
 
 const MyApplied = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,8 +15,7 @@ const MyApplied = () => {
   const fetchAppliedJobs = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/getAppliedJobs');
-      const data = response?.data || {};
+      const data = await freelancerJobAPI.getAppliedJobs();
 
       const list = Array.isArray(data?.job_App_list) ? data.job_App_list : [];
 
@@ -41,6 +40,7 @@ const MyApplied = () => {
 
         // Format date
         const formatDate = (dateString) => {
+          if (!dateString) return 'N/A';
           const date = new Date(dateString);
           return date.toLocaleDateString('en-US', { 
             year: 'numeric', 
