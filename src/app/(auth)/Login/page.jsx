@@ -418,6 +418,13 @@ const AuthForm = () => {
     window.location.href = 'https://test.hyrelancer.in/api/google/login';
   };
 
+  const handleGoogleSignUp = () => {
+    // Redirect to Google signup with callback to complete-signup page
+    const frontendUrl = `${window.location.origin}/complete-signup`;
+    const googleSignupUrl = `https://test.hyrelancer.in/api/google/signup?redirect_url=${encodeURIComponent(frontendUrl)}`;
+    window.location.href = googleSignupUrl;
+  };
+
   // Phone OTP functions
   const isBackendSuccess = (data) => {
     if (!data) return false;
@@ -1069,6 +1076,27 @@ const AuthForm = () => {
                     {isLoading ? 'Creating Account...' : 'Create Account'}
                   </button>
 
+                  {/* Social Signup Options */}
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-4 bg-white text-gray-500 font-medium">Or sign up with</span>
+                    </div>
+                  </div>
+
+                  {/* Google Sign Up Button */}
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignUp}
+                    aria-label="Sign up with Google"
+                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm"
+                  >
+                    <GoogleOutlined className="w-4 h-4 mr-3" />
+                    Sign up with Google
+                  </button>
+
                   {/* Sign up with Mobile -> open shared modal in signup mode */}
                   {/* <button
                     type="button"
@@ -1353,6 +1381,27 @@ const AuthForm = () => {
                     className="w-full h-12 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? 'Creating Account...' : 'Create Account'}
+                  </button>
+
+                  {/* Social Signup Options */}
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-4 bg-white text-gray-500 font-medium">Or sign up with</span>
+                    </div>
+                  </div>
+
+                  {/* Google Sign Up Button */}
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignUp}
+                    aria-label="Sign up with Google"
+                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <GoogleOutlined className="w-4 h-4 mr-3" />
+                    Sign up with Google
                   </button>
 
                   {/* Sign up with Mobile -> open shared modal in signup mode */}

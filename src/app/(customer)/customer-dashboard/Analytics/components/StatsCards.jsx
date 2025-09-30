@@ -1,46 +1,91 @@
-import { TrendingUp, TrendingDown, Users, DollarSign, Clock, Briefcase } from 'lucide-react';
+"use client";
+import { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, Users, DollarSign, Clock, Briefcase, CheckCircle, PlayCircle } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardHeader,
 } from '@/components/ui/card';
+import { dashboardService } from '@/services/dashboardService';
 
 export default function StatsCards() {
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const data = await dashboardService.getUserDashboard();
+        const transformedData = dashboardService.transformDashboardData(data);
+        setDashboardData(transformedData);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {[...Array(4)].map((_, index) => (
+          <Card key={index} className="relative overflow-hidden border-0 shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   const stats = [
     { 
       title: 'Jobs Posted', 
-      value: '24', 
+      value: dashboardData?.stats?.totalJobs?.toString() || '0', 
       icon: Briefcase, 
       trend: 'up',
       change: '+12%',
-      description: 'vs last month',
+      description: 'Total jobs posted',
       pattern: 'up-trend'
     },
     { 
-      title: 'Active Applications', 
-      value: '186', 
-      icon: Users, 
+      title: 'Active Jobs', 
+      value: dashboardData?.stats?.activeJobs?.toString() || '0', 
+      icon: PlayCircle, 
       trend: 'up',
       change: '+8.2%',
-      description: 'vs last month',
+      description: 'Currently active',
       pattern: 'steady-up'
     },
     { 
-      title: 'Total Spent', 
-      value: '$12,450', 
-      icon: DollarSign, 
+      title: 'Completed Jobs', 
+      value: dashboardData?.stats?.completedJobs?.toString() || '0', 
+      icon: CheckCircle, 
       trend: 'up',
       change: '+4.5%',
-      description: 'vs last month',
+      description: 'Successfully completed',
       pattern: 'volatile-up'
     },
     { 
-      title: 'Time to Hire', 
-      value: '18 days', 
+      title: 'In Progress', 
+      value: dashboardData?.stats?.inProgressJobs?.toString() || '0', 
       icon: Clock, 
       trend: 'down',
       change: '-2.1%',
-      description: 'vs last month',
+      description: 'Currently in progress',
       pattern: 'down-trend'
     }
   ];

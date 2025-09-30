@@ -1,40 +1,58 @@
-import { User, Clock, CheckCircle, XCircle, Calendar, AlertCircle, ArrowUpRight } from "lucide-react"
+"use client";
+import { useState, useEffect } from "react";
+import { User, Clock, CheckCircle, XCircle, Calendar, AlertCircle, ArrowUpRight } from "lucide-react";
+import { dashboardService } from '@/services/dashboardService';
 
 export default function RecentApplications() {
-  const applications = [
-    { 
-      candidate: 'John Smith', 
-      jobTitle: 'Frontend Developer', 
-      appliedDate: 'Aug 12', 
-      status: 'Under Review',
-      avatar: 'JS',
-      priority: 'high'
-    },
-    { 
-      candidate: 'Sarah Johnson', 
-      jobTitle: 'UX Designer', 
-      appliedDate: 'Aug 11', 
-      status: 'Interview Scheduled',
-      avatar: 'SJ',
-      priority: 'medium'
-    },
-    { 
-      candidate: 'Mike Brown', 
-      jobTitle: 'Backend Developer', 
-      appliedDate: 'Aug 10', 
-      status: 'Rejected',
-      avatar: 'MB',
-      priority: 'low'
-    },
-    { 
-      candidate: 'Lisa Wilson', 
-      jobTitle: 'Product Manager', 
-      appliedDate: 'Aug 9', 
-      status: 'Hired',
-      avatar: 'LW',
-      priority: 'high'
-    }
-  ];
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const data = await dashboardService.getUserDashboard();
+        const transformedData = dashboardService.transformDashboardData(data);
+        
+        // Transform latest job list data
+        const jobApplications = transformedData?.latestJobs ? 
+          transformedData.latestJobs.map((job, index) => ({
+            candidate: job.cuj_contact_name || `Contact ${index + 1}`,
+            jobTitle: job.cuj_title || `Job ${index + 1}`,
+            appliedDate: job.created_at ? new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent',
+            status: job.cuj_job_status === '0' ? 'Active' : job.cuj_job_status === 'rejected' ? 'Rejected' : 'Under Review',
+            avatar: (job.cuj_contact_name || `C${index + 1}`).split(' ').map(n => n[0]).join('').toUpperCase(),
+            priority: job.cuj_is_active === 1 ? 'high' : 'low'
+          })) : [];
+        
+        setApplications(jobApplications);
+      } catch (error) {
+        console.error('Error fetching recent applications:', error);
+        // Fallback to sample data
+        setApplications([
+          { 
+            candidate: 'John Smith', 
+            jobTitle: 'Frontend Developer', 
+            appliedDate: 'Aug 12', 
+            status: 'Under Review',
+            avatar: 'JS',
+            priority: 'high'
+          },
+          { 
+            candidate: 'Sarah Johnson', 
+            jobTitle: 'UX Designer', 
+            appliedDate: 'Aug 11', 
+            status: 'Interview Scheduled',
+            avatar: 'SJ',
+            priority: 'medium'
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const getStatusConfig = (status) => {
     switch(status) {
@@ -189,22 +207,6 @@ export default function RecentApplications() {
         </table>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-100">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900">
-              {applications.filter(app => app.status === 'Hired').length}
-            </div>
-            <div className="text-xs text-gray-500">Hired this month</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900">
-              {applications.filter(app => app.status === 'Interview Scheduled').length}
-            </div>
-            <div className="text-xs text-gray-500">Interviews pending</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

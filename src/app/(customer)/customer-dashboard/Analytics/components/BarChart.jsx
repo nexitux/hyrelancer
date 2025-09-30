@@ -1,4 +1,5 @@
 "use client"
+import { useState, useEffect } from "react";
 import { TrendingUp, BarChart3, Calendar } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
 import {
@@ -15,39 +16,79 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { dashboardService } from '@/services/dashboardService';
 
 export default function EnhancedBarChart() {
-  const chartData = [
-    { month: "January", jobs: 45, target: 50 },
-    { month: "February", jobs: 30, target: 35 },
-    { month: "March", jobs: 35, target: 40 },
-    { month: "April", jobs: 25, target: 30 },
-    { month: "May", jobs: 40, target: 45 },
-    { month: "June", jobs: 30, target: 35 },
-    { month: "July", jobs: 35, target: 40 },
-    { month: "August", jobs: 50, target: 55 },
-    { month: "September", jobs: 40, target: 45 },
-    { month: "October", jobs: 45, target: 50 },
-  ];
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [year, setYear] = useState(2024);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const data = await dashboardService.getUserDashboard();
+        const transformedData = dashboardService.transformDashboardData(data);
+        
+        // Transform monthly data for the chart
+        const monthlyChartData = transformedData?.monthlyData?.map(item => ({
+          month: item.month,
+          jobs: item.jobs,
+          completed: item.completed
+        })) || [];
+        
+        setChartData(monthlyChartData);
+        setYear(transformedData?.year || 2024);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        // Fallback to empty data
+        setChartData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const chartConfig = {
     jobs: {
       label: "Job Posts",
       color: "#3b82f6",
     },
-    target: {
-      label: "Target",
+    completed: {
+      label: "Completed",
       color: "#93c5fd",
     },
   }
 
   // Calculate performance metrics
   const totalJobs = chartData.reduce((sum, item) => sum + item.jobs, 0);
-  const averageJobs = Math.round(totalJobs / chartData.length);
+  const totalCompleted = chartData.reduce((sum, item) => sum + item.completed, 0);
+  const averageJobs = chartData.length > 0 ? Math.round(totalJobs / chartData.length) : 0;
   const lastMonth = chartData[chartData.length - 1];
   const previousMonth = chartData[chartData.length - 2];
-  const growthRate = ((lastMonth.jobs - previousMonth.jobs) / previousMonth.jobs * 100).toFixed(1);
+  const growthRate = lastMonth && previousMonth && previousMonth.jobs > 0 
+    ? ((lastMonth.jobs - previousMonth.jobs) / previousMonth.jobs * 100).toFixed(1)
+    : '0';
   const isPositiveGrowth = parseFloat(growthRate) > 0;
+
+  if (loading) {
+    return (
+      <Card className="relative overflow-hidden border border-gray-200 shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="relative overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white via-slate-50/50 to-white">
@@ -68,7 +109,7 @@ export default function EnhancedBarChart() {
             </div>
             <CardDescription className="flex items-center space-x-2 text-sm">
               <Calendar className="w-4 h-4" />
-              <span>January - October 2024</span>
+              <span>January - December {year}</span>
             </CardDescription>
           </div>
           
@@ -133,11 +174,10 @@ export default function EnhancedBarChart() {
                 className="transition-all duration-300 hover:opacity-80"
               />
               <Bar
-                dataKey="target"
-                fill="var(--color-target)"
+                dataKey="completed"
+                fill="var(--color-completed)"
                 radius={[4, 4, 0, 0]}
-                opacity={0.3}
-                className="transition-all duration-300"
+                className="transition-all duration-300 hover:opacity-80"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -163,12 +203,12 @@ export default function EnhancedBarChart() {
           {/* Legend */}
           <div className="flex items-center space-x-4 text-xs">
             <div className="flex items-center space-x-1">
-              <div className="w-3 h-3 rounded-sm bg-chart-1" />
-              <span className="text-muted-foreground">Actual</span>
+              <div className="w-3 h-3 rounded-sm bg-blue-500" />
+              <span className="text-muted-foreground">Jobs Posted</span>
             </div>
             <div className="flex items-center space-x-1">
-              <div className="w-3 h-3 rounded-sm bg-chart-2 opacity-30" />
-              <span className="text-muted-foreground">Target</span>
+              <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#93c5fd" }} />
+              <span className="text-muted-foreground">Completed</span>
             </div>
           </div>
         </div>
