@@ -9,6 +9,7 @@ const StatisticsChart = dynamic(() => import("./components/StatisticsChart"), { 
 const DemographicCard = dynamic(() => import("./components/DemographicCard"), { ssr: false });
 const RecentOrders = dynamic(() => import("./components/RecentOrders"), { ssr: false });
 const NotificationPanel = dynamic(() => import("./components/NotificationPanel"), { ssr: false });
+const Badges = dynamic(() => import("./components/Badges"), { ssr: false });
 
 export default function DashboardPage() {
   return (
@@ -32,13 +33,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Second Row - Equal Columns (Demographic Card and Monthly Target) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Second Row - Three Columns (Demographic Card, Monthly Target, and Badges) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <DemographicCard />
           <MonthlyTarget />
+          <Badges />
         </div>
 
-        {/* Third Row - Recent Orders (Full Width) */}
+        {/* Fourth Row - Recent Orders (Full Width) */}
         <div className="w-full">
           <RecentOrders />
         </div>
