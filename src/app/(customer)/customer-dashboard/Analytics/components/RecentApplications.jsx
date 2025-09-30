@@ -29,22 +29,7 @@ export default function RecentApplications() {
         console.error('Error fetching recent applications:', error);
         // Fallback to sample data
         setApplications([
-          { 
-            candidate: 'John Smith', 
-            jobTitle: 'Frontend Developer', 
-            appliedDate: 'Aug 12', 
-            status: 'Under Review',
-            avatar: 'JS',
-            priority: 'high'
-          },
-          { 
-            candidate: 'Sarah Johnson', 
-            jobTitle: 'UX Designer', 
-            appliedDate: 'Aug 11', 
-            status: 'Interview Scheduled',
-            avatar: 'SJ',
-            priority: 'medium'
-          }
+          
         ]);
       } finally {
         setLoading(false);

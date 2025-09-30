@@ -20,6 +20,15 @@ export default function HomePage() {
       // Redirect to complete-signup page with Google parameters
       const completeSignupUrl = `/complete-signup?user_googleid=${googleId}&user_email=${encodeURIComponent(googleEmail)}`;
       router.replace(completeSignupUrl);
+      return;
+    }
+
+    // Check for registration-complete message and redirect to select-user-type
+    const message = searchParams.get('message');
+    if (message === 'registration-complete') {
+      // Redirect to select-user-type page
+      router.replace('/select-user-type');
+      return;
     }
   }, [searchParams, router]);
 

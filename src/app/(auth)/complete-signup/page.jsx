@@ -130,8 +130,8 @@ const CompleteSignupPage = () => {
                 console.warn('sessionStorage unavailable:', e);
             }
 
-            // Success - redirect to home
-            router.push('/?message=registration-complete');
+            // Success - redirect to select user type page
+            router.push('/select-user-type');
             
         } catch (error) {
             console.error('Registration error:', error);

@@ -155,7 +155,15 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
             }
         } catch (error) {
             console.error('handleMobileSubmit error', error);
-            setMobileError('Network error. Please check your connection.');
+            
+            // Handle specific backend errors
+            if (error.response?.data?.message) {
+                setMobileError(error.response.data.message);
+            } else if (error.response?.data?.errors?.mobile) {
+                setMobileError(error.response.data.errors.mobile[0]);
+            } else {
+                setMobileError('Network error. Please check your connection.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -211,7 +219,15 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
 }
         } catch (error) {
             console.error('handleOtpSubmit error', error);
-            setOtpError('Network error. Please check your connection.');
+                
+            // Handle specific backend errors
+            if (error.response?.data?.message) {
+                setOtpError(error.response.data.message);
+            } else if (error.response?.data?.errors?.otp) {
+                setOtpError(error.response.data.errors.otp[0]);
+            } else {
+                setOtpError('Network error. Please check your connection.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -244,7 +260,15 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
             }
         } catch (error) {
             console.error('handleEmailSubmit error', error);
-            setEmailError('Network error. Please check your connection.');
+            
+            // Handle specific backend errors
+            if (error.response?.data?.message) {
+                setEmailError(error.response.data.message);
+            } else if (error.response?.data?.errors?.email) {
+                setEmailError(error.response.data.errors.email[0]);
+            } else {
+                setEmailError('Network error. Please check your connection.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -282,7 +306,15 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
             }
         } catch (error) {
             console.error('handleResendOtp error', error);
-            setOtpError('Network error. Please check your connection.');
+            
+            // Handle specific backend errors
+            if (error.response?.data?.message) {
+                setOtpError(error.response.data.message);
+            } else if (error.response?.data?.errors?.mobile) {
+                setOtpError(error.response.data.errors.mobile[0]);
+            } else {
+                setOtpError('Network error. Please check your connection.');
+            }
         } finally {
             setIsLoading(false);
         }
