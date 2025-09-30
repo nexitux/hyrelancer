@@ -21,27 +21,8 @@ import Link from 'next/link';
 import FreelancerAssignedJobsModal from '../../components/FreelancerAssignedJobsModal';
 import FreelancerAppliedJobsModal from '../../components/FreelancerAppliedJobsModal';
 
-// --- API Configuration ---
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  },
-  removeToken: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken');
-    }
-  },
-  setToken: (token) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('adminToken', token);
-    }
-  }
-};
+// --- Import admin API ---
+import adminApi from '@/config/adminApi';
 
 // --- Status Helper Functions ---
 const getStatusInfo = (freelancer) => {
@@ -132,67 +113,17 @@ const FreelancerProfile = () => {
         setLoading(true);
         setError(null);
         
-        const token = TokenManager.getToken();
-        if (!token) {
-          message.error('Authentication token not found. Please login again.');
-          TokenManager.removeToken();
-          router.push('/gateway');
-          return;
-        }
-
         console.log('Fetching freelancer data for ID:', freelancerId);
-        console.log('API URL:', `${API_BASE_URL}/freelancers/${freelancerId}`);
 
-        const response = await fetch(`${API_BASE_URL}/freelancers/${freelancerId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          }
-        });
-
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-
-        if (response.status === 401) {
-          message.error('Authentication failed. Please login again.');
-          TokenManager.removeToken();
-          router.push('/gateway');
-          return;
-        }
-
-        if (response.status === 404) {
-          setError('Freelancer not found');
-          setLoading(false);
-          return;
-        }
-
-        if (!response.ok) {
-          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch (parseError) {
-            console.error('Error parsing error response:', parseError);
-          }
-          throw new Error(errorMessage);
-        }
-
-        const responseData = await response.json();
-        console.log('Response data:', responseData);
+        const response = await adminApi.get(`/freelancers/${freelancerId}`);
+        console.log('Response data:', response.data);
 
         // Handle the API response structure - data is wrapped in 'data' property
-        if (responseData.data) {
-          setFreelancerData(responseData.data);
-          
-          // Update token if provided
-          if (responseData.token) {
-            TokenManager.setToken(responseData.token);
-          }
-        } else if (responseData.id) {
+        if (response.data.data) {
+          setFreelancerData(response.data.data);
+        } else if (response.data.id) {
           // Fallback in case data is not wrapped
-          setFreelancerData(responseData);
+          setFreelancerData(response.data);
         } else {
           throw new Error('Invalid response format');
         }
@@ -281,34 +212,21 @@ const FreelancerProfile = () => {
 
     try {
       const encodedId = Base64.encode(freelancerData.id.toString());
-      const token = TokenManager.getToken();
       
-      const response = await fetch(`${API_BASE_URL}/activeFeAccount/${status}/${encodedId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        }
-      });
+      const response = await adminApi.get(`/activeFeAccount/${status}/${encodedId}`);
 
-      if (response.ok) {
-        const responseData = await response.json();
-        if (responseData.message) {
-          message.success(responseData.message);
-          
-          // Update local state
-          setFreelancerData(prevData => ({
-            ...prevData,
-            is_active_acc: status
-          }));
-        }
-      } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (response.data.message) {
+        message.success(response.data.message);
+        
+        // Update local state
+        setFreelancerData(prevData => ({
+          ...prevData,
+          is_active_acc: status
+        }));
       }
     } catch (err) {
       console.error(`Error ${actionText}ing freelancer account:`, err);
-      const errorMessage = err.message || `Failed to ${actionText} freelancer account`;
+      const errorMessage = err.response?.data?.message || err.message || `Failed to ${actionText} freelancer account`;
       message.error(errorMessage);
     }
   };

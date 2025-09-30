@@ -33,16 +33,8 @@ import {
 } from 'lucide-react';
 import { message } from 'antd';
 
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// Import admin API
+import adminApi from '@/config/adminApi';
 
 const AddCategory = ({ record, suggestionDetails }) => {
   const router = useRouter();
@@ -173,36 +165,12 @@ const AddCategory = ({ record, suggestionDetails }) => {
     }
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/storeCategory`, {
-        method: 'POST',
+      const response = await adminApi.post('/storeCategory', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
       
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 422) {
-          // Display backend validation errors
-          const errorMessages = Object.values(result.errors).flat();
-          setError(errorMessages.join(' '));
-          message.error(errorMessages.join(' '));
-        } else {
-          const errorMessage = result.message || 'Failed to create category.';
-          setError(errorMessage);
-          message.error(errorMessage);
-        }
-        return;
-      }
-
       setSuccess('Category created successfully!');
       message.success('Category created successfully!');
       // Redirect to the category list page after a short delay
@@ -212,9 +180,17 @@ const AddCategory = ({ record, suggestionDetails }) => {
 
     } catch (err) {
       console.error('API Error:', err);
-      const errorMessage = err.message || 'An unexpected error occurred.';
-      setError(errorMessage);
-      message.error(errorMessage);
+      
+      if (err.response?.status === 422) {
+        // Display backend validation errors
+        const errorMessages = Object.values(err.response.data.errors).flat();
+        setError(errorMessages.join(' '));
+        message.error(errorMessages.join(' '));
+      } else {
+        const errorMessage = err.response?.data?.message || err.message || 'An unexpected error occurred.';
+        setError(errorMessage);
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

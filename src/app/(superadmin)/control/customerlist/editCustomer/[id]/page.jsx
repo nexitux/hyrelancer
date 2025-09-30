@@ -14,16 +14,9 @@ import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
 
 const { Title } = Typography;
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin/customers';
 
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// Import admin API
+import adminApi from '@/config/adminApi';
 
 const decodeId = (encodedId) => {
   try {
@@ -51,25 +44,11 @@ export default function EditCustomer({ params }) {
     }
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) throw new Error('Authentication token not found.');
-
-      const response = await fetch(`${API_BASE_URL}/${encodedId}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch customer data.');
-      }
-      const result = await response.json();
-      form.setFieldsValue(result); // Prefill form with fetched data
+      const response = await adminApi.get(`/customers/${encodedId}`);
+      form.setFieldsValue(response.data); // Prefill form with fetched data
     } catch (error) {
       console.error("API Error:", error);
-      message.error('Failed to load customer data.');
+      message.error(error.response?.data?.message || 'Failed to load customer data.');
     } finally {
       setInitialDataLoading(false);
     }
@@ -85,34 +64,7 @@ export default function EditCustomer({ params }) {
     const { confirmPassword, ...payload } = values;
 
     try {
-      const token = TokenManager.getToken();
-
-      const response = await fetch(`${API_BASE_URL}/${encodedId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 422 && result.errors) {
-          const formErrors = Object.keys(result.errors).map(key => ({
-            name: key,
-            errors: result.errors[key],
-          }));
-          form.setFields(formErrors);
-          message.error('Validation failed. Please check the form.');
-        } else {
-          const errorMessage = result.message || 'Failed to update customer.';
-          message.error(errorMessage);
-        }
-        return;
-      }
+      const response = await adminApi.put(`/customers/${encodedId}`, payload);
 
       message.success('Customer updated successfully!');
       setTimeout(() => {
@@ -121,7 +73,18 @@ export default function EditCustomer({ params }) {
 
     } catch (error) {
       console.error("API Error:", error);
-      message.error('An unexpected error occurred. Please try again.');
+      
+      if (error.response?.status === 422 && error.response.data.errors) {
+        const formErrors = Object.keys(error.response.data.errors).map(key => ({
+          name: key,
+          errors: error.response.data.errors[key],
+        }));
+        form.setFields(formErrors);
+        message.error('Validation failed. Please check the form.');
+      } else {
+        const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred. Please try again.';
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

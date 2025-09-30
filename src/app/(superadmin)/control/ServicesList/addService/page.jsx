@@ -13,23 +13,8 @@ import {
 } from 'lucide-react';
 import { message } from 'antd'; // Import for toast notifications
 
-// API configuration
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-
-// Token management (local state)
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  },
-  removeToken: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken');
-    }
-  }
-};
+// Import admin API
+import adminApi from '@/config/adminApi';
 
 // Reusable Toolbar Button component
 const ToolbarButton = ({ onClick, isActive, children }) => (
@@ -78,37 +63,15 @@ const AddService = () => {
     setFetchingCategories(true);
     setError(null);
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/category`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.status === 401) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.message || 'Failed to fetch categories.');
-      }
-      
-      const result = await response.json();
-      setCategories(result.data.data);
+      const response = await adminApi.get('/category');
+      setCategories(response.data.data.data);
       
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setFetchingCategories(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     fetchCategories();
@@ -152,37 +115,11 @@ const AddService = () => {
     }
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/storeServices`, {
-        method: 'POST',
+      const response = await adminApi.post('/storeServices', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
-
-      const result = await response.json();
-
-      if (response.status === 401) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      if (!response.ok) {
-        const errorMessages = Object.values(result.errors || {}).flat();
-        const msg = errorMessages.join(' ') || result.message || 'Failed to create service.';
-        setError(msg);
-        message.error(msg);
-        return;
-      }
 
       setSuccess('Service created successfully!');
       message.success('Service created successfully!');
@@ -192,9 +129,17 @@ const AddService = () => {
 
     } catch (err) {
       console.error('API Error:', err);
-      const msg = err.message || 'An unexpected error occurred.';
-      setError(msg);
-      message.error(msg);
+      
+      if (err.response?.status === 422) {
+        const errorMessages = Object.values(err.response.data.errors || {}).flat();
+        const msg = errorMessages.join(' ') || err.response.data.message || 'Failed to create service.';
+        setError(msg);
+        message.error(msg);
+      } else {
+        const msg = err.response?.data?.message || err.message || 'An unexpected error occurred.';
+        setError(msg);
+        message.error(msg);
+      }
     } finally {
       setLoading(false);
     }

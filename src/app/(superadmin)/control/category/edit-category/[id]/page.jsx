@@ -11,16 +11,8 @@ import {
 } from 'lucide-react';
 import { Base64 } from 'js-base64';
 
-// Assuming you have these helpers and API config available
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// Import admin API
+import adminApi from '@/config/adminApi';
 const decodeId = (encodedId) => {
   try {
     return Base64.decode(encodedId);
@@ -63,20 +55,8 @@ const EditCategory = ({ params }) => {
     }
     setLoading(true);
     try {
-      const token = TokenManager.getToken();
-      if (!token) throw new Error('Authentication token not found.');
-
-      const response = await fetch(`${API_BASE_URL}/category/${encodedId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch category data.');
-      }
-      const result = await response.json();
-      const data = result.data;
+      const response = await adminApi.get(`/category/${encodedId}`);
+      const data = response.data.data;
 
       setCategoryName(data.sc_name || '');
       if (editor) {
@@ -85,7 +65,7 @@ const EditCategory = ({ params }) => {
       setExistingIconUrl(data.sc_icon);
       setExistingBannerUrl(data.sc_img);
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.');
+      setError(err.response?.data?.message || err.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
@@ -133,35 +113,11 @@ const EditCategory = ({ params }) => {
   }
   
   try {
-    const token = TokenManager.getToken();
-    if (!token) {
-      router.push('/gateway'); // Redirect if token is missing
-      return;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/updateCategory/${encodedId}`, {
-      method: 'POST', // 🚨 Change method to 'POST' for FormData with files
+    const response = await adminApi.post(`/updateCategory/${encodedId}`, formData, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        // ⚠️ DO NOT set 'Content-Type': it is automatically handled by the browser for FormData.
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData,
     });
-
-    const result = await response.json();
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Handle token expiration
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      const errorMessages = Object.values(result.errors || {}).flat();
-      setError(errorMessages.join(' ') || result.message || 'Failed to update category.');
-      return;
-    }
 
     setSuccess('Category updated successfully!');
     // A small delay for the user to see the success message
@@ -171,7 +127,15 @@ const EditCategory = ({ params }) => {
 
   } catch (err) {
     console.error('API Error:', err);
-    setError(err.message || 'An unexpected error occurred.');
+    
+    if (err.response?.status === 422) {
+      // Display backend validation errors
+      const errorMessages = Object.values(err.response.data.errors || {}).flat();
+      setError(errorMessages.join(' ') || err.response.data.message || 'Failed to update category.');
+    } else {
+      const errorMessage = err.response?.data?.message || err.message || 'An unexpected error occurred.';
+      setError(errorMessage);
+    }
   } finally {
     setLoading(false);
   }

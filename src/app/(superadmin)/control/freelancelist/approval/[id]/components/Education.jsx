@@ -7,11 +7,8 @@ import { CarryOutOutlined, CheckCircleOutlined } from "@ant-design/icons";
 
 const { Text, Title } = Typography;
 
-// Simple token helper (reads admin token from localStorage)
-const TokenManager = {
-  getToken: () => (typeof window !== "undefined" ? localStorage.getItem("adminToken") : null),
-  clearToken: () => { if (typeof window !== "undefined") localStorage.removeItem("adminToken"); }
-};
+// Import admin API
+import adminApi from '@/config/adminApi';
 
 export default function AdminProfessionalDisplay() {
   const params = useParams();
@@ -36,28 +33,9 @@ export default function AdminProfessionalDisplay() {
     try {
       setLoading(true);
       setError(null);
-      const token = TokenManager.getToken();
-      const res = await fetch(`https://test.hyrelancer.in/api/admin/getFeUProfessional/${userIdBase64}`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      const text = await res.text();
-      let data;
-      try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          TokenManager.clearToken();
-          message.error("Unauthorized. Redirecting to login...");
-          router.push("/admin/login");
-          return;
-        }
-        throw new Error(data?.message || `HTTP ${res.status}`);
-      }
+      
+      const response = await adminApi.get(`/getFeUProfessional/${userIdBase64}`);
+      const data = response.data;
 
       if (data && data.u_profile) {
         setProfessional(data.u_profile || null);
@@ -70,7 +48,7 @@ export default function AdminProfessionalDisplay() {
       }
     } catch (err) {
       console.error("Fetch error:", err);
-      setError(err.message || "Failed to load data");
+      setError(err.response?.data?.message || err.message || "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -83,39 +61,18 @@ export default function AdminProfessionalDisplay() {
     if (!userIdBase64) return;
     try {
       setIsApproving(true);
-      const token = TokenManager.getToken();
 
-      // NOTE: This endpoint name is a best-effort guess. Change to your real approve endpoint if different.
-      const res = await fetch("https://test.hyrelancer.in/api/admin/approveFeUProfessional", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ fp_u_id: userIdBase64, action: "approve" }),
+      const response = await adminApi.post("/approveFeUProfessional", {
+        fp_u_id: userIdBase64,
+        action: "approve"
       });
 
-      const text = await res.text();
-      let data;
-      try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          TokenManager.clearToken();
-          message.error("Unauthorized. Please login again.");
-          router.push("/admin/login");
-          return;
-        }
-        throw new Error(data?.message || `HTTP ${res.status}`);
-      }
-
-      message.success(data?.message || "User approved successfully");
+      message.success(response.data?.message || "User approved successfully");
       // refresh the display after approval
       await fetchProfessionalData();
     } catch (err) {
       console.error("Approve error:", err);
-      message.error(err.message || "Failed to approve user");
+      message.error(err.response?.data?.message || err.message || "Failed to approve user");
     } finally {
       setIsApproving(false);
     }

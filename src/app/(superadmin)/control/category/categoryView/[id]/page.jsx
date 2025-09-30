@@ -10,16 +10,8 @@ import {
   MdInfo
 } from 'react-icons/md';
 
-// API configuration and Token Manager
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// Import admin API
+import adminApi from '@/config/adminApi';
 
 // Helper function to decode Base64 ID
 import { Base64 } from 'js-base64';
@@ -63,34 +55,18 @@ export default function CategoryDetailsPage({ params }) {
     setLoading(true);
     setError(null);
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/category/${encodedId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Category not found.');
-        }
-        const errorData = await response.json();
-        throw new Error(errorData?.message || 'Failed to fetch category details.');
-      }
-
-      const result = await response.json();
-      setCategoryData(result.data);
+      const response = await adminApi.get(`/category/${encodedId}`);
+      setCategoryData(response.data.data);
       
     } catch (err) {
       console.error('Error fetching category details:', err);
-      setError(err.message || 'An unexpected error occurred.');
+      
+      if (err.response?.status === 404) {
+        setError('Category not found.');
+      } else {
+        const errorMessage = err.response?.data?.message || err.message || 'An unexpected error occurred.';
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

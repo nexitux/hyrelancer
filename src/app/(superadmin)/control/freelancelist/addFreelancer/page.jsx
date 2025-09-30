@@ -11,16 +11,8 @@ import { useRouter } from 'next/navigation'; // Import useRouter for redirection
 
 const { Title } = Typography;
 
-// --- API Configuration ---
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// --- Import admin API ---
+import adminApi from '@/config/adminApi';
 
 export default function AddFreelancer() {
   const [form] = Form.useForm();
@@ -39,41 +31,7 @@ export default function AddFreelancer() {
     };
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        message.error("Authentication failed. Please log in again.");
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/freelancers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 422 && result.errors) {
-          // --- Backend Validation Error Handling ---
-          // Maps validation errors (e.g., "email already exists") to form fields.
-          const formErrors = Object.keys(result.errors).map(key => ({
-            name: key,
-            errors: result.errors[key],
-          }));
-          form.setFields(formErrors);
-          message.error('Validation failed. Please check the form fields.');
-        } else {
-          // Other API errors (e.g., server error)
-          message.error(result.message || 'Failed to create freelancer.');
-        }
-        return;
-      }
+      const response = await adminApi.post('/freelancers', payload);
 
       // --- Success Case ---
       message.success('Freelancer created successfully!');
@@ -86,7 +44,21 @@ export default function AddFreelancer() {
 
     } catch (error) {
       console.error("API Error:", error);
-      message.error('An unexpected error occurred. Please try again.');
+      
+      if (error.response?.status === 422 && error.response.data.errors) {
+        // --- Backend Validation Error Handling ---
+        // Maps validation errors (e.g., "email already exists") to form fields.
+        const formErrors = Object.keys(error.response.data.errors).map(key => ({
+          name: key,
+          errors: error.response.data.errors[key],
+        }));
+        form.setFields(formErrors);
+        message.error('Validation failed. Please check the form fields.');
+      } else {
+        // Other API errors (e.g., server error)
+        const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred. Please try again.';
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

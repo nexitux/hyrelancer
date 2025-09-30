@@ -12,16 +12,8 @@ import { useRouter } from 'next/navigation';
 
 const { Title } = Typography;
 
-// API configuration and Token Manager (assuming it exists)
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+// Import admin API
+import adminApi from '@/config/adminApi';
 
 export default function AddCustomer() {
   const [form] = Form.useForm();
@@ -41,36 +33,7 @@ export default function AddCustomer() {
     };
 
     try {
-      const token = TokenManager.getToken();
-
-      const response = await fetch(`${API_BASE_URL}/customers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 422 && result.errors) {
-          // Backend validation errors
-          const formErrors = Object.keys(result.errors).map(key => ({
-            name: key,
-            errors: result.errors[key],
-          }));
-          form.setFields(formErrors);
-          message.error('Validation failed. Please check the form.');
-        } else {
-          // Other API errors
-          const errorMessage = result.message || 'Failed to create customer.';
-          message.error(errorMessage);
-        }
-        return;
-      }
+      const response = await adminApi.post('/customers', payload);
 
       // Success case
       message.success('Customer created successfully!');
@@ -80,10 +43,22 @@ export default function AddCustomer() {
         router.push('/control/customerlist');
       }, 1000); // 1-second delay for the success message to be visible
 
-
     } catch (error) {
       console.error("API Error:", error);
-      message.error('An unexpected error occurred. Please try again.');
+      
+      if (error.response?.status === 422 && error.response.data.errors) {
+        // Backend validation errors
+        const formErrors = Object.keys(error.response.data.errors).map(key => ({
+          name: key,
+          errors: error.response.data.errors[key],
+        }));
+        form.setFields(formErrors);
+        message.error('Validation failed. Please check the form.');
+      } else {
+        // Other API errors
+        const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred. Please try again.';
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
