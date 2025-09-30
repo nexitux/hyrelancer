@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { logout, updateUserProfile } from "@/redux/slices/authSlice";
+import { logout, updateUserProfile, mobileVerified } from "@/redux/slices/authSlice";
 import {
   Menu as MenuIcon,
   User,
@@ -15,10 +15,12 @@ import {
   ChevronDown,
   Settings,
   LogOut,
+  Shield,
 } from "lucide-react";
 import Logo from "../../../../public/images/image.png";
 import Image from "next/image";
 import api from "@/config/api";
+import PhoneVerificationModal from "../../registration/Header/components/PhoneVerificationModal";
 
 // Default category icons mapping
 const defaultCategoryIcons = {
@@ -40,6 +42,7 @@ const Header = ({ params }) => {
   const [isTabletView, setIsTabletView] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch();
@@ -193,6 +196,19 @@ const Header = ({ params }) => {
     pathname !== "/Register" && 
     pathname !== "/register";
 
+  // Check if mobile number is verified
+  const isMobileVerified = user?.mobile_verify && user.mobile_verify !== null;
+
+  const handleVerifyPhone = () => {
+    setShowVerificationModal(true);
+  };
+
+  const handleVerificationSuccess = () => {
+    // Update Redux state with mobile verification timestamp
+    dispatch(mobileVerified({ timestamp: new Date().toISOString() }));
+    setShowVerificationModal(false);
+  };
+
   const handleLogout = async () => {
     try {
       // Call backend logout API
@@ -307,67 +323,84 @@ const Header = ({ params }) => {
               priority
             />
           </div>
-          {/* User Dropdown - Only show if authenticated and not on login/register pages */}
+          {/* User Dropdown and Verification Button - Only show if authenticated and not on login/register pages */}
           {shouldShowUserDropdown && (
-            <div className="relative user-dropdown">
-              <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className={`flex items-center space-x-2 p-2 rounded-full transition-colors duration-200 ${isScrolled
-                  ? "hover:bg-gray-100 text-gray-700"
-                  : "hover:bg-white/10 text-white"
-                  }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${isScrolled
-                    ? "border-gray-300 bg-gray-50"
-                    : "border-white/30 bg-white/10"
+            <div className="flex items-center space-x-3">
+              {/* Mobile Verification Button - Only show if mobile is not verified */}
+              {!isMobileVerified && (
+                <button
+                  onClick={handleVerifyPhone}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isScrolled
+                    ? "bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200"
+                    : "bg-orange-500 text-white hover:bg-orange-600"
                     }`}
                 >
-                  <User className="w-4 h-4" />
-                </div>
-
-                <span className="hidden sm:inline-block text-sm font-medium truncate max-w-[10rem]">
-                  {`Hi, ${user?.name ||
-                    user?.username ||
-                    user?.slug ||
-                    slug ||
-                    `User${user?.id}` ||
-                    "User"
-                    }`}
-                </span>
-
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""
-                    }`}
-                />
-              </button>
-
-              {/* User Dropdown Menu */}
-              {showUserDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  {userMenuItems.map((item, index) => (
-                    <button
-                      key={item.name}
-                      onClick={item.onClick}
-                      className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-150 ${index === userMenuItems.length - 1
-                        ? "text-red-600 hover:bg-red-50"
-                        : ""
-                        }`}
-                    >
-                      <span
-                        className={
-                          index === userMenuItems.length - 1
-                            ? "text-red-600"
-                            : "text-gray-400"
-                        }
-                      >
-                        {item.icon}
-                      </span>
-                      <span className="text-sm font-medium">{item.name}</span>
-                    </button>
-                  ))}
-                </div>
+                  <Shield className="w-4 h-4" />
+                  <span className="hidden sm:inline">Verify Phone</span>
+                </button>
               )}
+
+              {/* User Dropdown */}
+              <div className="relative user-dropdown">
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className={`flex items-center space-x-2 p-2 rounded-full transition-colors duration-200 ${isScrolled
+                    ? "hover:bg-gray-100 text-gray-700"
+                    : "hover:bg-white/10 text-white"
+                    }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${isScrolled
+                      ? "border-gray-300 bg-gray-50"
+                      : "border-white/30 bg-white/10"
+                      }`}
+                  >
+                    <User className="w-4 h-4" />
+                  </div>
+
+                  <span className="hidden sm:inline-block text-sm font-medium truncate max-w-[10rem]">
+                    {`Hi, ${user?.name ||
+                      user?.username ||
+                      user?.slug ||
+                      slug ||
+                      `User${user?.id}` ||
+                      "User"
+                      }`}
+                  </span>
+
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""
+                      }`}
+                  />
+                </button>
+
+                {/* User Dropdown Menu */}
+                {showUserDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    {userMenuItems.map((item, index) => (
+                      <button
+                        key={item.name}
+                        onClick={item.onClick}
+                        className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-150 ${index === userMenuItems.length - 1
+                          ? "text-red-600 hover:bg-red-50"
+                          : ""
+                          }`}
+                      >
+                        <span
+                          className={
+                            index === userMenuItems.length - 1
+                              ? "text-red-600"
+                              : "text-gray-400"
+                          }
+                        >
+                          {item.icon}
+                        </span>
+                        <span className="text-sm font-medium">{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -502,6 +535,13 @@ const Header = ({ params }) => {
           )}
         </div>
       </div>
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal 
+        isOpen={showVerificationModal} 
+        onClose={() => setShowVerificationModal(false)}
+        onSuccess={handleVerificationSuccess}
+      />
     </header>
   );
 };

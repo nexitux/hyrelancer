@@ -2,7 +2,7 @@ import "../../styles/globals.css";
 import Sidebar from "@/components/sidebar/Sidebar";
 import { customerMenu } from "@/components/sidebar/customerMenu";
 import Header from "../(public)/Header/page";
-import Footer from "../(public)/Footer/page";
+import SimpleFooter from "@/components/Footer/SimpleFooter";
 
 export default function DashboardLayout({ children, showSidebar = true }) {
   return (
@@ -19,17 +19,17 @@ export default function DashboardLayout({ children, showSidebar = true }) {
           </div>
         )}
 
-        {/* Right side: content + footer stacked */}
-        <div className="flex flex-col flex-1 gap-5">
+        {/* Right side: content only */}
+        <div className="flex flex-col flex-1">
           {/* Content */}
           <main className="flex-1 overflow-y-auto">
             {children}
           </main>
-
-          {/* Footer (same width as content) */}
-          <Footer />
         </div>
       </div>
+
+      {/* Full width footer outside sidebar */}
+      <SimpleFooter />
     </div>
   );
 }

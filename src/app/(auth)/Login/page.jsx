@@ -37,6 +37,58 @@ const usePasswordValidation = (password) => {
   return { validation, isValid };
 };
 
+// Validation functions
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validatePhoneNumber = (phone) => {
+  const cleanPhone = phone.replace(/\s/g, '');
+  const phoneRegex = /^\d{10}$/;
+  return phoneRegex.test(cleanPhone);
+};
+
+const validateConfirmPassword = (password, confirmPassword) => {
+  return password === confirmPassword && password.length > 0;
+};
+
+// Validation Icon Component
+const ValidationIcon = ({ isValid, hasValue }) => {
+  if (!hasValue) return null;
+  
+  return (
+    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+      {isValid ? (
+        <Check size={16} className="text-green-500" />
+      ) : (
+        <X size={16} className="text-red-500" />
+      )}
+    </div>
+  );
+};
+
+// Text Validation Component for Confirm Password
+const TextValidation = ({ isValid, hasValue, field }) => {
+  if (!hasValue || field !== 'confirmPassword') return null;
+  
+  return (
+    <div className="mt-1 text-xs">
+      {isValid ? (
+        <span className="text-green-600 flex items-center">
+          <Check size={12} className="mr-1" />
+          Passwords match
+        </span>
+      ) : (
+        <span className="text-red-600 flex items-center">
+          <X size={12} className="mr-1" />
+          Passwords do not match
+        </span>
+      )}
+    </div>
+  );
+};
+
 // Validation Checklist Component
 const ValidationChecklist = ({ validation }) => {
   const rules = [
@@ -849,19 +901,19 @@ const AuthForm = () => {
                       className={`w-full h-12 sm:h-14 bg-gray-50/80 border-2 rounded-xl px-4 sm:px-6 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.email ? 'border-red-300 bg-red-50' : 'border-transparent'
                         }`}
                       required
+                      autoComplete="new-password"
                       onFocus={() => handleFocus('signin-username')}
                       onBlur={handleBlur}
                       onChange={(e) => handleInputChange('signin-username', e.target.value)}
-                      placeholder=" "
+                      placeholder=""
                     />
-                    {!(focusedField === 'signin-username' || (formData && formData['signin-username'])) && (
-                      <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${isFieldActive('signin-username')
+                    <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${
+                      focusedField === 'signin-username' || (formData && formData['signin-username'])
                         ? 'top-0 text-xs text-gray-500 font-medium'
                         : 'top-1/2 -translate-y-1/2 text-gray-400'
-                        }`}>
-                        Username or Email
-                      </label>
-                    )}
+                    }`}>
+                      Username or Email
+                    </label>
                     {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email[0]}</p>}
                   </div>
 
@@ -871,10 +923,11 @@ const AuthForm = () => {
                       className={`w-full h-12 sm:h-14 bg-gray-50/80 border-2 rounded-xl px-4 sm:px-6 pr-12 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
                         }`}
                       required
+                      autoComplete="new-password"
                       onFocus={() => handleFocus('signin-password')}
                       onBlur={handleBlur}
                       onChange={(e) => handleInputChange('signin-password', e.target.value)}
-                      placeholder=" "
+                      placeholder=""
                     />
 
                     {/* eye toggle */}
@@ -887,14 +940,13 @@ const AuthForm = () => {
                       {showPasswordFields['signin-password'] ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
 
-                    {!(focusedField === 'signin-password' || (formData && formData['signin-username'])) && (
-                      <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${isFieldActive('signin-username')
+                    <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${
+                      focusedField === 'signin-password' || (formData && formData['signin-password'])
                         ? 'top-0 text-xs text-gray-500 font-medium'
                         : 'top-1/2 -translate-y-1/2 text-gray-400'
-                        }`}>
-                        Password
-                      </label>
-                    )}
+                    }`}>
+                      Password
+                    </label>
                     {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password[0]}</p>}
                   </div>
 
@@ -996,76 +1048,138 @@ const AuthForm = () => {
                     { field: 'mobile', label: 'Mobile Number', type: 'tel' },
                     { field: 'password', label: 'Password', type: 'password' },
                     { field: 'confirmPassword', label: 'Confirm Password', type: 'password' }
-                  ].map(({ field, label, type }) => (
-                    <div key={field}>
-                      <div className="relative">
-                        {(field === 'password' || field === 'confirmPassword') ? (
-                          <>
-                            <input
-                              type={showPasswordFields[field] ? 'text' : 'password'}
-                              className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                                }`}
-                              required
-                              onFocus={() => handleFocus(field)}
-                              onBlur={handleBlur}
-                              onChange={(e) => handleInputChange(field, e.target.value)}
-                              value={formData[field] || ''}
-                              placeholder=" "
-                            />
+                  ].map(({ field, label, type }) => {
+                    // Get validation state for each field
+                    const getValidationState = () => {
+                      const value = formData[field] || '';
+                      const hasValue = value.length > 0;
+                      
+                      switch (field) {
+                        case 'email':
+                          return { isValid: validateEmail(value), hasValue };
+                        case 'mobile':
+                          return { isValid: validatePhoneNumber(value), hasValue };
+                        case 'confirmPassword':
+                          return { 
+                            isValid: validateConfirmPassword(formData.password || '', value), 
+                            hasValue 
+                          };
+                        default:
+                          return { isValid: false, hasValue: false };
+                      }
+                    };
 
-                            <button
-                              type="button"
-                              aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
-                              onClick={() => toggleShowPassword(field)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
-                            >
-                              {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                          </>
-                        ) : (
-                          <input
-                            type={type}
-                            className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                              }`}
-                            required
-                            onFocus={() => handleFocus(field)}
-                            onBlur={handleBlur}
-                            onChange={(e) => handleInputChange(field, e.target.value)}
-                            value={formData[field] || ''}
-                            placeholder=" "
+                    const validationState = getValidationState();
+
+                    return (
+                      <div key={field}>
+                        <div className="relative">
+                          {(field === 'password' || field === 'confirmPassword') ? (
+                            <>
+                              <input
+                                type={showPasswordFields[field] ? 'text' : 'password'}
+                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                                  }`}
+                                required
+                                autoComplete="new-password"
+                                onFocus={() => handleFocus(field)}
+                                onBlur={handleBlur}
+                                onChange={(e) => {
+                                  if (field === 'mobile') {
+                                    // Only allow digits and limit to 10 characters
+                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    handleInputChange(field, value);
+                                  } else {
+                                    handleInputChange(field, e.target.value);
+                                  }
+                                }}
+                                value={formData[field] || ''}
+                                placeholder=""
+                              />
+
+                              <button
+                                type="button"
+                                aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
+                                onClick={() => toggleShowPassword(field)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                              >
+                                {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
+                              </button>
+
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                type={type}
+                                maxLength={field === 'mobile' ? 10 : undefined}
+                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                                  }`}
+                                required
+                                autoComplete="new-password"
+                                onFocus={() => handleFocus(field)}
+                                onBlur={handleBlur}
+                                onChange={(e) => {
+                                  if (field === 'mobile') {
+                                    // Only allow digits and limit to 10 characters
+                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    handleInputChange(field, value);
+                                  } else {
+                                    handleInputChange(field, e.target.value);
+                                  }
+                                }}
+                                value={formData[field] || ''}
+                                placeholder=""
+                              />
+
+                              {/* Validation icon for email and mobile */}
+                              {(field === 'email' || field === 'mobile') && (
+                                <ValidationIcon 
+                                  isValid={validationState.isValid} 
+                                  hasValue={validationState.hasValue} 
+                                />
+                              )}
+                            </>
+                          )}
+
+                          {!(formData[field] && formData[field].length > 0) && (
+                            <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
+                              ? 'top-1.5 text-xs text-gray-500'
+                              : 'top-1/2 -translate-y-1/2 text-gray-400'
+                              }`}>
+                              {label}
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Conditionally render the checklist for the password field */}
+                        {field === 'password' && formData.password && (
+                          <div className="mt-2">
+                            <ValidationChecklist validation={passwordValidation} />
+                          </div>
+                        )}
+                        {/* Text validation for confirm password */}
+                        {field === 'confirmPassword' && (
+                          <TextValidation 
+                            isValid={validationState.isValid} 
+                            hasValue={validationState.hasValue}
+                            field={field}
                           />
                         )}
-
-                        {!(formData[field] && formData[field].length > 0) && (
-                          <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
-                            ? 'top-1.5 text-xs text-gray-500'
-                            : 'top-1/2 -translate-y-1/2 text-gray-400'
-                            }`}>
-                            {label}
-                          </label>
+                        {/* Conditionally render the confirm password error */}
+                        {field === 'confirmPassword' && errors.confirmPassword && (
+                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.confirmPassword) ? errors.confirmPassword[0] : errors.confirmPassword}</p>
+                        )}
+                        {/* Conditionally render the password error */}
+                        {field === 'password' && errors.password && (
+                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>
+                        )}
+                        {/* Render other field errors */}
+                        {field !== 'password' && field !== 'confirmPassword' && errors[field] && (
+                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors[field]) ? errors[field][0] : errors[field]}</p>
                         )}
                       </div>
-
-                      {/* Conditionally render the checklist for the password field */}
-                      {field === 'password' && formData.password && (
-                        <div className="mt-2">
-                          <ValidationChecklist validation={passwordValidation} />
-                        </div>
-                      )}
-                      {/* Conditionally render the confirm password error */}
-                      {field === 'confirmPassword' && errors.confirmPassword && (
-                        <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.confirmPassword) ? errors.confirmPassword[0] : errors.confirmPassword}</p>
-                      )}
-                      {/* Conditionally render the password error */}
-                      {field === 'password' && errors.password && (
-                        <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>
-                      )}
-                      {/* Render other field errors */}
-                      {field !== 'password' && field !== 'confirmPassword' && errors[field] && (
-                        <p className="text-red-500 text-xs mt-1">{Array.isArray(errors[field]) ? errors[field][0] : errors[field]}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
 
 
                   <button
@@ -1153,22 +1267,19 @@ const AuthForm = () => {
                       className={`w-full h-14 bg-gray-50/80 border-2 rounded-2xl px-6 text-gray-900 text-lg focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.email ? 'border-red-300 bg-red-50' : 'border-transparent'
                         }`}
                       required
+                      autoComplete="new-password"
                       onFocus={() => handleFocus('signin-username')}
                       onBlur={handleBlur}
                       onChange={(e) => handleInputChange('signin-username', e.target.value)}
-                      placeholder=" "
+                      placeholder=""
                     />
-                    {!(
-                      focusedField === 'signin-username' ||
-                      (formData && formData['signin-username'])
-                    ) && (
-                        <label className={`absolute left-6 transition-all duration-300 pointer-events-none ${isFieldActive('signin-username')
-                          ? 'top-0 text-sm text-gray-500 font-medium'
-                          : 'top-1/2 -translate-y-1/2 text-gray-400 text-lg'
-                          }`}>
-                          Username or Email
-                        </label>
-                      )}
+                    <label className={`absolute left-6 transition-all duration-300 pointer-events-none ${
+                      focusedField === 'signin-username' || (formData && formData['signin-username'])
+                        ? 'top-0 text-sm text-gray-500 font-medium'
+                        : 'top-1/2 -translate-y-1/2 text-gray-400 text-lg'
+                    }`}>
+                      Username or Email
+                    </label>
                     {errors.email && <p className="text-red-500 text-sm mt-1">{Array.isArray(errors.email) ? errors.email[0] : errors.email}</p>}
                   </div>
 
@@ -1178,10 +1289,11 @@ const AuthForm = () => {
                       className={`w-full h-14 bg-gray-50/80 border-2 rounded-2xl px-6 text-gray-900 text-lg focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm pr-12 ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
                         }`}
                       required
+                      autoComplete="new-password"
                       onFocus={() => handleFocus('signin-password')}
                       onBlur={handleBlur}
                       onChange={(e) => handleInputChange('signin-password', e.target.value)}
-                      placeholder=" "
+                      placeholder=""
                     />
 
                     <button
@@ -1193,14 +1305,13 @@ const AuthForm = () => {
                       {showPasswordFields['signin-password'] ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
 
-                    {!(focusedField === 'signin-password' || (formData && formData['signin-password'])) && (
-                      <label className={`absolute left-6 transition-all duration-300 pointer-events-none ${isFieldActive('signin-password')
-                        ? 'top-3 text-sm text-gray-500 font-medium'
+                    <label className={`absolute left-6 transition-all duration-300 pointer-events-none ${
+                      focusedField === 'signin-password' || (formData && formData['signin-password'])
+                        ? 'top-0 text-sm text-gray-500 font-medium'
                         : 'top-1/2 -translate-y-1/2 text-gray-400 text-lg'
-                        }`}>
-                        Password
-                      </label>
-                    )}
+                    }`}>
+                      Password
+                    </label>
                     {errors.password && <p className="text-red-500 text-sm mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>}
                   </div>
 
@@ -1304,76 +1415,138 @@ const AuthForm = () => {
                     { field: 'mobile', label: 'Mobile Number', type: 'tel' },
                     { field: 'password', label: 'Password', type: 'password' },
                     { field: 'confirmPassword', label: 'Confirm Password', type: 'password' }
-                  ].map(({ field, label, type }) => (
-                    <div key={field}>
-                      <div className="relative">
-                        {(field === 'password' || field === 'confirmPassword') ? (
-                          <>
-                            <input
-                              type={showPasswordFields[field] ? 'text' : 'password'}
-                              className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                                }`}
-                              required
-                              onFocus={() => handleFocus(field)}
-                              onBlur={handleBlur}
-                              onChange={(e) => handleInputChange(field, e.target.value)}
-                              value={formData[field] || ''}
-                              placeholder=" "
-                            />
+                  ].map(({ field, label, type }) => {
+                    // Get validation state for each field
+                    const getValidationState = () => {
+                      const value = formData[field] || '';
+                      const hasValue = value.length > 0;
+                      
+                      switch (field) {
+                        case 'email':
+                          return { isValid: validateEmail(value), hasValue };
+                        case 'mobile':
+                          return { isValid: validatePhoneNumber(value), hasValue };
+                        case 'confirmPassword':
+                          return { 
+                            isValid: validateConfirmPassword(formData.password || '', value), 
+                            hasValue 
+                          };
+                        default:
+                          return { isValid: false, hasValue: false };
+                      }
+                    };
 
-                            <button
-                              type="button"
-                              aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
-                              onClick={() => toggleShowPassword(field)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
-                            >
-                              {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                          </>
-                        ) : (
-                          <input
-                            type={type}
-                            className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                              }`}
-                            required
-                            onFocus={() => handleFocus(field)}
-                            onBlur={handleBlur}
-                            onChange={(e) => handleInputChange(field, e.target.value)}
-                            value={formData[field] || ''}
-                            placeholder=" "
+                    const validationState = getValidationState();
+
+                    return (
+                      <div key={field}>
+                        <div className="relative">
+                          {(field === 'password' || field === 'confirmPassword') ? (
+                            <>
+                              <input
+                                type={showPasswordFields[field] ? 'text' : 'password'}
+                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                                  }`}
+                                required
+                                autoComplete="new-password"
+                                onFocus={() => handleFocus(field)}
+                                onBlur={handleBlur}
+                                onChange={(e) => {
+                                  if (field === 'mobile') {
+                                    // Only allow digits and limit to 10 characters
+                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    handleInputChange(field, value);
+                                  } else {
+                                    handleInputChange(field, e.target.value);
+                                  }
+                                }}
+                                value={formData[field] || ''}
+                                placeholder=""
+                              />
+
+                              <button
+                                type="button"
+                                aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
+                                onClick={() => toggleShowPassword(field)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                              >
+                                {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
+                              </button>
+
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                type={type}
+                                maxLength={field === 'mobile' ? 10 : undefined}
+                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
+                                  }`}
+                                required
+                                autoComplete="new-password"
+                                onFocus={() => handleFocus(field)}
+                                onBlur={handleBlur}
+                                onChange={(e) => {
+                                  if (field === 'mobile') {
+                                    // Only allow digits and limit to 10 characters
+                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    handleInputChange(field, value);
+                                  } else {
+                                    handleInputChange(field, e.target.value);
+                                  }
+                                }}
+                                value={formData[field] || ''}
+                                placeholder=""
+                              />
+
+                              {/* Validation icon for email and mobile */}
+                              {(field === 'email' || field === 'mobile') && (
+                                <ValidationIcon 
+                                  isValid={validationState.isValid} 
+                                  hasValue={validationState.hasValue} 
+                                />
+                              )}
+                            </>
+                          )}
+
+                          {!(formData[field] && formData[field].length > 0) && (
+                            <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
+                              ? 'top-1.5 text-xs text-gray-500'
+                              : 'top-1/2 -translate-y-1/2 text-gray-400'
+                              }`}>
+                              {label}
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Conditionally render the checklist for the password field */}
+                        {field === 'password' && formData.password && (
+                          <div className="mt-2">
+                            <ValidationChecklist validation={passwordValidation} />
+                          </div>
+                        )}
+                        {/* Text validation for confirm password */}
+                        {field === 'confirmPassword' && (
+                          <TextValidation 
+                            isValid={validationState.isValid} 
+                            hasValue={validationState.hasValue}
+                            field={field}
                           />
                         )}
-
-                        {!(formData[field] && formData[field].length > 0) && (
-                          <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
-                            ? 'top-1.5 text-xs text-gray-500'
-                            : 'top-1/2 -translate-y-1/2 text-gray-400'
-                            }`}>
-                            {label}
-                          </label>
+                        {/* Conditionally render the confirm password error */}
+                        {field === 'confirmPassword' && errors.confirmPassword && (
+                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.confirmPassword) ? errors.confirmPassword[0] : errors.confirmPassword}</p>
+                        )}
+                        {/* Conditionally render the password error */}
+                        {field === 'password' && errors.password && (
+                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>
+                        )}
+                        {/* Render other field errors */}
+                        {field !== 'password' && field !== 'confirmPassword' && errors[field] && (
+                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors[field]) ? errors[field][0] : errors[field]}</p>
                         )}
                       </div>
-
-                      {/* Conditionally render the checklist for the password field */}
-                      {field === 'password' && formData.password && (
-                        <div className="mt-2">
-                          <ValidationChecklist validation={passwordValidation} />
-                        </div>
-                      )}
-                      {/* Conditionally render the confirm password error */}
-                      {field === 'confirmPassword' && errors.confirmPassword && (
-                        <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.confirmPassword) ? errors.confirmPassword[0] : errors.confirmPassword}</p>
-                      )}
-                      {/* Conditionally render the password error */}
-                      {field === 'password' && errors.password && (
-                        <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>
-                      )}
-                      {/* Render other field errors */}
-                      {field !== 'password' && field !== 'confirmPassword' && errors[field] && (
-                        <p className="text-red-500 text-xs mt-1">{Array.isArray(errors[field]) ? errors[field][0] : errors[field]}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   <button
                     type="submit"

@@ -17,6 +17,9 @@ export default function Banner() {
     setShowVerificationModal(true);
   };
 
+  // Check if mobile number is verified
+  const isMobileVerified = user?.mobile_verify && user.mobile_verify !== null;
+
   const marqueeItems = [
     { icon: <FaBriefcase className="text-sky-400" />, text: "Find Your Next Big Project" },
     { icon: <FaCheckCircle className="text-teal-400" />, text: "Thousands of Verified Clients" },
@@ -51,19 +54,21 @@ export default function Banner() {
             </div>
           </div>
 
-          {/* Professional Verify Button */}
-          <div className="flex-shrink-0 w-full lg:w-auto">
-            <button
-              onClick={handleVerifyPhone}
-              className="relative flex items-center justify-center gap-3 px-6 py-3 text-sm font-semibold bg-white text-slate-900 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 ease-in-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 active:bg-slate-100 group/button"
-            >
-              <div className="flex items-center gap-2">
-                <FaShieldAlt className="h-4 w-4 text-green-600" />
-              </div>
-              <span className="text-slate-700">Verify Phone Number</span>
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-50 to-green-50 opacity-0 group-hover/button:opacity-100 transition-opacity duration-200 -z-10"></div>
-            </button>
-          </div>
+          {/* Professional Verify Button - Only show if mobile is not verified */}
+          {!isMobileVerified && (
+            <div className="flex-shrink-0 w-full lg:w-auto">
+              <button
+                onClick={handleVerifyPhone}
+                className="relative flex items-center justify-center gap-3 px-6 py-3 text-sm font-semibold bg-white text-slate-900 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 ease-in-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 active:bg-slate-100 group/button"
+              >
+                <div className="flex items-center gap-2">
+                  <FaShieldAlt className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-slate-700">Verify Phone Number</span>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-50 to-green-50 opacity-0 group-hover/button:opacity-100 transition-opacity duration-200 -z-10"></div>
+              </button>
+            </div>
+          )}
 
         </div>
       </div>

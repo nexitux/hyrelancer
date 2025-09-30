@@ -9,7 +9,7 @@ import { Spin } from "antd";
 import Sidebar from "@/components/sidebar/Sidebar";
 import { freelancerMenu } from "@/components/sidebar/freelancerMenu";
 import Header from "../(public)/Header/page";
-import Footer from "../(public)/Footer/page";
+import SimpleFooter from "@/components/Footer/SimpleFooter";
 import Loader from "../../components/Loader/page";
 
 export default function FreelancerLayout({ children, showSidebar = true }) {
@@ -63,17 +63,17 @@ export default function FreelancerLayout({ children, showSidebar = true }) {
           </div>
         )}
 
-        {/* Main content area with footer */}
+        {/* Main content area */}
         <div className="flex flex-col flex-1">
           {/* Main content */}
           <main className="flex-1 overflow-y-auto bg-gray-50">
             {children}
           </main>
-
-          {/* Footer */}
-          <Footer />
         </div>
       </div>
+
+      {/* Full width footer outside sidebar */}
+      <SimpleFooter />
     </div>
   );
 }
