@@ -28,20 +28,7 @@ export default function ActiveJobs() {
         console.error('Error fetching active jobs data:', error);
         // Fallback to sample data
         setActiveJobsData([
-          { 
-            jobTitle: 'Senior Frontend Developer', 
-            postedDate: 'August 1', 
-            applicants: 21,
-            status: 'active',
-            priority: 'high'
-          },
-          { 
-            jobTitle: 'UX/UI Designer', 
-            postedDate: 'August 30', 
-            applicants: 11,
-            status: 'active',
-            priority: 'medium'
-          }
+      
         ]);
       } finally {
         setLoading(false);

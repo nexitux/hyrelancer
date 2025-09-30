@@ -63,13 +63,8 @@ export default function PieChart() {
         setChartData(jobStats);
       } catch (error) {
         console.error('Error fetching job stats:', error);
-        // Fallback to sample data
-        setChartData([
-          { category: "total", count: 2, fill: "var(--color-total)" },
-          { category: "active", count: 2, fill: "var(--color-active)" },
-          { category: "completed", count: 0, fill: "var(--color-completed)" },
-          { category: "inProgress", count: 0, fill: "var(--color-inProgress)" },
-        ]);
+        // Set empty data on error
+        setChartData([]);
       } finally {
         setLoading(false);
       }
