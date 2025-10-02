@@ -1382,6 +1382,13 @@ const AuthForm = () => {
                       Sign in with Google
                     </button>
 
+
+
+
+
+
+
+
                     {/* Phone Authentication Logic */}
                     {!showMobileSignIn ? (
                       <button
