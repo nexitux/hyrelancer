@@ -3,6 +3,7 @@ import { useState } from 'react';
 import FormInput from './FormInput';
 import SocialLoginButtons from './SocialLoginButtons';
 import useAuth from '@/hooks/useAuth'
+import { capitalizeFirst, capitalizeWords } from '@/lib/utils';
 const AuthForm = ({ isLogin, toggleAuthMode }) => {
   const { isLoading, errors, handleRegister, handleLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -62,10 +63,10 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
       <div className="w-full max-w-md">
         <div className="text-center transition-all duration-500 ease-in-out lg:text-left">
           <h2 className="mb-2 text-3xl font-extrabold text-gray-900 transition-all duration-300 dark:text-white">
-            {isLogin ? 'Welcome Back' : 'Join Our Freelance Community'}
+            {isLogin ? capitalizeWords('Welcome Back') : capitalizeWords('Join Our Freelance Community')}
           </h2>
           <p className="mb-8 text-gray-600 transition-all duration-300 dark:text-gray-300">
-            {isLogin ? 'Sign in to access your account' : 'Create your account to start finding jobs'}
+            {isLogin ? capitalizeFirst('Sign in to access your account') : capitalizeFirst('Create your account to start finding jobs')}
           </p>
         </div>
 
@@ -74,7 +75,7 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {!isLogin && (
             <FormInput
-              label="Full Name"
+              label={capitalizeWords("Full Name")}
               type="text"
               name="name"
               value={formData.name}
@@ -86,7 +87,7 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
           )}
 
           <FormInput
-            label="Email Address"
+            label={capitalizeWords("Email Address")}
             type="email"
             name="email"
             value={formData.email}
@@ -98,7 +99,7 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
 
           {!isLogin && (
             <FormInput
-              label="Phone Number"
+              label={capitalizeWords("Phone Number")}
               type="tel"
               name="mobile"
               value={formData.mobile}
@@ -110,7 +111,7 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
           )}
 
           <FormInput
-            label="Password"
+            label={capitalizeFirst("Password")}
             type="password"
             name="password"
             value={formData.password}

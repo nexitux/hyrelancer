@@ -1,5 +1,6 @@
 'use client'
 import { FaEye, FaEyeSlash, FaExclamationCircle } from 'react-icons/fa';
+import { capitalizeFirst } from '@/lib/utils';
 
 const FormInput = ({
   label,
@@ -19,7 +20,7 @@ const FormInput = ({
   return (
     <div className="mb-4">
       <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        {label} {required && <span className="text-red-500">*</span>}
+        {capitalizeWords(label)} {required && <span className="text-red-500">*</span>}
       </label>
       <div className="relative">
         <input

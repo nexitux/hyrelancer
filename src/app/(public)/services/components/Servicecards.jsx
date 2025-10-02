@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
 import api from "@/config/api";
 import PortfolioModal from "./Modal";
+import { capitalizeFirst, capitalizeWords } from "@/lib/utils";
 
 export default function Servicecards({ params }) {
   // Use useParams hook to get the slug from URL
@@ -24,6 +25,8 @@ export default function Servicecards({ params }) {
   const [layout, setLayout] = useState("4");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const cardsRef = useRef([]);
   // Get slug from Redux
   console.log("Servicecards Debug:", { 
@@ -142,6 +145,17 @@ const getServicesData = () => {
     }
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(sortedServices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentServices = sortedServices.slice(startIndex, endIndex);
+
+  // Reset to first page when sort option changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortOption]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -174,11 +188,11 @@ const getServicesData = () => {
         if (card) observer.unobserve(card);
       });
     };
-  }, [sortedServices]);
+  }, [currentServices]);
 
   useEffect(() => {
     setVisibleCards([]);
-  }, [sortOption]);
+  }, [sortOption, currentPage]);
 
   const gridClasses = {
     "4": "xl:grid-cols-4",
@@ -193,7 +207,7 @@ const getServicesData = () => {
         <div className="container mx-auto max-w-7xl flex flex-col items-center">
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-blue-600 animate-spin mr-3" />
-            <span className="text-gray-600">Loading portfolio...</span>
+            <span className="text-gray-600">{capitalizeFirst("Loading portfolio...")}</span>
           </div>
         </div>
       </div>
@@ -206,7 +220,7 @@ const getServicesData = () => {
       <div className="services lg:py-20 sm:py-14 py-10">
         <div className="container mx-auto max-w-7xl flex flex-col items-center">
           <div className="text-center py-20">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Portfolio</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{capitalizeWords("Error Loading Portfolio")}</h3>
             <p className="text-gray-600">{error}</p>
           </div>
         </div>
@@ -221,13 +235,13 @@ const getServicesData = () => {
         {portfolioData?.u_profile && (
           <div className="text-center mb-12">
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              {portfolioData.u_profile.fp_display_name}'s Portfolio
+              {capitalizeWords(portfolioData.u_profile.fp_display_name)}'s Portfolio
             </h1>
             {portfolioData.u_profile.fp_headline && (
-              <p className="text-lg text-gray-600 mb-2">{portfolioData.u_profile.fp_headline}</p>
+              <p className="text-lg text-gray-600 mb-2">{capitalizeFirst(portfolioData.u_profile.fp_headline)}</p>
             )}
             {portfolioData.u_profile.fp_occupation && (
-              <p className="text-gray-500">{portfolioData.u_profile.fp_occupation}</p>
+              <p className="text-gray-500">{capitalizeWords(portfolioData.u_profile.fp_occupation)}</p>
             )}
           </div>
         )}
@@ -280,7 +294,7 @@ const getServicesData = () => {
 
               {/* Sort dropdown */}
               <div className="select_filter flex items-center gap-3 relative">
-                <span className="caption1">Sort by:</span>
+                <span className="caption1">{capitalizeWords("Sort by:")}</span>
                 <div
                   className="select_block sm:pr-16 pr-10 pl-3 py-1 border border-gray-300 rounded relative cursor-pointer"
                   onClick={toggleDropdown}
@@ -317,7 +331,7 @@ const getServicesData = () => {
 
             {/* Services List */}
             <ul className={`list_layout_cols list_services grid ${gridClasses[layout]} sm:grid-cols-2 md:gap-7.5 gap-5 w-full md:mt-10 mt-7`}>
-              {sortedServices.map((service, index) => (
+              {currentServices.map((service, index) => (
                 <li
                   key={service.id}
                   ref={el => cardsRef.current[index] = el}
@@ -330,7 +344,7 @@ const getServicesData = () => {
                     transitionDelay: visibleCards.includes(index) ? '0ms' : '0ms'
                   }}
                 >
-                  <div className="service_item overflow-hidden relative h-full rounded-lg bg-white shadow-md duration-300 hover:shadow-xl hover:-translate-y-1">
+                  <div className="service_item overflow-hidden relative h-full min-h-[400px] rounded-lg bg-white shadow-md duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col">
                     {/* Favorite button */}
                     <button
                       onClick={() => toggleFavorite(service.id)}
@@ -346,14 +360,14 @@ const getServicesData = () => {
                       )}
                     </button>
 
-                    <div className="service_thumb block overflow-hidden cursor-pointer" onClick={() => openModal(service)}>
+                    <div className="service_thumb block overflow-hidden cursor-pointer h-60" onClick={() => openModal(service)}>
                       {service.image ? (
                         <Image
                           src={service.image}
                           alt={service.title}
                           width={400}
                           height={300}
-                          className="w-full h-auto transition-transform duration-300 group-hover:scale-105"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           onError={(e) => {
                             e.target.src = "https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=300&fit=crop";
                           }}
@@ -364,34 +378,40 @@ const getServicesData = () => {
                         </div>
                       )}
                     </div>
-                    <div className="service_info py-5 px-4">
+                    <div className="service_info py-5 px-4 flex-1 flex flex-col">
                       <div className="service_title text-lg font-semibold text-gray-900 duration-300 hover:text-[#3e5a9a] line-clamp-2 cursor-pointer"
                            onClick={() => openModal(service)}>
-                        {service.title}
+                        {capitalizeFirst(service.title)}
                       </div>
                       
                       {/* Portfolio description preview */}
-                      {service.description && (
-                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                          {service.description}
-                        </p>
-                      )}
+                      <div className="h-12 mt-2 flex items-start">
+                        {service.description ? (
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {capitalizeFirst(service.description)}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-400 line-clamp-2">
+                            {capitalizeWords("No description available")}
+                          </p>
+                        )}
+                      </div>
 
                       {/* Media count */}
                       <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
                         {service.images.length > 0 && (
-                          <span>{service.images.length} Image{service.images.length !== 1 ? 's' : ''}</span>
+                          <span>{service.images.length} {capitalizeFirst("image")}{service.images.length !== 1 ? 's' : ''}</span>
                         )}
                         {service.videos.length > 0 && (
-                          <span>{service.videos.length} Video{service.videos.length !== 1 ? 's' : ''}</span>
+                          <span>{service.videos.length} {capitalizeFirst("video")}{service.videos.length !== 1 ? 's' : ''}</span>
                         )}
                       </div>
 
-                      <div className="service_more_info mt-5 pt-4 border-t border-gray-300">
+                      <div className="service_more_info mt-auto pt-4 border-t border-gray-300">
                         <button
                           onClick={() => openModal(service)}
                           className="btn_action w-full py-2 bg-white text-[#3e5a9a] font-semibold rounded-lg border border-[#3e5a9a] duration-300 hover:bg-[#3e5a9a] hover:text-white transform hover:scale-105 active:scale-95">
-                          View Details
+                          {capitalizeWords("View Details")}
                         </button>
                       </div>
                     </div>
@@ -400,31 +420,68 @@ const getServicesData = () => {
               ))}
             </ul>
 
-            {/* Pagination - You can implement this based on your API pagination */}
-            <ul className="list_pagination flex items-center justify-center gap-2 w-full md:mt-10 mt-7">
-              {[1, 2, 3].map((page) => (
-                <li key={page}>
-                  <a
-                    href="#"
-                    className={`tab_btn -fill flex items-center justify-center w-10 h-10 rounded border border-gray-300 text-gray-800 duration-300 hover:border-black hover:scale-105 active:scale-95 ${page === 1 ? "active bg-[#3e5a9a] text-white border-[#3e5a9a]" : ""}`}
-                  >
-                    {page}
-                  </a>
-                </li>
-              ))}
-              <li>
-                <a href="#" className="tab_btn -fill flex items-center justify-center w-10 h-10 rounded border border-gray-300 text-gray-800 duration-300 hover:bg-[#3e5a9a] hover:text-white hover:scale-105 active:scale-95">
+            {/* Dynamic Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 w-full md:mt-10 mt-7">
+                {/* Previous Button */}
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className={`flex items-center justify-center w-10 h-10 rounded border border-gray-300 text-gray-800 duration-300 hover:bg-[#3e5a9a] hover:text-white hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:hover:text-gray-800`}
+                >
+                  <FaArrowRight className="rotate-180" />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`flex items-center justify-center w-10 h-10 rounded border border-gray-300 text-gray-800 duration-300 hover:bg-[#3e5a9a] hover:text-white hover:scale-105 active:scale-95 ${
+                          currentPage === pageNumber ? "bg-[#3e5a9a] text-white border-[#3e5a9a]" : ""
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`flex items-center justify-center w-10 h-10 rounded border border-gray-300 text-gray-800 duration-300 hover:bg-[#3e5a9a] hover:text-white hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:hover:text-gray-800`}
+                >
                   <FaArrowRight />
-                </a>
-              </li>
-            </ul>
+                </button>
+
+                {/* Page Info */}
+                <div className="ml-4 text-sm text-gray-600">
+                  Showing {startIndex + 1}-{Math.min(endIndex, sortedServices.length)} of {sortedServices.length} items
+                </div>
+              </div>
+            )}
           </>
         ) : (
           // No portfolio items
           <div className="text-center py-20">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Portfolio Items</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">{capitalizeWords("No Portfolio Items")}</h3>
             <p className="text-gray-600">
-              {portfolioData?.u_profile?.fp_display_name || 'This freelancer'} hasn't uploaded any portfolio items yet.
+              {capitalizeWords(portfolioData?.u_profile?.fp_display_name || 'This freelancer')} hasn't uploaded any portfolio items yet.
             </p>
           </div>
         )}
@@ -443,7 +500,7 @@ const getServicesData = () => {
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-xl">
             <Loader2 className="w-6 h-6 text-blue-600 animate-spin mx-auto mb-2" />
-            <p className="text-gray-600">Loading portfolio...</p>
+            <p className="text-gray-600">{capitalizeFirst("Loading portfolio...")}</p>
           </div>
         </div>
       )}

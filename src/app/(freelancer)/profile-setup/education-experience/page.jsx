@@ -163,12 +163,12 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
   const initializeFormFields = () => {
     const key = "education-0";
     setEducationFields([
-      { key, type: "UG", label: "Education" }
+      { key, type: "Other", label: "Freelancer Expertise" }
     ]);
 
     // Initialize the AntD form nested value so `type` is present
     form.setFieldsValue({
-      [`education_${key}`]: { type: "UG" }
+      [`education_${key}`]: { type: "Other" }
     });
   };
 
@@ -258,9 +258,9 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
     if (eduFields.length === 0) {
       const defaultKey = "education-0";
       eduFields.push(
-        { key: defaultKey, type: "UG", label: "Education" }
+        { key: defaultKey, type: "Other", label: "Freelancer Expertise" }
       );
-      formData[`education_${defaultKey}`] = { type: "UG" };
+      formData[`education_${defaultKey}`] = { type: "Other" };
     }
 
     setEducationFields(eduFields);

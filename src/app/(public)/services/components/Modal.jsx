@@ -26,9 +26,24 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
 
         const projects = [];
         
+        // Add main portfolio image first if it exists
+        if (portfolioData.image) {
+            projects.push({
+                id: portfolioData.id || 'main',
+                title: portfolioData.title,
+                type: 'image',
+                image: portfolioData.image,
+            });
+        }
+        
         // Add all images
         if (portfolioData.images && portfolioData.images.length > 0) {
             portfolioData.images.forEach((img, index) => {
+                // Skip if this is the same as the main image
+                if (portfolioData.image && getImageUrl(img.fpoi_path) === portfolioData.image) {
+                    return;
+                }
+                
                 projects.push({
                     id: img.fpoi_id,
                     title: `${portfolioData.title} - Image ${index + 1}`,
@@ -38,26 +53,43 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
             });
         }
 
-        // Add all videos
+        // Add all videos (handle dummy video URLs)
         if (portfolioData.videos && portfolioData.videos.length > 0) {
             portfolioData.videos.forEach((vid, index) => {
-                projects.push({
-                    id: vid.fpoi_id,
-                    title: `${portfolioData.title} - Video ${index + 1}`,
-                    type: 'video',
-                    image: portfolioData.image,
-                    videoUrl: vid.fpoi_path,
-                });
+                // Check if it's a dummy video URL
+                const isDummyVideo = !vid.fpoi_path || 
+                    vid.fpoi_path.includes('video.url.com') || 
+                    vid.fpoi_path.includes('dummy') || 
+                    vid.fpoi_path.includes('placeholder');
+                
+                if (isDummyVideo) {
+                    // Treat dummy video as image placeholder
+                    projects.push({
+                        id: vid.fpoi_id,
+                        title: `${portfolioData.title} - Media ${index + 1}`,
+                        type: 'image',
+                        image: portfolioData.image || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=300&fit=crop',
+                    });
+                } else {
+                    // Real video
+                    projects.push({
+                        id: vid.fpoi_id,
+                        title: `${portfolioData.title} - Video ${index + 1}`,
+                        type: 'video',
+                        image: portfolioData.image,
+                        videoUrl: vid.fpoi_path,
+                    });
+                }
             });
         }
 
-        // If no separate images/videos, use the main portfolio image
-        if (projects.length === 0 && portfolioData.image) {
+        // If no projects at all, create a placeholder
+        if (projects.length === 0) {
             projects.push({
-                id: portfolioData.id,
-                title: portfolioData.title,
+                id: 'placeholder',
+                title: portfolioData.title || 'Portfolio Item',
                 type: 'image',
-                image: portfolioData.image,
+                image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=300&fit=crop',
             });
         }
 
@@ -123,7 +155,7 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
             />
             
             {/* Modal Content */}
-            <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+            <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden">
                 {/* Close Button */}
                 <button
                     onClick={onClose}
@@ -133,25 +165,25 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
                 </button>
 
                 {/* Scrollable Content */}
-                <div className="overflow-y-auto scrollbar-hide max-h-[95vh] sm:max-h-[90vh] p-3 sm:p-4 md:p-6">
+                <div className="overflow-y-auto scrollbar-hide max-h-[90vh] sm:max-h-[85vh] p-3 sm:p-4 md:p-5">
                     {/* Header */}
-                    <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 md:mb-8 pr-12 sm:pr-16">
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-5 pr-12 sm:pr-16">
                         {portfolioData.title}
                     </h1>
 
                     {/* Description - NEW ADDITION */}
                     {portfolioData.description && (
-                        <div className="mb-6 sm:mb-8">
-                            <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">About This Project</h2>
-                            <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-                                <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+                        <div className="mb-4 sm:mb-5">
+                            <h2 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">About This Project</h2>
+                            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                                <p className="text-gray-700 leading-relaxed text-sm">
                                     {portfolioData.description}
                                 </p>
                             </div>
                         </div>
                     )}
 
-                    <div className="space-y-4 sm:space-y-6 md:space-y-8">
+                    <div className="space-y-3 sm:space-y-4 md:space-y-5">
                         {/* Main Project Display */}
                         <div className="relative">
                             {/* Navigation Buttons - Hidden on very small screens */}
@@ -172,7 +204,7 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
                             </button>
 
                             {/* Main Display with sliding animation */}
-                            <div className="aspect-[4/3] sm:aspect-[16/10] md:aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden relative">
+                            <div className="aspect-[4/3] sm:aspect-[4/3] md:aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden relative max-h-[300px] sm:max-h-[350px] md:max-h-[400px]">
                                 <div 
                                     className="flex transition-transform duration-300 ease-in-out h-full"
                                     style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -180,7 +212,10 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
                                     {projects.map((project, index) => (
                                         <div key={project.id} className="w-full h-full flex-shrink-0">
                                             {project.type === 'video' ? (
-                                                project.videoUrl && project.videoUrl.startsWith('http') ? (
+                                                project.videoUrl && project.videoUrl.startsWith('http') && 
+                                                !project.videoUrl.includes('video.url.com') && 
+                                                !project.videoUrl.includes('dummy') && 
+                                                !project.videoUrl.includes('placeholder') ? (
                                                     <iframe
                                                         src={project.videoUrl}
                                                         title={project.title}
@@ -196,6 +231,9 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
                                                                 <div className="w-0 h-0 border-l-[8px] border-l-white border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent ml-1"></div>
                                                             </div>
                                                             <p className="text-lg font-medium">Video Content</p>
+                                                            <p className="text-sm opacity-70 mt-2">
+                                                                {project.videoUrl || 'Video preview not available'}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 )
@@ -204,6 +242,9 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
                                                     src={project.image}
                                                     alt={project.title}
                                                     className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.src = 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=300&fit=crop';
+                                                    }}
                                                 />
                                             )}
                                         </div>
@@ -237,16 +278,16 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
 
                         {/* Project Title */}
                         <div className="text-center sm:text-left">
-                            <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">
+                            <h2 className="text-sm sm:text-base font-semibold text-gray-800">
                                 {projects[currentIndex]?.title}
                             </h2>
                         </div>
 
                         {/* Thumbnail Grid */}
                         {projects.length > 1 && (
-                            <div className="space-y-3">
-                                <h3 className="text-sm sm:text-base font-medium text-gray-700">All Projects</h3>
-                                <div className={`grid gap-2 sm:gap-3 ${thumbnailCount === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                            <div className="space-y-2">
+                                <h3 className="text-xs sm:text-sm font-medium text-gray-700">All Projects</h3>
+                                <div className={`grid gap-1.5 sm:gap-2 ${thumbnailCount === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
                                     {visibleThumbnails.map((project, index) => {
                                         const actualIndex = thumbnailStartIndex + index;
                                         return (
@@ -270,6 +311,9 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
                                                     src={project.image}
                                                     alt={project.title}
                                                     className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.src = 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=150&h=150&fit=crop';
+                                                    }}
                                                 />
                                                 {project.type === 'video' && (
                                                     <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20">
@@ -285,7 +329,7 @@ export default function PortfolioModal({ isOpen, onClose, portfolioData, getImag
 
                                 {/* Thumbnail Navigation Indicators */}
                                 {projects.length > thumbnailCount && (
-                                    <div className="flex justify-center space-x-2 mt-3">
+                                    <div className="flex justify-center space-x-1.5 mt-2">
                                         {Array.from({ length: Math.ceil(projects.length / thumbnailCount) }).map((_, index) => {
                                             const isActive = Math.floor(thumbnailStartIndex / thumbnailCount) === index;
                                             return (

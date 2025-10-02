@@ -1574,7 +1574,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             maxCount={1}
                             accept="image/*"
                             listType="picture"
-                            disabled={true}
+                            disabled={isIdProofApproved}
                             onRemove={() => {
                               setFileList([]);
                               return true;
@@ -1584,7 +1584,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                               icon={<UploadOutlined />}
                               className="w-full"
                               size="large"
-                              disabled={true}
+                              disabled={isIdProofApproved}
                             >
                               {isIdProofApproved ? "ID Proof Approved" : (existingFileUrl && !isIdProofDeleted ? "Upload New ID Proof" : "Click to Upload")}
                             </Button>

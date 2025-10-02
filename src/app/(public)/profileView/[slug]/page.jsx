@@ -8,6 +8,7 @@ import ProfileDetails from "../components/ProfileDetails";
 import ProfileHeader from "../components/ProfileHeader";
 import ReviewsSection from "../components/ReviewsSection";
 import Loader from "../../../../components/Loader/page";
+import { capitalizeFirst, capitalizeWords } from "@/lib/utils";
 
 export default function Page({ params }) {
   const slug = params?.slug; // <-- correct place to read dynamic param
@@ -81,9 +82,9 @@ export default function Page({ params }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Profile Under Review</h2>
-              <p className="text-gray-600 mb-6">This profile is currently under review and will be available once approved by our team.</p>
-              <p className="text-sm text-gray-500">Please check back later or contact support if you have any questions.</p>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">{capitalizeWords("Profile Under Review")}</h2>
+              <p className="text-gray-600 mb-6">{capitalizeFirst("This profile is currently under review and will be available once approved by our team.")}</p>
+              <p className="text-sm text-gray-500">{capitalizeFirst("Please check back later or contact support if you have any questions.")}</p>
             </div>
           </div>
         </div>
@@ -94,9 +95,9 @@ export default function Page({ params }) {
     return (
       <div className="min-h-screen bg-gray-50 py-8 px-4 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error loading profile: {error}</p>
+          <p className="text-red-600 mb-4">{capitalizeFirst("Error loading profile:")} {error}</p>
           <button onClick={() => window.location.reload()} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            Retry
+            {capitalizeFirst("Retry")}
           </button>
         </div>
       </div>

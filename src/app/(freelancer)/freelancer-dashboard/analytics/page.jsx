@@ -8,7 +8,7 @@ const MonthlyTarget = dynamic(() => import("./components/MonthlyTarget"), { ssr:
 const StatisticsChart = dynamic(() => import("./components/StatisticsChart"), { ssr: false });
 const DemographicCard = dynamic(() => import("./components/DemographicCard"), { ssr: false });
 const RecentOrders = dynamic(() => import("./components/RecentOrders"), { ssr: false });
-const NotificationPanel = dynamic(() => import("./components/NotificationPanel"), { ssr: false });
+const AchievementsRoadmap = dynamic(() => import("./components/NotificationPanel"), { ssr: false });
 const Badges = dynamic(() => import("./components/Badges"), { ssr: false });
 
 export default function DashboardPage() {
@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
           {/* Right Column - Notification Panel */}
           <div className="lg:col-span-1">
-            <NotificationPanel />
+            <AchievementsRoadmap />
           </div>
         </div>
 

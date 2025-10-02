@@ -4,10 +4,15 @@ export const dashboardService = {
   // Fetch user dashboard data
   getUserDashboard: async () => {
     try {
+      // Try GET first
       const response = await api.get('/UserDashboard');
       return response.data;
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      // If GET fails with 405, try POST
+      if (error.response?.status === 405) {
+        const response = await api.post('/UserDashboard');
+        return response.data;
+      }
       throw error;
     }
   },

@@ -154,7 +154,7 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
             )}
 
             {/* Languages */}
-            {userLanguages.length > 0 && (
+            {/* {userLanguages.length > 0 && (
               <div className="flex items-center mb-4">
                 <span className="text-sm text-gray-600 mr-2">Languages:</span>
                 <span className="text-sm font-medium text-gray-900">
@@ -164,7 +164,7 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
                     : ""}
                 </span>
               </div>
-            )}
+            )} */}
 
             {/* Rate Information */}
             {profileData?.fp_amt_hour && (
