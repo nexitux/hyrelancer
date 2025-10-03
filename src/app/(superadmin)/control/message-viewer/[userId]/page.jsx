@@ -7,16 +7,18 @@ import adminApi from '@/config/adminApi';
 
 export default function AdminMessageViewerPage({ params }) {
     const router = useRouter();
-    const userId = params.userId;
+    const userId = Number(params.userId);
     
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [messages, setMessages] = useState({});
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const [selectedUser, setSelectedUser] = useState(null);
     const [targetUserName, setTargetUserName] = useState('');
     const messagesEndRef = useRef(null);
     const refreshIntervalRef = useRef(null);
+    const didInitialAutoSelectRef = useRef(false);
 
     // Get admin authentication data from Redux store
     const { user, token, isAuthenticated } = useSelector((state) => state.admin);
@@ -47,66 +49,112 @@ export default function AdminMessageViewerPage({ params }) {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    // Helper: truncate message preview
+    const truncatePreview = (text, max = 80) => {
+        if (!text) return "";
+        const clean = String(text).trim();
+        return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
+    };
+
     // Fetch inbox (users list) for admin - using admin API
     const fetchInbox = async (showLoading = false) => {
         if (showLoading) setLoading(true);
         try {
+            setError("");
             console.log('Fetching inbox for userId:', userId);
             const response = await adminApi.get(`/UserChatInbox/${userId}`);
             const data = response.data;
             console.log('Admin Inbox API Response:', data);
             
-            if (data.status && data.data && Array.isArray(data.data)) {
-                const userMap = new Map();
-                
-                data.data.forEach(chat => {
-                    // For admin view, we want to see conversations where the target user (userId) is involved
-                    // The other user is the one they're talking to
-                    const otherUser = chat.uc_sender_id === userId ? chat.receiver : chat.sender;
-                    const otherUserId = otherUser.id;
-                    
-                    // Set target user name from the first chat (the user we're viewing messages for)
-                    if (!targetUserName) {
-                        // The target user is the one whose ID matches the userId parameter
-                        if (chat.sender.id === userId) {
-                            setTargetUserName(chat.sender.name);
-                        } else if (chat.receiver.id === userId) {
-                            setTargetUserName(chat.receiver.name);
+            // Treat data.data as a map of conversationId -> messages[]
+            if (data?.status === true && data?.data && typeof data.data === 'object') {
+                const conversationMap = data.data;
+                const rows = [];
+
+                // Attempt to set target user name (the inspected user whose conversations we're viewing)
+                if (!targetUserName) {
+                    // Scan first available message to infer target name
+                    for (const key of Object.keys(conversationMap)) {
+                        const arr = Array.isArray(conversationMap[key]) ? conversationMap[key] : [];
+                        const first = arr[0];
+                        if (first?.sender?.id === userId) {
+                            setTargetUserName(first.sender?.name || "");
+                            break;
+                        } else if (first?.receiver?.id === userId) {
+                            setTargetUserName(first.receiver?.name || "");
+                            break;
                         }
                     }
-                    
-                    // If user doesn't exist in map or this message is newer, update the user
-                    if (!userMap.has(otherUserId) || new Date(chat.created_at) > new Date(userMap.get(otherUserId).latestMessageTime)) {
-                        userMap.set(otherUserId, {
-                            id: otherUser.id,
-                            name: otherUser.name,
-                            lastMessage: chat.uc_message,
-                            timestamp: chat.created_at,
-                            latestMessageTime: chat.created_at,
-                            avatar: otherUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser.name)}&background=random`,
-                            userType: otherUser.user_type || 'User',
-                            email: otherUser.email
-                        });
-                    }
-                });
-                
-                // Convert map to array and sort by latest message time
-                const transformedUsers = Array.from(userMap.values())
-                    .sort((a, b) => new Date(b.latestMessageTime) - new Date(a.latestMessageTime))
-                    .map(user => ({
-                        ...user,
-                        timestamp: formatInboxTimestamp(user.timestamp)
-                    }));
-                
-                setUsers(transformedUsers);
-                
-                // Auto-select first user if none selected and we have users
-                if (transformedUsers.length > 0 && !selectedUser) {
-                    setSelectedUser(transformedUsers[0].id);
                 }
+
+                Object.values(conversationMap).forEach((messageArrayRaw) => {
+                    const messageArray = Array.isArray(messageArrayRaw) ? messageArrayRaw : [];
+                    if (messageArray.length === 0) return;
+
+                    // Dedupe by uc_id in case of duplicates
+                    const seen = new Set();
+                    const deduped = [];
+                    for (const m of messageArray) {
+                        if (!seen.has(m.uc_id)) {
+                            seen.add(m.uc_id);
+                            deduped.push(m);
+                        }
+                    }
+
+                    // Find latest message by created_at
+                    const latest = deduped.reduce((acc, cur) => (
+                        !acc || new Date(cur.created_at) > new Date(acc.created_at) ? cur : acc
+                    ), null);
+                    if (!latest) return;
+
+                    // Identify counterpart (other user id)
+                    const isMeSender = Number(latest.uc_sender_id) === Number(userId);
+                    const counterpartUser = isMeSender ? latest.receiver : latest.sender;
+                    const counterpartId = counterpartUser?.id;
+                    const counterpartName = counterpartUser?.name || 'User';
+                    const avatar = counterpartUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(counterpartName)}&background=random`;
+                    const userType = counterpartUser?.user_type || 'User';
+
+                    // Unread count: messages where is_read === 0 and I am the receiver
+                    const unreadCount = deduped.filter((m) => Number(m.is_read) === 0 && Number(m.uc_receiver_id) === Number(userId)).length;
+
+                    // Preview string (no prefix to match acceptance criteria)
+                    const preview = truncatePreview(latest.uc_message || '', 80);
+
+                    rows.push({
+                        id: counterpartId,
+                        name: counterpartName,
+                        lastMessage: preview,
+                        timestamp: latest.created_at, // raw for sorting; we'll format for display below
+                        latestMessageTime: latest.created_at,
+                        avatar,
+                        userType,
+                        email: counterpartUser?.email || '',
+                        unreadCount,
+                    });
+                });
+
+                // Sort by lastActivity (latestMessageTime) desc and map display timestamp
+                const transformedUsers = rows
+                    .sort((a, b) => new Date(b.latestMessageTime) - new Date(a.latestMessageTime))
+                    .map((u) => ({
+                        ...u,
+                        timestamp: formatInboxTimestamp(u.timestamp),
+                    }));
+
+                setUsers(transformedUsers);
+
+                if (transformedUsers.length > 0 && !selectedUser && !didInitialAutoSelectRef.current) {
+                    setSelectedUser(transformedUsers[0].id);
+                    didInitialAutoSelectRef.current = true;
+                }
+            } else {
+                // Treat as empty inbox
+                setUsers([]);
             }
         } catch (error) {
             console.error('Error fetching admin inbox:', error);
+            setError('Failed to load inbox. Please try again.');
         } finally {
             if (showLoading) setLoading(false);
         }
@@ -118,7 +166,8 @@ export default function AdminMessageViewerPage({ params }) {
         
         if (showLoading) setLoading(true);
         try {
-            const response = await adminApi.get(`/UserChatConversation/${otherUserId}`);
+            // New endpoint format requires sender (opened message user) and receiver id
+            const response = await adminApi.get(`/UserChatConversation/${userId}/${otherUserId}`);
             const data = response.data;
             console.log('Admin Conversation API Response:', data);
             
@@ -148,6 +197,17 @@ export default function AdminMessageViewerPage({ params }) {
             if (showLoading) setLoading(false);
         }
     };
+
+    // Auto-scroll to bottom on message updates or when switching conversations
+    useEffect(() => {
+        try {
+            if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        } catch (e) {
+            // no-op
+        }
+    }, [selectedUser, messages[selectedUser]?.length]);
 
     // Group messages by date
     const groupMessagesByDate = (messages) => {
@@ -188,11 +248,13 @@ export default function AdminMessageViewerPage({ params }) {
         // Only fetch if we have authentication and userId
         if (isAuthenticated && authToken && userId) {
             console.log('useEffect: Starting to fetch inbox for userId:', userId);
+            // Initial load: allow auto-select
             fetchInbox(true);
 
             // Setup auto-refresh interval
             refreshIntervalRef.current = setInterval(() => {
-                fetchInbox(false); // Don't show loading for auto-refresh
+                // Refresh without changing selection
+                fetchInbox(false);
                 if (selectedUser) {
                     fetchConversation(selectedUser, false);
                 }
@@ -205,6 +267,12 @@ export default function AdminMessageViewerPage({ params }) {
             }
         };
     }, [userId, isAuthenticated, authToken]);
+
+    // Clear unread badge locally when conversation is opened
+    useEffect(() => {
+        if (!selectedUser) return;
+        setUsers(prev => prev.map(u => u.id === selectedUser ? { ...u, unreadCount: 0 } : u));
+    }, [selectedUser]);
 
     // Fetch conversation when user is selected
     useEffect(() => {
@@ -314,6 +382,12 @@ export default function AdminMessageViewerPage({ params }) {
 
                         {/* Users List */}
                         <div className="flex-1 overflow-y-auto">
+                            {error && (
+                                <div className="px-4 py-2 text-red-600 text-sm flex items-center justify-between bg-red-50 border-b border-red-200">
+                                    <span>{error}</span>
+                                    <button onClick={() => fetchInbox(true)} className="text-red-700 underline">Retry</button>
+                                </div>
+                            )}
                             {loading && users.length === 0 ? (
                                 <div className="flex justify-center items-center p-4">
                                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
@@ -342,7 +416,14 @@ export default function AdminMessageViewerPage({ params }) {
                                                 <h3 className="text-sm font-medium text-slate-900 truncate">
                                                     {user.name}
                                                 </h3>
-                                                <span className="text-xs text-slate-500 ml-1">{user.timestamp}</span>
+                                                <div className="flex items-center space-x-2 ml-1">
+                                                    <span className="text-xs text-slate-500">{user.timestamp}</span>
+                                                    {user.unreadCount > 0 && (
+                                                        <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold">
+                                                            {user.unreadCount}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <p className="text-xs text-blue-500 truncate">
                                                 {user.userType}
