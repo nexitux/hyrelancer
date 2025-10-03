@@ -32,7 +32,7 @@ const ServicesHome = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('https://test.hyrelancer.in/api/getSiteData');
+                const response = await fetch('https://backend.hyrelancer.in/api/getSiteData');
                 if (!response.ok) {
                     throw new Error('Failed to fetch data');
                 }
@@ -486,7 +486,7 @@ const ServicesHome = () => {
                                 <div className="relative h-48 w-full bg-gradient-to-br from-purple-500 to-blue-600">
                                     {service.se_img ? (
                                         <Image
-                                            src={`https://test.hyrelancer.in/${service.se_img}`}
+                                            src={`https://backend.hyrelancer.in/${service.se_img}`}
                                             alt={service.se_name}
                                             fill
                                             className="w-full h-full object-cover"

@@ -27,7 +27,7 @@ const ServicesHome = () => {
         const fetchData = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch('https://test.hyrelancer.in/api/getSiteData');
+                const response = await fetch('https://backend.hyrelancer.in/api/getSiteData');
                 const data = await response.json();
                 
                 if (data && data.sc_list && data.se_list) {
@@ -63,7 +63,7 @@ const ServicesHome = () => {
                             author: `User${service.se_id}`,
                             price: `$${(Math.random() * 100 + 20).toFixed(2)}`,
                             image: service.se_img 
-                                ? `https://test.hyrelancer.in/${service.se_img.split('--')[0]}`
+                                ? `https://backend.hyrelancer.in/${service.se_img.split('--')[0]}`
                                 : placeholderImage,
                             bgColor: 'bg-gradient-to-br from-blue-400 to-purple-500' // Default gradient
                         };

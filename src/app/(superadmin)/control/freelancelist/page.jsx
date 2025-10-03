@@ -14,13 +14,15 @@ import {
   MdPending,
   MdBlock,
   MdChevronLeft,
-  MdChevronRight
+  MdChevronRight,
+  MdMessage
 } from 'react-icons/md';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
 import { message } from 'antd';
 import adminApi from '@/config/adminApi';
+// import AdminMessageViewer from '../components/AdminMessageViewer';
 
 // --- Status Mapping Helper ---
 const getStatusInfo = (freelancer) => {
@@ -96,6 +98,10 @@ export default function ListFreelancerPage() {
   const [allFreelancers, setAllFreelancers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Message viewer state - now using navigation instead of modal
+  // const [showMessageViewer, setShowMessageViewer] = useState(false);
+  // const [selectedUserForMessages, setSelectedUserForMessages] = useState(null);
 
 
   // Pagination State
@@ -292,6 +298,11 @@ export default function ListFreelancerPage() {
   const handlePageChange = (page) => {
     setCurrentPage(page);
     setSelectedFreelancers([]); // Clear selections when changing page
+  };
+
+  // Handle message viewer - now navigates to page
+  const handleViewMessages = (freelancer) => {
+    router.push(`/control/message-viewer/${freelancer.id}`);
   };
 
 
@@ -536,6 +547,13 @@ export default function ListFreelancerPage() {
                         >
                           <MdEdit size={16} />
                         </Link>
+                        <button
+                          onClick={() => handleViewMessages(freelancer)}
+                          className="p-2 text-green-600 rounded-lg transition-colors hover:bg-green-50"
+                          title="View Messages"
+                        >
+                          <MdMessage size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -603,6 +621,8 @@ export default function ListFreelancerPage() {
           </div>
         )}
       </div>
+
+      {/* Message Viewer Modal - Now using page navigation instead */}
     </div>
   );
 }

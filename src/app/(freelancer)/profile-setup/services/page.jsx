@@ -289,7 +289,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
       cleanImagePath = imagePath.split('--')[0];
     }
 
-    let baseURL = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    let baseURL = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_BASE_URL;
     if (baseURL.endsWith('/api')) {
       baseURL = baseURL.replace('/api', '');
     }

@@ -3,7 +3,7 @@ import axios from "axios";
 import { store } from "../redux/store";
 import { logout } from "../redux/slices/authSlice";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://test.hyrelancer.in/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.hyrelancer.in/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,

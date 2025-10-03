@@ -7,7 +7,7 @@ export const adminLogin = createAsyncThunk(
   '/gateway',
   async (credentials, { rejectWithValue }) => {
     try {
-      const res = await fetch('https://test.hyrelancer.in/api/adminLogin', {
+      const res = await fetch('https://backend.hyrelancer.in/api/adminLogin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(credentials),

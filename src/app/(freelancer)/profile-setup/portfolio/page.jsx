@@ -57,7 +57,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     if (!imagePath || imagePath.trim() === '' || imagePath === '0') return null;
     if (imagePath.startsWith('http')) return imagePath;
     let cleanImagePath = imagePath.split('--')[0];
-    let baseURL = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    let baseURL = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_BASE_URL;
     baseURL = baseURL.replace(/\/+$/, '');
     if (baseURL.endsWith('/api')) baseURL = baseURL.slice(0, -4);
     cleanImagePath = cleanImagePath.replace(/^\/+/, '');

@@ -4,7 +4,7 @@ import { store } from "../redux/store";
 import { logoutAdmin } from "../redux/slices/adminSlice"; // Import the specific admin logout action
 
 const ADMIN_API_BASE_URL =
-  process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://test.hyrelancer.in/api/admin";
+  process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://backend.hyrelancer.in/api/admin";
 
 const adminApi = axios.create({
   baseURL: ADMIN_API_BASE_URL,
@@ -90,5 +90,21 @@ export function setAdminToken(token) {
 export function clearAdminToken() {
   setAdminToken(null);
 }
+
+/**
+ * Admin Dashboard API calls
+ */
+export const adminDashboardApi = {
+  // Get dashboard analytics data
+  getDashboardData: async () => {
+    try {
+      const response = await adminApi.get('/AdminDashboard');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      throw error;
+    }
+  }
+};
 
 export default adminApi;

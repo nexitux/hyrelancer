@@ -31,7 +31,7 @@ export default function Page({ params }) {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://test.hyrelancer.in/api/freelancerProfile/${encodeURIComponent(slug)}`;
+        const url = `https://backend.hyrelancer.in/api/freelancerProfile/${encodeURIComponent(slug)}`;
         console.log("Fetching profile URL:", url);
         const response = await fetch(url);
 

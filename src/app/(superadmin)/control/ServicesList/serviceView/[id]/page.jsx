@@ -17,7 +17,7 @@ import {
 import { Base64 } from 'js-base64';
 
 // API configuration and Token Manager
-const API_BASE_URL = 'https://test.hyrelancer.in/api/admin';
+const API_BASE_URL = 'https://backend.hyrelancer.in/api/admin';
 const TokenManager = {
   getToken: () => {
     if (typeof window !== 'undefined') {
@@ -135,7 +135,7 @@ export default function ServiceDetailsPage({ params }) {
     if (imagePath.startsWith('http')) {
       return imagePath; // Return full URL if it's already a link
     }
-    return `https://test.hyrelancer.in/${imagePath}`; // Prepend base URL
+    return `https://backend.hyrelancer.in/${imagePath}`; // Prepend base URL
   };
 
 

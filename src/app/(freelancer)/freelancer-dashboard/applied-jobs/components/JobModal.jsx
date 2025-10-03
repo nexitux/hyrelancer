@@ -221,7 +221,7 @@ const JobModal = ({ isOpen, onClose, selectedJob }) => {
                 <h6 className="text-lg font-bold mb-3">Job Image</h6>
                 <div className="relative overflow-hidden rounded-lg bg-gray-200 h-48">
                   <img 
-                    src={`https://test.hyrelancer.in/${selectedJob.image}`}
+                    src={`https://backend.hyrelancer.in/${selectedJob.image}`}
                     alt="Job related image"
                     className="w-full h-full object-cover"
                     onError={(e) => {

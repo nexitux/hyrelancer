@@ -123,7 +123,7 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
               <div>
                 <p className="text-gray-500 dark:text-gray-400">Attachment</p>
                 <a 
-                  href={`http://test.hyrelancer.in/${ticket.file}`} 
+                  href={`http://backend.hyrelancer.in/${ticket.file}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
@@ -145,7 +145,7 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
                 {ticket.file && (
                   <div className="mt-1">
                     <a 
-                      href={`http://test.hyrelancer.in/${ticket.file}`} 
+                      href={`http://backend.hyrelancer.in/${ticket.file}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
@@ -184,7 +184,7 @@ const TicketDetailPage = ({ ticket, onStatusChange, onReply, encodedTicketId }) 
                       {reply.file && (
                         <div className="mt-1">
                           <a 
-                            href={`http://test.hyrelancer.in/${reply.file}`} 
+                            href={`http://backend.hyrelancer.in/${reply.file}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className={`text-xs ${

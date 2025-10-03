@@ -18,7 +18,7 @@ export default function Page({ params }) {
     const fetchProfileData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`https://test.hyrelancer.in/api/freelancerProfile/${id}`);
+        const response = await fetch(`https://backend.hyrelancer.in/api/freelancerProfile/${id}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch profile data');

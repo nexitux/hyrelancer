@@ -14,40 +14,36 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-const chartData = [
-  { gender: "male", candidates: 1234, fill: "#06b6d4" },
-  { gender: "female", candidates: 1754, fill: "#8b5cf6" },
-];
+const CandidatesChart = ({ dashboardData }) => {
+  const chartData = React.useMemo(() => [
+    { type: "freelancers", count: dashboardData?.FeCount || 0, fill: "#06b6d4" },
+    { type: "customers", count: dashboardData?.CuCount || 0, fill: "#8b5cf6" },
+  ], [dashboardData?.FeCount, dashboardData?.CuCount]);
 
-const chartConfig = {
-  candidates: {
-    label: "Candidates",
-  },
-  male: {
-    label: "Male",
-    color: "#06b6d4",
-  },
-  female: {
-    label: "Female",
-    color: "#8b5cf6",
-  },
-};
+  const chartConfig = {
+    count: {
+      label: "Users",
+    },
+    freelancers: {
+      label: "Freelancers",
+      color: "#06b6d4",
+    },
+    customers: {
+      label: "Customers",
+      color: "#8b5cf6",
+    },
+  };
 
-const CandidatesChart = () => {
-  const totalCandidates = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.candidates, 0);
-  }, []);
+  const totalUsers = React.useMemo(() => {
+    return chartData.reduce((acc, curr) => acc + curr.count, 0);
+  }, [chartData]);
 
   return (
     <Card className="flex flex-col bg-white border border-gray-100 rounded-lg gap-2">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-gray-100">
         <CardTitle className="font-bold text-gray-900">
-          Candidates
+          Users Distribution
         </CardTitle>
-        <button className="flex items-center text-xs text-gray-500 hover:text-gray-700 transition-colors">
-          View All
-          <ChevronDown className="w-3 h-3 ml-1" />
-        </button>
       </CardHeader>
       
       <CardContent className="flex-1">
@@ -62,8 +58,8 @@ const CandidatesChart = () => {
             />
             <Pie
               data={chartData}
-              dataKey="candidates"
-              nameKey="gender"
+              dataKey="count"
+              nameKey="type"
               innerRadius={60}
               outerRadius={100}
               strokeWidth={0}
@@ -92,7 +88,7 @@ const CandidatesChart = () => {
                           y={(viewBox.cy || 0) + 15}
                           className="fill-gray-900 text-base"
                         >
-                          {totalCandidates.toLocaleString()}
+                          {totalUsers.toLocaleString()}
                         </tspan>
                       </text>
                     );
@@ -107,11 +103,11 @@ const CandidatesChart = () => {
       {/* Stats Footer */}
       <div className="px-4 md:px-6">
         <div className="grid grid-cols-2 gap-4">
-          {/* Male Candidates */}
+          {/* Freelancers */}
           <div className="text-center">
-            <div className="text-sm text-gray-500 mb-1">Male Candidates</div>
+            <div className="text-sm text-gray-500 mb-1">Freelancers</div>
             <div className="flex items-center justify-center space-x-2">
-              <span className="text-xl md:text-2xl font-semibold text-gray-900">1,234</span>
+              <span className="text-xl md:text-2xl font-semibold text-gray-900">{dashboardData?.FeCount || 0}</span>
               <span className="flex items-center text-sm font-medium text-green-500">
                 <span className="mr-1">▲</span>
                 0.23%
@@ -119,11 +115,11 @@ const CandidatesChart = () => {
             </div>
           </div>
 
-          {/* Female Candidates */}
+          {/* Customers */}
           <div className="text-center">
-            <div className="text-sm text-gray-500 mb-1">Female Candidates</div>
+            <div className="text-sm text-gray-500 mb-1">Customers</div>
             <div className="flex items-center justify-center space-x-2">
-              <span className="text-xl md:text-2xl font-semibold text-gray-900">1,754</span>
+              <span className="text-xl md:text-2xl font-semibold text-gray-900">{dashboardData?.CuCount || 0}</span>
               <span className="flex items-center text-sm font-medium text-red-500">
                 <span className="mr-1">▼</span>
                 0.11%

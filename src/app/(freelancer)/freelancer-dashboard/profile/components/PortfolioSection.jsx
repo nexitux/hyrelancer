@@ -9,7 +9,7 @@ const PortfolioSection = ({ portfolio, portfolioImages, portfolioEx }) => {
   // Helper function to get image URL
   const getImageUrl = (imagePath) => {
     if (!imagePath || imagePath === '0') return null;
-    return `https://test.hyrelancer.in/${imagePath.split('--')[0]}`;
+    return `https://backend.hyrelancer.in/${imagePath.split('--')[0]}`;
   };
 
   // Process portfolio images from API

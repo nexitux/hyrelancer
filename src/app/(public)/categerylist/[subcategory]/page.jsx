@@ -142,7 +142,7 @@ const SubcategoryDetailPage = () => {
         {subcategoryDetail.sc_img && (
           <div className="absolute inset-0">
             <img
-              src={`https://test.hyrelancer.in/${subcategoryDetail.sc_img}`}
+              src={`https://backend.hyrelancer.in/${subcategoryDetail.sc_img}`}
               alt={subcategoryDetail.sc_name}
               className="w-full h-full object-cover object-center scale-105 blur-[2px] brightness-75"
             />
@@ -186,7 +186,7 @@ const SubcategoryDetailPage = () => {
               <div key={service.se_id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={service.se_img ? `https://test.hyrelancer.in/${service.se_img}` : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'}
+                    src={service.se_img ? `https://backend.hyrelancer.in/${service.se_img}` : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'}
                     alt={service.se_name}
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />

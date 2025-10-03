@@ -174,7 +174,7 @@ const ServiceUsersPage = ({ serviceId: propServiceId, serviceName: propServiceNa
                                 cleanImagePath = cleanImagePath.split('--')[0];
                             }
                             cleanImagePath = cleanImagePath.replace(/^\//, '');
-                            imageUrl = `https://test.hyrelancer.in/${cleanImagePath}`;
+                            imageUrl = `https://backend.hyrelancer.in/${cleanImagePath}`;
                         }
 
                         return {

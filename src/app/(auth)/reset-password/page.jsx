@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 // Define your API base URL here for consistency
-const API_BASE_URL = 'https://test.hyrelancer.in/api';
+const API_BASE_URL = 'https://backend.hyrelancer.in/api';
 
 // Custom hook for password validation (No changes needed)
 const usePasswordValidation = (password) => {

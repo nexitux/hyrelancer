@@ -208,7 +208,7 @@ const EditCategory = ({ params }) => {
                   <label className="block mb-1 text-sm font-medium text-gray-700">Category Icon</label>
                   {existingIconUrl && (
                     <div className="relative mb-2 w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
-                      <img src={`https://test.hyrelancer.in/${existingIconUrl}`} alt="Current Icon" className="w-full h-full object-cover" />
+                      <img src={`https://backend.hyrelancer.in/${existingIconUrl}`} alt="Current Icon" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setExistingIconUrl(null)}
@@ -245,7 +245,7 @@ const EditCategory = ({ params }) => {
                 <label className="block mb-1 text-sm font-medium text-gray-700">Category Banner</label>
                 {existingBannerUrl && (
                   <div className="relative mb-2 h-40 w-full rounded-lg overflow-hidden border border-gray-200">
-                    <img src={`https://test.hyrelancer.in/${existingBannerUrl}`} alt="Current Banner" className="w-full h-full object-cover" />
+                    <img src={`https://backend.hyrelancer.in/${existingBannerUrl}`} alt="Current Banner" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setExistingBannerUrl(null)}

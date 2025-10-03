@@ -116,7 +116,7 @@ const EnhancedChatModal = ({
                 return;
             }
 
-            const response = await fetch(`https://test.hyrelancer.in/api/conversation/${userId}`, {
+            const response = await fetch(`https://backend.hyrelancer.in/api/conversation/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -187,7 +187,7 @@ const EnhancedChatModal = ({
         setMessages(prev => [...prev, tempMessage]);
         
         try {
-            const response = await fetch('https://test.hyrelancer.in/api/send', {
+            const response = await fetch('https://backend.hyrelancer.in/api/send', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

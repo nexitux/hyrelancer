@@ -17,7 +17,7 @@ export default function Page({ slug }) {
     const fetchProfileData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`https://test.hyrelancer.in/api/freelancerProfile/${slug || 'sachilb1b372dd-59ad-4a36-be46-973c7c05ddf3'}`);
+        const response = await fetch(`https://backend.hyrelancer.in/api/freelancerProfile/${slug || 'sachilb1b372dd-59ad-4a36-be46-973c7c05ddf3'}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch profile data');

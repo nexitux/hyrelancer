@@ -58,7 +58,7 @@ export default function ChangePassword() {
           return;
         }
 
-        const backendUrl = 'http://test.hyrelancer.in/api'
+        const backendUrl = 'http://backend.hyrelancer.in/api'
 
         const response = await axios.post(
           `${backendUrl}/changePassword`,

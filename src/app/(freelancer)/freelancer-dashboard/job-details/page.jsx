@@ -68,7 +68,7 @@ const JobListingsPage = () => {
                     return;
                 }
 
-                const response = await fetch('https://test.hyrelancer.in/api/getAllJobs', {
+                const response = await fetch('https://backend.hyrelancer.in/api/getAllJobs', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -99,7 +99,7 @@ const JobListingsPage = () => {
                             tags: [job.cuj_job_type, job.cuj_work_mode, job.cuj_lang].filter(Boolean),
                             price: salaryFrom > 0 ? `$${salaryFrom}` : 'Negotiable',
                             priceType: '/fixed-price',
-                            image: job.cuj_img1 ? `https://test.hyrelancer.in/${job.cuj_img1}` : "/images/IMG-13.webp",
+                            image: job.cuj_img1 ? `https://backend.hyrelancer.in/${job.cuj_img1}` : "/images/IMG-13.webp",
                             workMode: job.cuj_work_mode || 'Not specified',
                             jobType: job.cuj_job_type || 'Not specified',
                             experience: job.cuj_u_experience || 'Not specified',
@@ -140,7 +140,7 @@ const JobListingsPage = () => {
 
         try {
             const encodedId = typeof window !== 'undefined' ? window.btoa(String(jobId)) : Buffer.from(String(jobId)).toString('base64');
-            const response = await fetch(`https://test.hyrelancer.in/api/sendRequestForJob/${encodedId}`, {
+            const response = await fetch(`https://backend.hyrelancer.in/api/sendRequestForJob/${encodedId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,

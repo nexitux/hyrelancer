@@ -91,11 +91,11 @@ const PortfolioSection = ({
     
     // Handle the specific format from API: "uploads/freelancer/profile/f_profile_pic_1759086468.JPEG--f_profile_pic_1759086468.JPEG"
     if (imagePath.includes('--')) {
-      return `https://test.hyrelancer.in/${imagePath.split('--')[0]}`;
+      return `https://backend.hyrelancer.in/${imagePath.split('--')[0]}`;
     }
     
     // For other formats, just prepend the base URL
-    return `https://test.hyrelancer.in/${imagePath}`;
+    return `https://backend.hyrelancer.in/${imagePath}`;
   };
 
   // Process portfolio items from API

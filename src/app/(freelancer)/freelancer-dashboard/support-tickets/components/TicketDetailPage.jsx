@@ -318,10 +318,10 @@ const TicketDetailPage = () => {
                 {ticket.file && (
                   <div className="mt-3">
                     <img 
-                      src={`https://test.hyrelancer.in/${ticket.file}`}
+                      src={`https://backend.hyrelancer.in/${ticket.file}`}
                       alt="Uploaded file"
                       className="max-w-80 max-h-80 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => handleImageClick(`https://test.hyrelancer.in/${ticket.file}`)}
+                      onClick={() => handleImageClick(`https://backend.hyrelancer.in/${ticket.file}`)}
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
@@ -399,10 +399,10 @@ const TicketDetailPage = () => {
                               {message.file && (
                                 <div className="mt-3">
                                   <img 
-                                    src={`https://test.hyrelancer.in/${message.file}`}
+                                    src={`https://backend.hyrelancer.in/${message.file}`}
                                     alt="Uploaded file"
                                     className="max-w-80 max-h-80 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => handleImageClick(`https://test.hyrelancer.in/${message.file}`)}
+                                    onClick={() => handleImageClick(`https://backend.hyrelancer.in/${message.file}`)}
                                     onError={(e) => {
                                       e.target.style.display = 'none';
                                     }}

@@ -12,12 +12,14 @@ import {
   MdCancel,
   MdBusiness,
   MdWork,
-  MdAssignment
+  MdAssignment,
+  MdMessage
 } from 'react-icons/md';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Base64 } from 'js-base64';
 import adminApi from '@/config/adminApi';
+// import AdminMessageViewer from '../components/AdminMessageViewer';
 
 // Using centralized adminApi config
 
@@ -38,6 +40,10 @@ export default function ListCustomerPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomers, setSelectedCustomers] = useState([]);
+
+  // Message viewer state - now using navigation instead of modal
+  // const [showMessageViewer, setShowMessageViewer] = useState(false);
+  // const [selectedUserForMessages, setSelectedUserForMessages] = useState(null);
 
   const encodeId = (id) => Base64.encode(String(id));
   
@@ -140,6 +146,11 @@ const handleDeleteSelected = async () => {
     setLoading(false);
   }
 };
+
+  // Handle message viewer - now navigates to page
+  const handleViewMessages = (customer) => {
+    router.push(`/control/message-viewer/${customer.id}`);
+  };
 
   // Stats
   const totalCustomers = customers.length;
@@ -337,6 +348,13 @@ const handleDeleteSelected = async () => {
                         >
                           <MdEdit size={16} />
                         </Link>
+                        <button
+                          onClick={() => handleViewMessages(customer)}
+                          className="p-2 text-green-600 rounded-lg transition-colors hover:bg-green-50"
+                          title="View Messages"
+                        >
+                          <MdMessage size={16} />
+                        </button>
                         <button 
                           className="p-2 text-red-600 rounded-lg transition-colors hover:bg-red-50"
                           title="Delete"
@@ -383,6 +401,8 @@ const handleDeleteSelected = async () => {
           </div>
         )}
       </div>
+
+      {/* Message Viewer Modal - Now using page navigation instead */}
     </div>
   );
 }

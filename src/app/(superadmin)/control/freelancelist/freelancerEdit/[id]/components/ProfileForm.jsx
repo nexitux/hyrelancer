@@ -99,7 +99,7 @@ export default function ProfileForm() {
       
       // Ensure proper URL construction
       if (!imageUrl.startsWith('http')) {
-        imageUrl = `https://test.hyrelancer.in/${imageUrl.replace(/^\/+/, "")}`;
+        imageUrl = `https://backend.hyrelancer.in/${imageUrl.replace(/^\/+/, "")}`;
       }
       
       setImagePreviewUrl(imageUrl);
@@ -115,7 +115,7 @@ export default function ProfileForm() {
   useEffect(() => {
     const fetchLanguages = async () => {
       try {
-        const res = await fetch("https://test.hyrelancer.in/api/getLanglist", {
+        const res = await fetch("https://backend.hyrelancer.in/api/getLanglist", {
           method: "GET",
           headers: { "Accept": "application/json" },
         });
@@ -153,7 +153,7 @@ export default function ProfileForm() {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://test.hyrelancer.in/api/admin/getFeUProfile/${userIdBase64}`;
+        const url = `https://backend.hyrelancer.in/api/admin/getFeUProfile/${userIdBase64}`;
         const token = TokenManager.getToken();
 
         const res = await fetch(url, {
@@ -256,7 +256,7 @@ export default function ProfileForm() {
       });
 
       const token = TokenManager.getToken();
-      const res = await fetch("https://test.hyrelancer.in/api/admin/storeFeUProfile", {
+      const res = await fetch("https://backend.hyrelancer.in/api/admin/storeFeUProfile", {
         method: "POST",
         headers: {
           "Accept": "application/json",

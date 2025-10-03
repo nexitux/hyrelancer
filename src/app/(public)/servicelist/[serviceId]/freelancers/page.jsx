@@ -180,7 +180,7 @@ const FreelancerGridPage = ({ serviceId: propServiceId, serviceName: propService
                         }
                         // Remove leading slash if present
                         cleanImagePath = cleanImagePath.replace(/^\//, '');
-                        imageUrl = `https://test.hyrelancer.in/${cleanImagePath}`;
+                        imageUrl = `https://backend.hyrelancer.in/${cleanImagePath}`;
                     }
 
                     return {

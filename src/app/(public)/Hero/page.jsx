@@ -23,7 +23,7 @@ const HeroSection = () => {
     setLoadingCategories(true);
     try {
       // You'll need to create this endpoint in your backend to fetch categories
-      const response = await fetch('https://test.hyrelancer.in/api/categories');
+      const response = await fetch('https://backend.hyrelancer.in/api/categories');
       if (response.ok) {
         const data = await response.json();
         // Assuming the response has categories with sc_id and sc_name

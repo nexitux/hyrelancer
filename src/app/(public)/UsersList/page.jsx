@@ -133,7 +133,7 @@ const UsersList = () => {
       if (keyword) body.search_key = keyword;
       if (category) body.search_category = category;
 
-      const response = await fetch("https://test.hyrelancer.in/api/search", {
+      const response = await fetch("https://backend.hyrelancer.in/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -178,7 +178,7 @@ const UsersList = () => {
     const cleanPath = imagePath.split("--")[0];
     // ensure it doesn't already include base URL
     if (cleanPath.startsWith("http") || cleanPath.startsWith("https")) return cleanPath;
-    return `https://test.hyrelancer.in/${cleanPath}`;
+    return `https://backend.hyrelancer.in/${cleanPath}`;
   };
 
   const getLocationString = (user) => {

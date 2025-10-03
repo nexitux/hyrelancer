@@ -92,8 +92,7 @@ export default function ProfileTab({
 
     let baseURL =
       api.defaults.baseURL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "http://localhost:8000";
+      process.env.NEXT_PUBLIC_API_BASE_URL;
     if (baseURL.endsWith("/api")) {
       baseURL = baseURL.replace("/api", "");
     }

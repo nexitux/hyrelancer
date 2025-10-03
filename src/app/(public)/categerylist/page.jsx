@@ -164,7 +164,7 @@
                   {/* Subcategory Image Section */}
                   <div className="relative h-48 overflow-hidden">
                     <img
-                      src={subcategory.sc_img ? `https://test.hyrelancer.in/${subcategory.sc_img}` : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'}
+                      src={subcategory.sc_img ? `https://backend.hyrelancer.in/${subcategory.sc_img}` : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'}
                       alt={subcategory.sc_name}
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                     />
@@ -189,7 +189,7 @@
                     {subcategory.sc_icon && (
                       <div className="absolute bottom-3 left-3 w-12 h-12 bg-white/90 rounded-lg p-2">
                         <img 
-                          src={`https://test.hyrelancer.in/${subcategory.sc_icon}`}
+                          src={`https://backend.hyrelancer.in/${subcategory.sc_icon}`}
                           alt={subcategory.sc_name}
                           className="w-full h-full object-contain"
                         />

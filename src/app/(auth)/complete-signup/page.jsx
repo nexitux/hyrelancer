@@ -115,7 +115,7 @@ const CompleteSignupPage = () => {
                 requestData.google_id = googleId;
             }
             
-            const response = await api.post('https://test.hyrelancer.in/api/google-register', requestData);
+            const response = await api.post('https://backend.hyrelancer.in/api/google-register', requestData);
 
             // Store token if provided
             if (response.data.token) {

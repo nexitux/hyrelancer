@@ -150,7 +150,7 @@ export default function CategoryDetailsPage({ params }) {
               <div className="relative">
                 {categoryData.sc_img && (
                   <img 
-                    src={`https://test.hyrelancer.in/${categoryData.sc_img}`} 
+                    src={`https://backend.hyrelancer.in/${categoryData.sc_img}`} 
                     alt={categoryData.sc_name}
                     className="object-cover w-full h-64"
                   />
@@ -212,7 +212,7 @@ export default function CategoryDetailsPage({ params }) {
                 <div>
                   <h4 className="text-sm font-medium text-slate-700 mb-2">Category Icon</h4>
                   {categoryData.sc_icon ? (
-                    <img src={`https://test.hyrelancer.in/${categoryData.sc_icon}`} alt="Category Icon" className="w-24 h-24 object-cover rounded-lg border border-slate-200" />
+                    <img src={`https://backend.hyrelancer.in/${categoryData.sc_icon}`} alt="Category Icon" className="w-24 h-24 object-cover rounded-lg border border-slate-200" />
                   ) : (
                     <div className="w-24 h-24 flex items-center justify-center bg-slate-100 rounded-lg text-sm text-slate-500">No Icon</div>
                   )}
@@ -220,7 +220,7 @@ export default function CategoryDetailsPage({ params }) {
                 <div>
                   <h4 className="text-sm font-medium text-slate-700 mb-2">Category Banner</h4>
                   {categoryData.sc_img ? (
-                    <img src={`https://test.hyrelancer.in/${categoryData.sc_img}`} alt="Category Banner" className="w-full h-auto object-cover rounded-lg border border-slate-200" />
+                    <img src={`https://backend.hyrelancer.in/${categoryData.sc_img}`} alt="Category Banner" className="w-full h-auto object-cover rounded-lg border border-slate-200" />
                   ) : (
                     <div className="w-full h-32 flex items-center justify-center bg-slate-100 rounded-lg text-sm text-slate-500">No Banner</div>
                   )}

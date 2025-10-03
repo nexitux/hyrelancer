@@ -12,7 +12,7 @@ import {
   User,
 } from "lucide-react";
 
-const API_BASE = "https://test.hyrelancer.in/api";
+const API_BASE = "https://backend.hyrelancer.in/api";
 
 export default function InfoOverview({
   profileData,

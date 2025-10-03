@@ -41,7 +41,7 @@ const PortfolioDisplayPage = ({ isApprovalMode = false }) => {
 
         // Convert to absolute URL if it's a relative path
         if (!cleanUrl.startsWith('http')) {
-          return `https://test.hyrelancer.in/${cleanUrl.replace(/^\/+/, "")}`;
+          return `https://backend.hyrelancer.in/${cleanUrl.replace(/^\/+/, "")}`;
         }
 
         return cleanUrl;

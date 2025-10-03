@@ -40,7 +40,7 @@ const JobModal = ({ isOpen, onClose, job }) => {
   
   // Images - handle both full URLs and relative paths
   const images = [];
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://test.hyrelancer.in';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend.hyrelancer.in';
   
   // Debug: Log the raw data to see what image fields are available
   console.log('Raw job data:', raw);
