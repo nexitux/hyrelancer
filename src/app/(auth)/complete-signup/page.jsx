@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useDispatch } from 'react-redux';
 import { User, Mail, Phone, ArrowLeft, RefreshCcw } from 'lucide-react';
 import api from '@/config/api';
 import ErrorModal from '../../../components/ErorrModal/page';
+import { loginSuccess } from '@/redux/slices/authSlice';
 
 const CompleteSignupPage = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const dispatch = useDispatch();
     
     const getMobileNumber = () => {
         try {
@@ -117,11 +120,60 @@ const CompleteSignupPage = () => {
             
             const response = await api.post('https://backend.hyrelancer.in/api/google-register', requestData);
 
-            // Store token if provided
+            console.log('Complete signup response:', response.data);
+            console.log('User data from registration:', response.data.user);
+            console.log('User type from registration:', response.data.user?.user_type);
+
+            // Store all user data in Redux immediately after successful registration
+            // For new Google signups, ensure user_type is null so they go to select-user-type page
+            const userData = {
+                user: {
+                    ...(response.data.user || {
+                        google_id: googleId,
+                        name: formData.name,
+                        email: response.data.email || formData.email,
+                        mobile: formData.mobile || mobileNumber
+                    }),
+                    user_type: null // Force null for new signups to ensure they select user type
+                },
+                token: response.data.token,
+                userType: null, // Force null for new signups
+                slug: response.data.fp_slug || null
+            };
+
+            console.log('📦 Complete signup - storing user data:', userData);
+
+            // Store data in localStorage FIRST (before Redux dispatch)
             if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
                 api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+                console.log('✅ Token stored in localStorage');
             }
+
+            if (userData.user) {
+                localStorage.setItem('user', JSON.stringify(userData.user));
+                console.log('✅ User data stored in localStorage');
+            }
+
+            // Don't store userType for new signups - force them to select
+            localStorage.setItem('userType', '');
+            console.log('✅ UserType cleared for new signup');
+
+            if (userData.slug) {
+                localStorage.setItem('slug', userData.slug);
+                console.log('✅ Slug stored in localStorage');
+            }
+
+            // Now dispatch to Redux
+            dispatch(loginSuccess(userData));
+            console.log('✅ User data dispatched to Redux from complete-signup');
+
+            // Verify localStorage after storing
+            console.log('🔍 Verifying localStorage after complete-signup:');
+            console.log('Token:', !!localStorage.getItem('token'));
+            console.log('User:', !!localStorage.getItem('user'));
+            console.log('UserType:', localStorage.getItem('userType'));
+            console.log('Slug:', localStorage.getItem('slug'));
 
             // Clear sessionStorage after successful registration
             try {
@@ -130,8 +182,20 @@ const CompleteSignupPage = () => {
                 console.warn('sessionStorage unavailable:', e);
             }
 
-            // Success - redirect to select user type page
-            router.push('/select-user-type');
+            // Success - redirect back to Login page with Google parameters
+            // This will trigger the handleGoogleLoginRedirect function which handles authorization
+            // Add a small delay to ensure localStorage operations complete
+            setTimeout(() => {
+                if (response.data.token && googleId) {
+                    const redirectUrl = `/Login?token=${encodeURIComponent(response.data.token)}&user_googleid=${encodeURIComponent(googleId)}&from_signup=true`;
+                    console.log('🔄 Redirecting to Login page for authorization (from signup):', redirectUrl);
+                    router.push(redirectUrl);
+                } else {
+                    // Fallback: redirect to Login page
+                    console.log('🔄 Fallback redirect to Login page');
+                    router.push('/Login?from_signup=true');
+                }
+            }, 100); // Small delay to ensure localStorage operations complete
             
         } catch (error) {
             console.error('Registration error:', error);
