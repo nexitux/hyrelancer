@@ -257,8 +257,8 @@ const JobDetailPage = () => {
               posted: foundJob.created_at ? formatDate(foundJob.created_at) : 'Recently',
               verified: foundJob.cuj_is_active === 1,
               location: foundJob.cuj_location || 'Remote',
-              salary: foundJob.cuj_salary_range_from ? `$${foundJob.cuj_salary_range_from} - $${foundJob.cuj_salary_range_to}` : 'Not specified',
-              budget: foundJob.cuj_salary_range_from ? `$${foundJob.cuj_salary_range_from}` : 'Negotiable',
+              salary: foundJob.cuj_salary_range_from ? `₹${foundJob.cuj_salary_range_from} - ₹${foundJob.cuj_salary_range_to}` : 'Not specified',
+              budget: foundJob.cuj_salary_range_from ? `₹${foundJob.cuj_salary_range_from}` : 'Negotiable',
               rating: 4.5, // Default rating
               description: foundJob.cuj_desc || 'No description available',
               jobType: foundJob.cuj_job_type,
@@ -292,7 +292,7 @@ const JobDetailPage = () => {
                 title: job.cuj_title,
                 posted: job.created_at ? formatDate(job.created_at) : 'Recently',
                 location: job.cuj_location || 'Remote',
-                budget: job.cuj_salary_range_from ? `$${job.cuj_salary_range_from}` : 'Negotiable',
+                budget: job.cuj_salary_range_from ? `₹${job.cuj_salary_range_from}` : 'Negotiable',
                 rating: 4.5,
                 description: job.cuj_desc ? job.cuj_desc.substring(0, 100) + '...' : 'No description available',
                 tags: [job.cuj_job_type, job.cuj_work_mode].filter(Boolean)

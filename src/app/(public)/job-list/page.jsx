@@ -117,7 +117,7 @@ const ProjectDetail = () => {
             </div>
             <div className="price_area whitespace-nowrap">
               <span className="text-base text-white">Budget :</span>
-              <strong className="text-xl ml-0.5 text-white">$900</strong>
+              <strong className="text-xl ml-0.5 text-white">₹900</strong>
             </div>
           </div>
         </div>

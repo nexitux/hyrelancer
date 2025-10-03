@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Send, Paperclip, Smile, MoreVertical, Search, Phone, Video } from 'lucide-react';
+import api from '@/config/api';
+import { showSuccessNotification, showErrorNotification } from '@/utils/notificationService';
 
 export default function MessageBox() {
     const [message, setMessage] = useState('');
@@ -10,6 +12,7 @@ export default function MessageBox() {
     const [users, setUsers] = useState([]);
     const [messages, setMessages] = useState({});
     const [loading, setLoading] = useState(false);
+    const [requestingContact, setRequestingContact] = useState(false);
     const messagesEndRef = useRef(null);
     const refreshIntervalRef = useRef(null);
     const lastMessageIds = useRef({});
@@ -75,6 +78,9 @@ export default function MessageBox() {
         "What's your rate?",
         "I'm interested in your services >"
     ];
+
+    // Special contact request message that sends directly
+    const contactRequestMessage = "Hi, Please share your contact details.";
 
 
     // Get auth token 
@@ -360,6 +366,41 @@ export default function MessageBox() {
                 [receiverId]: prev[receiverId].filter(msg => msg.id !== tempMessage.id)
             }));
             return false;
+        }
+    };
+
+    // Send contact request directly
+    const handleContactRequest = async () => {
+        if (!selectedUser) {
+            showErrorNotification("Please select a user to send contact request.");
+            return;
+        }
+
+        setRequestingContact(true);
+        
+        try {
+            const requestData = {
+                sc_message_id: 1, // Default message ID as per API spec
+                sc_request_receive_id: selectedUser, // Freelancer's user ID
+                sc_request_send_message: "Hi, Please share your contact details."
+            };
+
+            const response = await api.post('/share-contact/send', requestData);
+            
+            if (response.data.status === 'success') {
+                showSuccessNotification(response.data.message || "Contact request sent successfully!");
+            } else {
+                showErrorNotification(response.data.message || "Failed to send contact request.");
+            }
+        } catch (error) {
+            console.error('Error requesting contact details:', error);
+            if (error.response?.data?.message) {
+                showErrorNotification(error.response.data.message);
+            } else {
+                showErrorNotification("Failed to send contact request. Please try again.");
+            }
+        } finally {
+            setRequestingContact(false);
         }
     };
 
@@ -707,6 +748,15 @@ export default function MessageBox() {
                                                     {msg}
                                                 </button>
                                             ))}
+                                            {/* Special contact request button */}
+                                            <button
+                                                onClick={handleContactRequest}
+                                                disabled={requestingContact}
+                                                className="px-4 py-2 bg-[#3e5a9a] text-white rounded-full text-sm hover:bg-[#2d4a7a] transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            >
+                                                <Phone className={`w-4 h-4 ${requestingContact ? 'animate-pulse' : ''}`} />
+                                                {requestingContact ? 'Sending...' : contactRequestMessage}
+                                            </button>
                                         </div>
                                     </div>
                                 )}

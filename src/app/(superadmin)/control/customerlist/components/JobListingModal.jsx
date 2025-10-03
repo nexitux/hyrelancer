@@ -12,7 +12,7 @@ const JobListingModal = ({ isOpen = true, onClose = () => {} }) => {
     department: 'Engineering',
     location: 'San Francisco, CA',
     type: 'Full-time',
-    salary: '$120,000 - $150,000',
+    salary: '₹120,000 - ₹150,000',
     postedDate: '2024-01-15',
     deadline: '2024-02-15',
     description: 'We are looking for an experienced Frontend Developer to join our dynamic team. The ideal candidate will have expertise in React, Next.js, and modern web technologies.',

@@ -64,7 +64,7 @@ const ActiveWorkDashboard = () => {
                 company: item.cuj_title, // Job title as company
                 location: item.cuj_location || 'Not specified',
                 type: item.cuj_job_type,
-                pricing: `$${item.cuj_salary_range_from} - $${item.cuj_salary_range_to}`,
+                pricing: `₹${item.cuj_salary_range_from} - ₹${item.cuj_salary_range_to}`,
                 dueDate: new Date(item.created_at).toLocaleDateString('en-US', { 
                     year: 'numeric', 
                     month: 'short', 

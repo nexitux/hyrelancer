@@ -53,7 +53,7 @@ const MyApplied = () => {
         const formatSalary = () => {
           const from = job.cuj_salary_range_from || '0';
           const to = job.cuj_salary_range_to || '0';
-          return `$${from}-$${to} /month`;
+          return `₹${from}-₹${to} /month`;
         };
 
         return {

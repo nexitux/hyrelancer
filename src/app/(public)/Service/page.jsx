@@ -61,7 +61,7 @@ const ServicesHome = () => {
                             rating: 4.5 + (Math.random() * 0.5), // Random rating between 4.5-5.0
                             reviews: Math.floor(Math.random() * 100) + 1, // Random reviews count
                             author: `User${service.se_id}`,
-                            price: `$${(Math.random() * 100 + 20).toFixed(2)}`,
+                            price: `₹${(Math.random() * 100 + 20).toFixed(2)}`,
                             image: service.se_img 
                                 ? `https://backend.hyrelancer.in/${service.se_img.split('--')[0]}`
                                 : placeholderImage,

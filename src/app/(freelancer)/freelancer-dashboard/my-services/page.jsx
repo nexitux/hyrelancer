@@ -9,7 +9,7 @@ const MyServices = () => {
             title: "I will translate your documents with accuracy and precision",
             description: "We need someone that can translate our documents ...",
             dateCreated: "Mar 12, 2024",
-            pricing: "$380",
+            pricing: "₹380",
             status: false,
             inQueue: 22
         },
@@ -18,7 +18,7 @@ const MyServices = () => {
             title: "I will design a professional and beautiful website on wix",
             description: "We need someone that can translate our documents ...",
             dateCreated: "Mar 08, 2024",
-            pricing: "$540",
+            pricing: "₹540",
             status: false,
             inQueue: 8
         },
@@ -27,7 +27,7 @@ const MyServices = () => {
             title: "I will create stunning logo designs for your business",
             description: "We need someone that can translate our documents ...",
             dateCreated: "Mar 02, 2024",
-            pricing: "$410",
+            pricing: "₹410",
             status: false,
             inQueue: 26
         },
@@ -36,7 +36,7 @@ const MyServices = () => {
             title: "I will do background illustration and environment concept art",
             description: "We need someone that can translate our documents ...",
             dateCreated: "Feb 16, 2024",
-            pricing: "$470",
+            pricing: "₹470",
             status: false,
             inQueue: 13
         }
@@ -53,7 +53,7 @@ const MyServices = () => {
     };
 
     const handleViewQueue = (serviceId, queueCount) => {
-        console.log(`View queue for service ${serviceId} with ${queueCount} items`);
+        console.log(`View queue for service ₹{serviceId} with ₹{queueCount} items`);
     };
 
     return (
@@ -118,11 +118,11 @@ const MyServices = () => {
                                     <div className="col-span-1">
                                         <button
                                             onClick={() => handleStatusToggle(service.id)}
-                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${service.status ? 'bg-indigo-600' : 'bg-gray-300'
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ₹{service.status ? 'bg-indigo-600' : 'bg-gray-300'
                                                 }`}
                                         >
                                             <span
-                                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${service.status ? 'translate-x-5.5' : 'translate-x-0.5'
+                                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ₹{service.status ? 'translate-x-5.5' : 'translate-x-0.5'
                                                     }`}
                                             />
                                         </button>
@@ -183,11 +183,11 @@ const MyServices = () => {
                                             <span className="text-gray-500 font-medium block mb-2">Status</span>
                                             <button
                                                 onClick={() => handleStatusToggle(service.id)}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${service.status ? 'bg-indigo-600' : 'bg-gray-300'
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ₹{service.status ? 'bg-indigo-600' : 'bg-gray-300'
                                                     }`}
                                             >
                                                 <span
-                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${service.status ? 'translate-x-6' : 'translate-x-1'
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ₹{service.status ? 'translate-x-6' : 'translate-x-1'
                                                         }`}
                                                 />
                                             </button>

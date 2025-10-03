@@ -99,143 +99,11 @@ const JobListingsPage = () => {
         });
     };
 
-    const jobItems = [
-        {
-            id: 1,
-            title: "Figma mockup needed for a new website for Electrical contractor business website",
-            posted: "2 days ago",
-            verified: true,
-            location: "Las Vegas, USA",
-            spent: "$2.8K spent",
-            rating: 4.8,
-            description: "I need an experienced professional to operate and manage a full-scale SaaS company focused on marketing automation. Key Features include Task Management, Custom Workflows, and strong expertise in Web Design, Marketing, and Automation.",
-            tags: ["Featured", "Saled", "NDA"],
-            proposals: "50+",
-            price: "$170",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        },
-        {
-            id: 2,
-            title: "Figma mockup needed for project 6",
-            posted: "5 days ago",
-            verified: true,
-            location: "New York, USA",
-            spent: "$3K spent",
-            rating: 4.9,
-            description: "I need an experienced professional to create Figma mockups for my project with modern UI/UX design principles.",
-            tags: ["Featured"],
-            proposals: "50+",
-            price: "$230",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        },
-        {
-            id: 3,
-            title: "Figma mockup needed for project 7",
-            posted: "6 days ago",
-            verified: false,
-            location: "London, UK",
-            spent: "$3.5K spent",
-            rating: 5.0,
-            description: "I need an experienced professional to create Figma mockups for my project with modern UI/UX design principles.",
-            tags: ["NDA"],
-            proposals: "60+",
-            price: "$250",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        },
-        {
-            id: 4,
-            title: "Figma mockup needed for project 8",
-            posted: "7 days ago",
-            verified: true,
-            location: "Tokyo, Japan",
-            spent: "$4K spent",
-            rating: 5.1,
-            description: "I need an experienced professional to create Figma mockups for my project with modern UI/UX design principles.",
-            tags: ["Featured", "Saled"],
-            proposals: "70+",
-            price: "$270",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        },
-        {
-            id: 5,
-            title: "Website redesign for e-commerce platform",
-            posted: "3 days ago",
-            verified: true,
-            location: "Sydney, Australia",
-            spent: "$5K spent",
-            rating: 4.7,
-            description: "Looking for a designer to redesign our e-commerce platform with modern UI/UX principles and improve conversion rates.",
-            tags: ["Featured"],
-            proposals: "40+",
-            price: "$350",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        },
-        {
-            id: 6,
-            title: "Mobile app UI/UX design",
-            posted: "1 day ago",
-            verified: false,
-            location: "Toronto, Canada",
-            spent: "$1.5K spent",
-            rating: 4.5,
-            description: "Need a designer to create a modern mobile app interface for our new productivity application.",
-            tags: [],
-            proposals: "30+",
-            price: "$200",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        },
-        {
-            id: 7,
-            title: "Dashboard design for analytics platform",
-            posted: "4 days ago",
-            verified: true,
-            location: "Berlin, Germany",
-            spent: "$6K spent",
-            rating: 4.9,
-            description: "Seeking an experienced designer to create a comprehensive dashboard for our data analytics platform.",
-            tags: ["Featured", "NDA"],
-            proposals: "55+",
-            price: "$400",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        },
-        {
-            id: 8,
-            title: "Brand identity and logo design",
-            posted: "8 days ago",
-            verified: false,
-            location: "Paris, France",
-            spent: "$2K spent",
-            rating: 4.6,
-            description: "Looking for a creative designer to develop our brand identity including logo, color scheme, and typography.",
-            tags: ["Saled"],
-            proposals: "45+",
-            price: "$180",
-            priceType: "/fixed-price",
-            image: "/images/IMG-13.webp"
-        }
-    ];
+    const [jobItems, setJobItems] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const categories = [
-        "All Categories",
-        "Graphic & Design",
-        "Writing",
-        "Videos",
-        "Digital Marketing",
-    ];
-    const locations = [
-        "City, State or Zip",
-        "Las Vegas, USA",
-        "Cape Town, South Africa",
-        "Sydney, Australia",
-        "Tokyo, Japan",
-    ];
+    const [categories, setCategories] = useState(["All Categories"]);
+    const [locations, setLocations] = useState(["City, State or Zip"]);
 
     const [category, setCategory] = useState(categories[0]);
     const [location, setLocation] = useState(locations[0]);
@@ -260,6 +128,29 @@ const JobListingsPage = () => {
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Fetch jobs data
+    useEffect(() => {
+        const fetchJobs = async () => {
+            try {
+                setLoading(true);
+                // TODO: Replace with your actual API endpoint
+                // Example: const response = await fetch('https://backend.hyrelancer.in/api/jobs');
+                const response = await fetch('/api/jobs');
+                if (response.ok) {
+                    const data = await response.json();
+                    setJobItems(data.jobs || []);
+                }
+            } catch (error) {
+                console.error('Error fetching jobs:', error);
+                // Keep empty array if API fails
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchJobs();
     }, []);
 
     // Pagination logic
@@ -500,15 +391,15 @@ const JobListingsPage = () => {
                                     <div
                                         className="absolute h-2 bg-[#3a599c] rounded-full"
                                         style={{
-                                            left: `${(salaryRange.min / 3000) * 100}%`,
-                                            right: `${100 - (salaryRange.max / 3000) * 100}%`,
+                                            left: `₹{(salaryRange.min / 3000) * 100}%`,
+                                            right: `₹{100 - (salaryRange.max / 3000) * 100}%`,
                                             backgroundColor: primaryColor
                                         }}
                                     ></div>
                                 </div>
                                 <div className="flex justify-between mt-4 gap-2">
                                     <div className="relative flex-1">
-                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                                         <input
                                             type="number"
                                             min="0"
@@ -523,7 +414,7 @@ const JobListingsPage = () => {
                                         <Minus size={16} />
                                     </div>
                                     <div className="relative flex-1">
-                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                                         <input
                                             type="number"
                                             min="0"
@@ -543,7 +434,7 @@ const JobListingsPage = () => {
                             <h3 className="font-semibold mb-3 text-gray-800">Filter by Hourly</h3>
                             <div className="flex justify-between gap-2">
                                 <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                                     <input
                                         type="number"
                                         className="w-full pl-7 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#3a599c] focus:border-[#3a599c]"
@@ -554,7 +445,7 @@ const JobListingsPage = () => {
                                     <Minus size={16} />
                                 </div>
                                 <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                                     <input
                                         type="number"
                                         className="w-full pl-7 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#3a599c] focus:border-[#3a599c]"
@@ -702,7 +593,23 @@ const JobListingsPage = () => {
                 <main className="w-full lg:w-[950px]">
                     
                     <div className="space-y-4 sm:space-y-6">
-                        {currentJobs.map((job) => (
+                        {loading ? (
+                            <div className="flex justify-center items-center py-12">
+                                <div className="text-center">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3a599c] mx-auto mb-4"></div>
+                                    <p className="text-gray-600">Loading jobs...</p>
+                                </div>
+                            </div>
+                        ) : currentJobs.length === 0 ? (
+                            <div className="text-center py-12">
+                                <div className="text-gray-400 mb-4">
+                                    <Stack size={48} className="mx-auto" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-600 mb-2">No jobs found</h3>
+                                <p className="text-gray-500">Try adjusting your search criteria or check back later.</p>
+                            </div>
+                        ) : (
+                            currentJobs.map((job) => (
                             <div key={job.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
                                 <div className="flex flex-col md:flex-row">
                                     <div className="flex-1 p-4 sm:p-6">
@@ -739,7 +646,7 @@ const JobListingsPage = () => {
                                             {job.tags.map((tag, index) => (
                                                 <span
                                                     key={index}
-                                                    className={`text-xs font-medium px-3 py-1 rounded-full ${tag === 'Featured' ? 'bg-red-100 text-red-800' :
+                                                    className={`text-xs font-medium px-3 py-1 rounded-full ₹{tag === 'Featured' ? 'bg-red-100 text-red-800' :
                                                         tag === 'Saled' ? 'bg-green-100 text-green-800' :
                                                             'bg-yellow-100 text-yellow-800'
                                                         }`}
@@ -783,11 +690,13 @@ const JobListingsPage = () => {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            ))
+                        )}
                     </div>
 
                     {/* Pagination */}
-                    <div className="mt-6 sm:mt-8 flex justify-center">
+                    {!loading && currentJobs.length > 0 && (
+                        <div className="mt-6 sm:mt-8 flex justify-center">
                         <nav className="flex items-center gap-1">
                             <button
                                 onClick={() => paginate(1)}
@@ -808,7 +717,7 @@ const JobListingsPage = () => {
                                 <button
                                     key={number}
                                     onClick={() => paginate(number)}
-                                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-md ${currentPage === number ? 'bg-[#3a599c] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+                                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-md ₹{currentPage === number ? 'bg-[#3a599c] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
                                     style={currentPage === number ? { backgroundColor: primaryColor } : {}}
                                 >
                                     {number}
@@ -830,7 +739,8 @@ const JobListingsPage = () => {
                                 <CaretDoubleRight size={18} />
                             </button>
                         </nav>
-                    </div>
+                        </div>
+                    )}
                 </main>
             </div>
 
@@ -918,15 +828,15 @@ const JobListingsPage = () => {
                                         <div
                                             className="absolute h-2 bg-[#3a599c] rounded-full"
                                             style={{
-                                                left: `${(salaryRange.min / 3000) * 100}%`,
-                                                right: `${100 - (salaryRange.max / 3000) * 100}%`,
+                                                left: `₹{(salaryRange.min / 3000) * 100}%`,
+                                                right: `₹{100 - (salaryRange.max / 3000) * 100}%`,
                                                 backgroundColor: primaryColor
                                             }}
                                         ></div>
                                     </div>
                                     <div className="flex justify-between mt-4 gap-2">
                                         <div className="relative flex-1">
-                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2">₹</span>
                                             <input
                                                 type="number"
                                                 value={salaryRange.min}
@@ -939,7 +849,7 @@ const JobListingsPage = () => {
                                         </div>
                                         <Minus size={20} className="text-gray-400" />
                                         <div className="relative flex-1">
-                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2">₹</span>
                                             <input
                                                 type="number"
                                                 value={salaryRange.max}

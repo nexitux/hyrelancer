@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Loader2, Upload, MapPin, Tag, Briefcase, DollarSign, User, Mail, Phone, Globe, Clock, Check, ChevronDown, Search } from 'lucide-react';
+import { X, Save, Loader2, Upload, MapPin, Tag, Briefcase, CircleDollarSign, User, Mail, Phone, Globe, Clock, Check, ChevronDown, Search } from 'lucide-react';
 import adminApi from '@/config/adminApi';
 import api from '@/config/api';
 
@@ -436,11 +436,11 @@ const EditJobModal = ({ isOpen, onClose, jobData, onSave }) => {
                             {/* Salary Range */}
                             <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
                                 <h3 className="text-lg font-semibold text-slate-800 mb-6 flex items-center gap-2">
-                                    <DollarSign size={20} className="text-green-600" />
+                                    <CircleDollarSign size={20} className="text-green-600" />
                                     Salary Range (₹)
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <InputField icon={<DollarSign size={18} />}>
+                                    <InputField icon={<CircleDollarSign size={18} />}>
                                         <input 
                                             type="number" 
                                             name="cuj_salary_range_from" 
@@ -450,7 +450,7 @@ const EditJobModal = ({ isOpen, onClose, jobData, onSave }) => {
                                             placeholder="From" 
                                         />
                                     </InputField>
-                                    <InputField icon={<DollarSign size={18} />}>
+                                    <InputField icon={<CircleDollarSign size={18} />}>
                                         <input 
                                             type="number" 
                                             name="cuj_salary_range_to" 

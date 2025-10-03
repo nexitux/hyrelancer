@@ -92,12 +92,12 @@ const JobListingsPage = () => {
                             posted: job.created_at ? formatDate(job.created_at) : 'Recently',
                             verified: job.cuj_is_active === 1 || job.is_active === 1,
                             location: job.cuj_location || job.location || 'Remote',
-                            salary: salaryFrom > 0 ? `$${salaryFrom} - $${salaryTo}` : 'Not specified',
+                            salary: salaryFrom > 0 ? `₹${salaryFrom} - ₹${salaryTo}` : 'Not specified',
                             salary_from: salaryFrom,
                             rating: (Math.random() * 1 + 4).toFixed(1), // Random rating between 4.0-5.0
                             description: job.cuj_desc || job.description || 'No description available',
                             tags: [job.cuj_job_type, job.cuj_work_mode, job.cuj_lang].filter(Boolean),
-                            price: salaryFrom > 0 ? `$${salaryFrom}` : 'Negotiable',
+                            price: salaryFrom > 0 ? `₹${salaryFrom}` : 'Negotiable',
                             priceType: '/fixed-price',
                             image: job.cuj_img1 ? `https://backend.hyrelancer.in/${job.cuj_img1}` : "/images/IMG-13.webp",
                             workMode: job.cuj_work_mode || 'Not specified',
@@ -368,7 +368,7 @@ const JobListingsPage = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Avg. Salary</p>
-                                <p className="text-2xl font-bold text-gray-900">$2,500</p>
+                                <p className="text-2xl font-bold text-gray-900">₹2,500</p>
                             </div>
                             <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
                                 <CurrencyDollar size={24} className="text-amber-600" />

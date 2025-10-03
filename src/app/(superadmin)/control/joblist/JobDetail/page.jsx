@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Clock, DollarSign, User, Mail, Phone, Calendar, Globe, Briefcase, Tag, MessageSquare, Trash2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, CircleDollarSign, User, Mail, Phone, Calendar, Globe, Briefcase, Tag, MessageSquare, Trash2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Base64 } from 'js-base64';
 import adminApi from '@/config/adminApi';
@@ -201,7 +201,7 @@ const JobDetailPage = () => {
                 <DetailItem icon={<Clock size={18} />} label="Job Type" value={job.cuj_job_type} />
                 <DetailItem icon={<Globe size={18} />} label="Work Mode" value={job.cuj_work_mode} />
                 <DetailItem icon={<Calendar size={18} />} label="Experience" value={job.cuj_u_experience} />
-                <DetailItem icon={<DollarSign size={18} />} label="Salary Range" value={formatSalary(job.cuj_salary_range_from, job.cuj_salary_range_to)} />
+                <DetailItem icon={<CircleDollarSign size={18} />} label="Salary Range" value={formatSalary(job.cuj_salary_range_from, job.cuj_salary_range_to)} />
                 {job.cuj_location && <DetailItem icon={<MapPin size={18} />} label="Location" value={job.cuj_location} />}
               </dl>
             </div>

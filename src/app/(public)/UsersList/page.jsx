@@ -17,7 +17,10 @@ import {
   List,
   X,
   Minus,
+  Phone,
 } from "lucide-react";
+import api from "@/config/api";
+import { showSuccessNotification, showErrorNotification } from "@/utils/notificationService";
 
 const UsersList = () => {
   const searchParams = useSearchParams();
@@ -49,6 +52,9 @@ const UsersList = () => {
   // Filter states
   const [workTime, setWorkTime] = useState("");
   const [experience, setExperience] = useState("");
+  
+  // Contact request states
+  const [requestingContact, setRequestingContact] = useState({});
   const [sortBy, setSortBy] = useState("Default");
   const [allResults, setAllResults] = useState([]);
   const [filteredResults, setFilteredResults] = useState([]);
@@ -154,6 +160,43 @@ const UsersList = () => {
       setResults([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // API call to request contact details
+  const handleRequestContactDetails = async (freelancerId, freelancerName) => {
+    if (!freelancerId) {
+      showErrorNotification("Unable to identify the freelancer. Please try again.");
+      return;
+    }
+
+    // Set loading state for this specific freelancer
+    setRequestingContact(prev => ({ ...prev, [freelancerId]: true }));
+    
+    try {
+      const requestData = {
+        sc_message_id: 1, // Default message ID as per API spec
+        sc_request_receive_id: freelancerId, // Freelancer's user ID
+        sc_request_send_message: `Hi, Please share your contact details.`
+      };
+
+      const response = await api.post('/share-contact/send', requestData);
+      
+      if (response.data.status === 'success') {
+        showSuccessNotification(response.data.message || "Contact request sent successfully!");
+      } else {
+        showErrorNotification(response.data.message || "Failed to send contact request.");
+      }
+    } catch (error) {
+      console.error('Error requesting contact details:', error);
+      if (error.response?.data?.message) {
+        showErrorNotification(error.response.data.message);
+      } else {
+        showErrorNotification("Failed to send contact request. Please try again.");
+      }
+    } finally {
+      // Clear loading state for this specific freelancer
+      setRequestingContact(prev => ({ ...prev, [freelancerId]: false }));
     }
   };
 
@@ -761,12 +804,14 @@ const UsersList = () => {
                           View Profile
                         </button>
 
-                        {/* <a
-                          href={`mailto:${user.email}`}
-                          className="flex-1 py-3 text-center bg-[#3e5a9a] text-white rounded-lg hover:bg-[#2d477a] transition-colors font-medium"
+                        <button
+                          onClick={() => handleRequestContactDetails(user.id, user.name)}
+                          disabled={requestingContact[user.id]}
+                          className="flex-1 py-3 text-center bg-[#3e5a9a] text-white rounded-lg hover:bg-[#2d477a] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                          Contact
-                        </a> */}
+                          <Phone className={`w-4 h-4 ${requestingContact[user.id] ? 'animate-pulse' : ''}`} />
+                          {requestingContact[user.id] ? 'Requesting...' : 'Get Contact Details'}
+                        </button>
                       </div>
                     </div>
                   </div>

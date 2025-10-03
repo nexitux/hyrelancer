@@ -1,7 +1,12 @@
-import React from "react";
-import { MapPin, Star, MessageCircle, User, CheckCircle } from "lucide-react";
+import React, { useState } from "react";
+import { MapPin, Star, MessageCircle, User, CheckCircle, Phone } from "lucide-react";
+import api from "@/config/api";
+import { showSuccessNotification, showErrorNotification } from "@/utils/notificationService";
 
 const ProfileHeader = ({ profileData, userData, skills, languages }) => {
+  // State for loading and button states
+  const [isRequestingContact, setIsRequestingContact] = useState(false);
+
   // Helper functions
   const getProfileImageUrl = (imagePath) => {
     if (!imagePath || imagePath === "0") return null;
@@ -36,6 +41,44 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
     return 0; // No reviews available
   };
 
+  // API call to request contact details
+  const handleRequestContactDetails = async () => {
+    // Get freelancer ID from profile data
+    const freelancerId = profileData?.fp_u_id;
+    
+    if (!freelancerId) {
+      showErrorNotification("Unable to identify the freelancer. Please try again.");
+      return;
+    }
+
+    setIsRequestingContact(true);
+    
+    try {
+      const requestData = {
+        sc_message_id: 1, // Default message ID as per API spec
+        sc_request_receive_id: freelancerId, // Freelancer's user ID
+        sc_request_send_message: "Hi, Please share your contact details."
+      };
+
+      const response = await api.post('/share-contact/send', requestData);
+      
+      if (response.data.status === 'success') {
+        showSuccessNotification(response.data.message || "Contact request sent successfully!");
+      } else {
+        showErrorNotification(response.data.message || "Failed to send contact request.");
+      }
+    } catch (error) {
+      console.error('Error requesting contact details:', error);
+      if (error.response?.data?.message) {
+        showErrorNotification(error.response.data.message);
+      } else {
+        showErrorNotification("Failed to send contact request. Please try again.");
+      }
+    } finally {
+      setIsRequestingContact(false);
+    }
+  };
+
   const profileImage = getProfileImageUrl(profileData?.fp_img);
   const userLanguages = parseLanguages(profileData?.fp_lang, languages);
   const displayName =
@@ -46,7 +89,7 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
   return (
     <div className="mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       {/* Header Section */}
-      <div className="relative bg-gradient-to-br from-blue-50 via-white to-blue-50 px-8 py-8">
+      <div className="relative bg-gradient-to-br from-[#3e5a9a]/5 via-white to-[#3e5a9a]/5 px-8 py-8">
         <div className="flex items-start space-x-6">
           {/* Profile Image */}
           <div className="relative">
@@ -140,7 +183,7 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
                 {skills.slice(0, 3).map((skill, index) => (
                   <span
                     key={skill.fs_id || index}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                    className="px-3 py-1 bg-[#3e5a9a]/10 text-[#3e5a9a] text-xs font-medium rounded-full"
                   >
                     {skill.fs_skill}
                   </span>
@@ -170,18 +213,29 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
             {profileData?.fp_amt_hour && (
               <div className="text-sm text-gray-600 mb-4">
                 <span className="font-medium">Rate: </span>
-                <span className="text-blue-600 font-bold">
+                <span className="text-[#3e5a9a] font-bold">
                   ₹{profileData.fp_amt_hour}/
                   {profileData.fp_amount_for || "Hour"}
                 </span>
               </div>
             )}
 
-            {/* Message Button */}
-            {/* <button className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-white border-2 border-blue-200 text-blue-700 rounded-xl font-semibold transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm">
-              <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
-              Send Message
-            </button> */}
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-white border-2 border-[#3e5a9a]/30 text-[#3e5a9a] rounded-xl font-semibold transition-all duration-200 hover:bg-[#3e5a9a]/5 hover:border-[#3e5a9a]/50 hover:shadow-sm">
+                <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
+                Send Message
+              </button>
+              
+              <button 
+                onClick={handleRequestContactDetails}
+                disabled={isRequestingContact}
+                className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-[#3e5a9a] text-white rounded-xl font-semibold transition-all duration-200 hover:bg-[#2d4a7a] hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Phone className={`w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200 ${isRequestingContact ? 'animate-pulse' : ''}`} />
+                {isRequestingContact ? 'Requesting...' : 'Get Contact Details'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

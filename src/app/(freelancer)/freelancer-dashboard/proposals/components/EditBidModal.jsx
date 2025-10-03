@@ -91,7 +91,7 @@ const EditBidModal = ({ isOpen, onClose, proposalData, onUpdate }) => {
                 placeholder="300"
               />
               <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
-                Max: $500
+                Max: ₹500
               </span>
             </div>
           </div>

@@ -119,7 +119,7 @@ const Bookmarks = () => {
                         },
                         location: appliedBookmark.customer_job.cuj_location || 'Remote',
                         price: appliedBookmark.customer_job.cuj_salary_range_from ?
-                            `$${appliedBookmark.customer_job.cuj_salary_range_from}` : 'Negotiable'
+                            `₹${appliedBookmark.customer_job.cuj_salary_range_from}` : 'Negotiable'
                     });
                 }
                 setShowSuccessModal(true);
@@ -374,9 +374,9 @@ const Bookmarks = () => {
     // Format salary range
     const formatSalary = (from, to) => {
         if (!from && !to) return 'Salary not specified';
-        if (!from) return `Up to $${to}`;
-        if (!to) return `From $${from}`;
-        return `$${from} - $${to}`;
+        if (!from) return `Up to ₹${to}`;
+        if (!to) return `From ₹${from}`;
+        return `₹${from} - ₹${to}`;
     };
 
     useEffect(() => {

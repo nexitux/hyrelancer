@@ -12,7 +12,7 @@ const MyProposals = () => {
       company: "Innovations",
       location: "Las Vegas, USA",
       date: "Mar 29, 2024",
-      cost: "$15-$20 /hour",
+      cost: "₹15-₹20 /hour",
       status: "Submitted",
       coverLetter: "Dear Tony, I am thrilled to apply for the Freelance UX/UI Designer position at Avitex. With my experience in this field and a profound passion for user experience design, I believe I can make a meaningful contribution to you.",
       companyIcon: (
@@ -27,7 +27,7 @@ const MyProposals = () => {
       company: "Bright Future",
       location: "Las Vegas, USA",
       date: "Mar 24, 2024",
-      cost: "$60-$80 /day",
+      cost: "₹60-₹80 /day",
       status: "Active",
       coverLetter: "Dear Hiring Manager, I am excited to apply for this video editing position...",
       companyIcon: (
@@ -42,7 +42,7 @@ const MyProposals = () => {
       company: "GlobalTech Partners",
       location: "Las Vegas, USA",
       date: "Mar 19, 2024",
-      cost: "$850-$1000 /month",
+      cost: "₹850-₹1000 /month",
       status: "Expired",
       coverLetter: "Dear Team, I would like to express my interest in this design position...",
       companyIcon: (
@@ -57,7 +57,7 @@ const MyProposals = () => {
       company: "Apex Innovations",
       location: "Las Vegas, USA",
       date: "Mar 16, 2024",
-      cost: "$20-$25 /hour",
+      cost: "₹20-₹25 /hour",
       status: "Expired",
       coverLetter: "Hello, I am interested in your landing page development project...",
       companyIcon: (
@@ -72,7 +72,7 @@ const MyProposals = () => {
       company: "Digital Commerce",
       location: "Las Vegas, USA",
       date: "Mar 14, 2024",
-      cost: "$500-$800 /project",
+      cost: "₹500-₹800 /project",
       status: "Active",
       coverLetter: "Dear Sir/Madam, I am writing to apply for the WordPress developer position...",
       companyIcon: (
@@ -87,7 +87,7 @@ const MyProposals = () => {
       company: "TechStart",
       location: "Las Vegas, USA",
       date: "Mar 13, 2024",
-      cost: "$100-$200 /project",
+      cost: "₹100-₹200 /project",
       status: "Submitted",
       coverLetter: "Dear Hiring Team, I am excited about the opportunity to design your logo...",
       companyIcon: (
@@ -102,7 +102,7 @@ const MyProposals = () => {
       company: "MarketPro",
       location: "Las Vegas, USA",
       date: "Mar 11, 2024",
-      cost: "$25-$35 /hour",
+      cost: "₹25-₹35 /hour",
       status: "Active",
       coverLetter: "Hello, I am interested in your SEO specialist position...",
       companyIcon: (
@@ -117,7 +117,7 @@ const MyProposals = () => {
       company: "ContentHub",
       location: "Las Vegas, USA",
       date: "Mar 9, 2024",
-      cost: "$15-$20 /hour",
+      cost: "₹15-₹20 /hour",
       status: "Expired",
       coverLetter: "Dear Content Team, I am writing to express my interest in the content writer role...",
       companyIcon: (
@@ -132,7 +132,7 @@ const MyProposals = () => {
       company: "DataFlow Systems",
       location: "Las Vegas, USA",
       date: "Mar 7, 2024",
-      cost: "$50-$70 /hour",
+      cost: "₹50-₹70 /hour",
       status: "Active",
       coverLetter: "Dear Hiring Manager, I am pleased to submit my application for the DBA position...",
       companyIcon: (
@@ -147,7 +147,7 @@ const MyProposals = () => {
       company: "SocialBuzz",
       location: "Las Vegas, USA",
       date: "Mar 5, 2024",
-      cost: "$800-$1200 /month",
+      cost: "₹800-₹1200 /month",
       status: "Submitted",
       coverLetter: "Hello, I am excited to apply for the Social Media Manager position...",
       companyIcon: (

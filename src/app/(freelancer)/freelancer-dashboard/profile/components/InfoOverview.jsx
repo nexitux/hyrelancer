@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { FileText, Download, ExternalLink, MapPin, DollarSign, Calendar, Globe, User } from 'lucide-react';
+import { FileText, Download, ExternalLink, MapPin, CircleDollarSign, Calendar, Globe, User } from 'lucide-react';
 
 export default function InfoOverview({ 
   profileData, 
@@ -91,7 +91,7 @@ export default function InfoOverview({
     { 
       label: 'Rate:', 
       value: getRateDisplay(), 
-      icon: DollarSign 
+      icon: CircleDollarSign 
     },
     { 
       label: 'Experience:', 

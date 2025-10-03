@@ -27,8 +27,8 @@ const ActiveWorkDashboard = () => {
                         // Calculate salary range
                         const salaryFrom = job.cuj_salary_range_from;
                         const salaryTo = job.cuj_salary_range_to;
-                        const budget = salaryFrom && salaryTo ? `$${salaryFrom} - $${salaryTo}` : 
-                                     salaryFrom ? `$${salaryFrom}+` : 'Not Specified';
+                        const budget = salaryFrom && salaryTo ? `₹${salaryFrom} - ₹${salaryTo}` : 
+                                     salaryFrom ? `₹${salaryFrom}+` : 'Not Specified';
                         
                         return {
                             id: job.cuj_id,
