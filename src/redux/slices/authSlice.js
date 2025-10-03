@@ -36,6 +36,7 @@ const loadInitialState = () => {
           token,
           userType: userType || parsedUser.user_type,
           slug: finalSlug,
+          isOnline: parsedUser.is_online || false, // Default to false if not present
           isLoading: false,
           error: null,
           isAuthenticated: true,
@@ -56,6 +57,7 @@ const loadInitialState = () => {
     token: null,
     userType: null,
     slug: null,
+    isOnline: false,
     isLoading: false,
     error: null,
     isAuthenticated: false,
@@ -91,6 +93,7 @@ const authSlice = createSlice({
       console.log('🏷️ Generated slug:', slug);
       
       state.slug = slug;
+      state.isOnline = action.payload.isOnline || action.payload.user?.is_online || false;
       state.error = null;
       state.isAuthenticated = true;
 
@@ -183,6 +186,17 @@ const authSlice = createSlice({
         }
       }
     },
+    // Action to update online status
+    updateOnlineStatus: (state, action) => {
+      state.isOnline = action.payload;
+      if (state.user) {
+        state.user.is_online = action.payload;
+        // Update localStorage with new user data
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
+      }
+    },
     // Action to restore auth state from localStorage
     restoreAuthState: (state, action) => {
       console.log('🔄 Restoring auth state:', action.payload);
@@ -202,6 +216,7 @@ const authSlice = createSlice({
       
       console.log('🏷️ Restored slug:', slug);
       state.slug = slug;
+      state.isOnline = action.payload.isOnline || action.payload.user?.is_online || false;
       state.isAuthenticated = true;
     },
   },
@@ -218,6 +233,7 @@ export const {
   logout,
   emailVerified,
   mobileVerified,
+  updateOnlineStatus,
   restoreAuthState
 } = authSlice.actions;
 

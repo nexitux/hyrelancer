@@ -96,6 +96,14 @@ export const freelancerJobAPI = {
   getAppliedJobAlert: async () => {
     const response = await api.get('/getAppliedJobAlert');
     return response.data;
+  },
+
+  // Update freelancer availability status (online/offline)
+  updateAvailability: async (userId, isOnline) => {
+    const encodedUserId = btoa(userId.toString());
+    const status = isOnline ? 1 : 0;
+    const response = await api.get(`/FeAvailable/${status}/${encodedUserId}`);
+    return response.data;
   }
 };
 

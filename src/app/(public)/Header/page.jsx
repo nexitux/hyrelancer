@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { logout, updateUserProfile, mobileVerified } from "@/redux/slices/authSlice";
+import { logout, updateUserProfile, mobileVerified, updateOnlineStatus } from "@/redux/slices/authSlice";
 import {
   Menu as MenuIcon,
   User,
@@ -16,10 +16,14 @@ import {
   Settings,
   LogOut,
   Shield,
+  MessageCircle,
+  Bell,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import Logo from "../../../../public/images/image.png";
 import Image from "next/image";
-import api from "@/config/api";
+import api, { freelancerJobAPI } from "@/config/api";
 import PhoneVerificationModal from "../../registration/Header/components/PhoneVerificationModal";
 
 // Default category icons mapping
@@ -43,10 +47,11 @@ const Header = ({ params }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch();
-  const { user, slug, token, isAuthenticated } = useSelector(state => state.auth);
+  const { user, slug, token, isAuthenticated, isOnline } = useSelector(state => state.auth);
   console.log("Redux user session:", {
     user: user,
     isAuthenticated: isAuthenticated,
@@ -149,6 +154,9 @@ const Header = ({ params }) => {
       if (!event.target.closest(".user-dropdown")) {
         setShowUserDropdown(false);
       }
+      if (!event.target.closest(".notification-dropdown")) {
+        setShowNotificationDropdown(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -208,6 +216,79 @@ const Header = ({ params }) => {
     dispatch(mobileVerified({ timestamp: new Date().toISOString() }));
     setShowVerificationModal(false);
   };
+
+  const handleMessageClick = () => {
+    const userType = user?.user_type;
+    if (userType === "Customer" || userType === "customer") {
+      router.push("/customer-dashboard/message");
+    } else if (userType === "Freelancer" || userType === "freelancer") {
+      router.push("/freelancer-dashboard/message");
+    }
+  };
+
+  const handleOnlineToggle = async () => {
+    try {
+      const newStatus = !isOnline;
+      const userId = user?.id;
+      
+      if (!userId) {
+        console.error("User ID not found");
+        return;
+      }
+
+      // Update Redux state immediately for better UX
+      dispatch(updateOnlineStatus(newStatus));
+      
+      // Call API to update availability status
+      await freelancerJobAPI.updateAvailability(userId, newStatus);
+      
+      console.log(`Freelancer availability updated to: ${newStatus ? 'Online' : 'Offline'}`);
+    } catch (error) {
+      console.error("Error updating availability status:", error);
+      // Revert Redux state on error
+      dispatch(updateOnlineStatus(!newStatus));
+    }
+  };
+
+  const getMessagePath = () => {
+    const userType = user?.user_type;
+    if (userType === "Customer" || userType === "customer") {
+      return "/customer-dashboard/message";
+    } else if (userType === "Freelancer" || userType === "freelancer") {
+      return "/freelancer-dashboard/message";
+    }
+    return "/";
+  };
+
+  // Sample notification data - replace with actual API call
+  const notifications = [
+    {
+      id: 1,
+      title: "New Message",
+      message: "You have a new message from John Doe",
+      time: "2 minutes ago",
+      isRead: false,
+    },
+    {
+      id: 2,
+      title: "Job Application",
+      message: "Your application for 'Web Development' was accepted",
+      time: "1 hour ago",
+      isRead: true,
+    },
+    {
+      id: 3,
+      title: "Payment Received",
+      message: "Payment of ₹5,000 has been received",
+      time: "3 hours ago",
+      isRead: true,
+    },
+  ];
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  // Check if user is freelancer
+  const isFreelancer = user?.user_type === "Freelancer" || user?.user_type === "freelancer";
 
   const handleLogout = async () => {
     try {
@@ -326,6 +407,100 @@ const Header = ({ params }) => {
           {/* User Dropdown and Verification Button - Only show if authenticated and not on login/register pages */}
           {shouldShowUserDropdown && (
             <div className="flex items-center space-x-3">
+              {/* Message Button */}
+              <button
+                onClick={handleMessageClick}
+                className={`flex items-center space-x-2 p-2 rounded-full transition-colors duration-200 ${isScrolled
+                  ? "hover:bg-gray-100 text-gray-700"
+                  : "hover:bg-white/10 text-white"
+                  }`}
+                title="Messages"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
+
+              {/* Notification Button with Dropdown */}
+              <div className="relative notification-dropdown">
+                <button
+                  onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                  className={`flex items-center space-x-2 p-2 rounded-full transition-colors duration-200 relative ${isScrolled
+                    ? "hover:bg-gray-100 text-gray-700"
+                    : "hover:bg-white/10 text-white"
+                    }`}
+                  title="Notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown Menu */}
+                {showNotificationDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-96 overflow-y-auto">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                    </div>
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`px-4 py-3 hover:bg-gray-50 transition-colors duration-150 ${
+                            !notification.isRead ? "bg-blue-50 border-l-4 border-blue-500" : ""
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900">
+                                {notification.title}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {notification.time}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-8 text-center text-gray-500">
+                        <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">No notifications yet</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Online/Offline Toggle - Only for Freelancers */}
+              {isFreelancer && (
+                <button
+                  onClick={handleOnlineToggle}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isOnline
+                    ? isScrolled
+                      ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-200"
+                      : "bg-green-500 text-white hover:bg-green-600"
+                    : isScrolled
+                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+                    : "bg-gray-500 text-white hover:bg-gray-600"
+                    }`}
+                  title={isOnline ? "Go Offline" : "Go Online"}
+                >
+                  {isOnline ? (
+                    <Wifi className="w-4 h-4" />
+                  ) : (
+                    <WifiOff className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {isOnline ? "Online" : "Offline"}
+                  </span>
+                </button>
+              )}
+
               {/* Mobile Verification Button - Only show if mobile is not verified */}
               {!isMobileVerified && (
                 <button
@@ -516,6 +691,70 @@ const Header = ({ params }) => {
           >
             Become A Service Provider
           </button>
+
+          {/* Mobile Action Buttons - Only show if authenticated */}
+          {shouldShowUserDropdown && (
+            <div className="space-y-2 pt-2 border-t">
+              {/* Message Button */}
+              <button
+                onClick={() => {
+                  handleMessageClick();
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md ${
+                  isScrolled ? "hover:bg-gray-100" : "hover:bg-[#4c6aa6]"
+                }`}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span>Messages</span>
+              </button>
+
+              {/* Notification Button */}
+              <button
+                onClick={() => {
+                  setShowNotificationDropdown(!showNotificationDropdown);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md relative ${
+                  isScrolled ? "hover:bg-gray-100" : "hover:bg-[#4c6aa6]"
+                }`}
+              >
+                <Bell className="w-5 h-5" />
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Online/Offline Toggle - Only for Freelancers */}
+              {isFreelancer && (
+                <button
+                  onClick={() => {
+                    handleOnlineToggle();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md ${
+                    isOnline
+                      ? isScrolled
+                        ? "bg-green-100 text-green-700"
+                        : "bg-green-500 text-white"
+                      : isScrolled
+                      ? "bg-gray-100 text-gray-700"
+                      : "bg-gray-500 text-white"
+                  }`}
+                >
+                  {isOnline ? (
+                    <Wifi className="w-5 h-5" />
+                  ) : (
+                    <WifiOff className="w-5 h-5" />
+                  )}
+                  <span>{isOnline ? "Online" : "Offline"}</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {shouldShowLoginButton && (
             <div className="pt-2 border-t">
