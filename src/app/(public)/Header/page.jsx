@@ -205,7 +205,7 @@ const Header = ({ params }) => {
     pathname !== "/register";
 
   // Check if mobile number is verified
-  const isMobileVerified = user?.mobile_verify && user.mobile_verify !== null;
+  const isMobileVerified = user?.mobile_verified_at && user.mobile_verified_at !== null;
 
   const handleVerifyPhone = () => {
     setShowVerificationModal(true);

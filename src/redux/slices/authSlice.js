@@ -103,7 +103,7 @@ const authSlice = createSlice({
           user: !!action.payload.user,
           userType: state.userType,
           slug: slug,
-          mobile_verify: action.payload.user?.mobile_verify
+          mobile_verified_at: action.payload.user?.mobile_verified_at
         });
         
         localStorage.setItem('token', action.payload.token);
@@ -179,7 +179,7 @@ const authSlice = createSlice({
     // Action for when mobile number is verified
     mobileVerified: (state, action) => {
       if (state.user) {
-        state.user.mobile_verify = action.payload.timestamp || new Date().toISOString();
+        state.user.mobile_verified_at = action.payload.timestamp || new Date().toISOString();
         // Update localStorage with new user data
         if (typeof window !== 'undefined') {
           localStorage.setItem('user', JSON.stringify(state.user));

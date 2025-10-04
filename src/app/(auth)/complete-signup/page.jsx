@@ -118,11 +118,7 @@ const CompleteSignupPage = () => {
                 requestData.google_id = googleId;
             }
             
-<<<<<<< HEAD
             const response = await api.post('https://backend.hyrelancer.in/api/google-register', requestData);
-=======
-            const response = await api.post('https://test.hyrelancer.in/api/google-register', requestData);
->>>>>>> 1229b14338b0244eb33d706807434741c3807c15
 
             console.log('Complete signup response:', response.data);
             console.log('User data from registration:', response.data.user);

@@ -18,7 +18,7 @@ export default function Banner() {
   };
 
   // Check if mobile number is verified
-  const isMobileVerified = user?.mobile_verify && user.mobile_verify !== null;
+  const isMobileVerified = user?.mobile_verified_at && user.mobile_verified_at !== null;
 
   const marqueeItems = [
     { icon: <FaBriefcase className="text-sky-400" />, text: "Find Your Next Big Project" },

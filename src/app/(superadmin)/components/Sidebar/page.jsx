@@ -11,7 +11,11 @@ import {
   MdClose,
   MdLightMode,
   MdDarkMode,
-  MdMessage
+  MdMessage,
+  MdStar,
+  MdAssignment,
+  MdSupport,
+  MdEmojiEvents
 } from 'react-icons/md';
 import Image from "next/image";
 import { usePathname, useRouter } from 'next/navigation';
@@ -99,7 +103,7 @@ export default function Sidebar() {
     { 
       id: 'jobs', 
       label: 'Jobs', 
-      icon: MdMiscellaneousServices, 
+      icon: MdAssignment, 
       href: '/superadmin/services',
       subLinks: [
         { id: 'jobslist', label: 'Jobs List', href: '/control/joblist' }
@@ -130,9 +134,15 @@ export default function Sidebar() {
       ]
     },
     { 
+      id: 'testimonials', 
+      label: 'Testimonials', 
+      icon: MdStar, 
+      href: '/control/testimonials'
+    },
+    { 
       id: 'AdminSupport', 
       label: 'AdminSupport', 
-      icon: MdPeople, 
+      icon: MdSupport, 
       href: '/AdminSupport',
       subLinks: [
         { id: 'AdminSupport', label: 'Ticekt List', href: '/control/AdminSupport' },
@@ -142,7 +152,7 @@ export default function Sidebar() {
     { 
       id: 'badgesList', 
       label: 'badgesList', 
-      icon: MdPeople, 
+      icon: MdEmojiEvents, 
       href: '/badgesList',
       subLinks: [
         { id: 'badgesList', label: 'Badges List', href: '/control/badgesList' },
