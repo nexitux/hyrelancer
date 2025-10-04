@@ -1,74 +1,214 @@
 "use client";
-import React, { useState } from 'react';
-import { Trophy, Target, Zap, Award, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trophy, Target, Zap, Award, Star, Shield, Users, Clock, DollarSign, Crown, Mail, Phone, MessageSquare, CheckCircle, XCircle, UserCheck, Globe, Briefcase } from 'lucide-react';
+import api from '@/config/api';
+import { freelancerDashboardService } from '@/services/freelancerDashboardService';
 
 const AchievementsRoadmap = () => {
-  const [activeAchievement, setActiveAchievement] = useState(null);
+  const [activeBadge, setActiveBadge] = useState(null);
+  const [verificationBadges, setVerificationBadges] = useState([]);
+  const [userBadges, setUserBadges] = useState([]);
+  const [verificationStatus, setVerificationStatus] = useState({
+    registration: false,
+    email: false,
+    mobile: false,
+    socialMedia: false,
+    idProof: false
+  });
+  const [loading, setLoading] = useState(true);
 
-  const achievements = [
+  // Default verification badges
+  const defaultVerificationBadges = [
     {
       id: 1,
-      title: 'First Win',
-      description: 'Complete your first project successfully',
-      icon: Trophy,
-      color: 'bg-blue-500',
-      iconColor: 'text-blue-500',
-      borderColor: 'border-blue-500',
-      status: 'completed',
-      date: '2 days ago',
-      position: { top: '8%', left: '50%' }
-    },
-    {
-      id: 2,
-      title: 'Quick Response',
-      description: 'Respond to 10 project proposals within 24 hours',
-      icon: Zap,
-      color: 'bg-green-500',
-      iconColor: 'text-green-500',
-      borderColor: 'border-green-500',
-      status: 'completed',
-      date: '5 days ago',
-      position: { top: '28%', left: '65%' }
-    },
-    {
-      id: 3,
-      title: 'Top Rated',
-      description: 'Achieve 5-star rating from 5 different clients',
-      icon: Star,
-      color: 'bg-yellow-500',
-      iconColor: 'text-yellow-500',
-      borderColor: 'border-yellow-500',
-      status: 'in-progress',
-      progress: 60,
-      date: 'In progress',
-      position: { top: '48%', left: '35%' }
-    },
-    {
-      id: 4,
-      title: 'Goal Crusher',
-      description: 'Complete 20 milestones on time',
-      icon: Target,
-      color: 'bg-orange-500',
-      iconColor: 'text-orange-500',
-      borderColor: 'border-orange-500',
-      status: 'in-progress',
-      progress: 35,
-      date: 'In progress',
-      position: { top: '68%', left: '60%' }
-    },
-    {
-      id: 5,
-      title: 'Elite Freelancer',
-      description: 'Earn ₹1,00,000 in total project payments',
-      icon: Award,
+      title: 'Registration Complete',
+      description: 'Complete your account registration',
+      icon: UserCheck,
       color: 'bg-purple-500',
       iconColor: 'text-purple-500',
       borderColor: 'border-purple-500',
       status: 'locked',
       date: 'Not started',
-      position: { top: '88%', left: '45%' }
+      position: { top: '7%', left: '25%' },
+      verificationType: 'registration'
+    },
+    {
+      id: 2,
+      title: 'Email Verified',
+      description: 'Verify your email address',
+      icon: Mail,
+      color: 'bg-blue-500',
+      iconColor: 'text-blue-500',
+      borderColor: 'border-blue-500',
+      status: 'locked',
+      date: 'Not started',
+      position: { top: '25%', left: '60%' },
+      verificationType: 'email'
+    },
+    {
+      id: 3,
+      title: 'Mobile Verified',
+      description: 'Verify your mobile number',
+      icon: Phone,
+      color: 'bg-green-500',
+      iconColor: 'text-green-500',
+      borderColor: 'border-green-500',
+      status: 'locked',
+      date: 'Not started',
+      position: { top: '60%', left: '70%' },
+      verificationType: 'mobile'
+    },
+    {
+      id: 4,
+      title: 'ID Proof Verified',
+      description: 'Verify your identity document',
+      icon: Shield,
+      color: 'bg-indigo-500',
+      iconColor: 'text-indigo-500',
+      borderColor: 'border-indigo-500',
+      status: 'locked',
+      date: 'Not started',
+      position: { top: '80%', left: '33%' },
+      verificationType: 'idProof'
+    },
+    {
+      id: 5,
+      title: 'Social Media Verified',
+      description: 'Connect your social media accounts',
+      icon: Globe,
+      color: 'bg-pink-500',
+      iconColor: 'text-pink-500',
+      borderColor: 'border-pink-500',
+      status: 'locked',
+      date: 'Not started',
+      position: { top: '95%', left: '80%' },
+      verificationType: 'socialMedia'
     }
   ];
+
+  // Transform verification badges based on fb_b_id
+  const transformVerificationBadges = (userBadges) => {
+    if (!userBadges || !Array.isArray(userBadges)) return defaultVerificationBadges;
+    
+    // Create a map of verified badge IDs
+    const verifiedIds = new Set();
+    userBadges.forEach(badge => {
+      const badgeId = parseInt(badge.fb_b_id);
+      verifiedIds.add(badgeId);
+    });
+    
+    // Update default badges with verification status based on fb_b_id
+    return defaultVerificationBadges.map(badge => {
+      let isVerified = false;
+      switch (badge.id) {
+        case 1: isVerified = verifiedIds.has(1); break; // Registration
+        case 2: isVerified = verifiedIds.has(2); break; // Email
+        case 3: isVerified = verifiedIds.has(3); break; // Mobile
+        case 4: isVerified = verifiedIds.has(4); break; // ID Proof
+        case 5: isVerified = verifiedIds.has(5); break; // Social Media
+      }
+      
+      return {
+        ...badge,
+        status: isVerified ? 'completed' : 'locked',
+        date: isVerified ? 'Completed' : 'Not started'
+      };
+    });
+  };
+
+  // Fetch verification badges from API
+  useEffect(() => {
+    
+    // Fetch user badges from UserDashboard API
+    const fetchUserBadges = async () => {
+      try {
+        console.log('Fetching user badges...');
+        const response = await api.post('/UserDashboard');
+        const data = response.data;
+        console.log('API Response:', data);
+        
+        // Extract badges from UserDashboard API response
+        // Check if badges are in fe_badges or other locations
+        let badgesArray = data?.fe_badges || data?.badges || data?.data?.badges || data;
+        if (!Array.isArray(badgesArray)) {
+          console.error('Badges data is not an array:', badgesArray);
+          badgesArray = [];
+        }
+        
+        const activeBadges = badgesArray.filter(badge => 
+          badge.fb_is_active === 1
+        );
+        
+        console.log('Filtered active badges:', activeBadges);
+        
+        setUserBadges(activeBadges);
+        
+        // Transform badges to verification status
+        const transformedBadges = transformVerificationBadges(activeBadges);
+        setVerificationBadges(transformedBadges);
+        
+        // Also update verification status for hover cards
+        const verification = {
+          registration: false,
+          email: false,
+          mobile: false,
+          socialMedia: false,
+          idProof: false
+        };
+        
+        activeBadges.forEach(badge => {
+          const badgeData = badge.get_fe_badge;
+          const badgeId = parseInt(badge.fb_b_id);
+          
+          console.log(`Badge ID: ${badgeId}`, {
+            fb_id: badge.fb_id,
+            fb_b_id: badge.fb_b_id,
+            badge_name: badgeData?.b_name || 'No Name',
+            badge_type: badgeData?.b_type || 'No Type'
+          });
+          
+          // Map based on fb_b_id (regardless of get_fe_badge being null)
+          switch (badgeId) {
+            case 1: // Registration
+              verification.registration = true;
+              console.log('✅ Registration Badge Found:', badgeData?.b_name || 'Active');
+              break;
+            case 2: // Email
+              verification.email = true;
+              console.log('✅ Email Badge Found:', badgeData?.b_name || 'Active');
+              break;
+            case 3: // Mobile
+              verification.mobile = true;
+              console.log('✅ Mobile Badge Found:', badgeData?.b_name || 'Active');
+              break;
+            case 4: // ID Proof
+              verification.idProof = true;
+              console.log('✅ ID Proof Badge Found:', badgeData?.b_name || 'Active');
+              break;
+            case 5: // Social Media
+              verification.socialMedia = true;
+              console.log('✅ Social Media Badge Found:', badgeData?.b_name || 'Active');
+              break;
+            default:
+              console.log('❌ Unknown Badge ID:', badgeId, 'Name:', badgeData?.b_name || 'Unknown');
+          }
+        });
+        
+        setVerificationStatus(verification);
+      } catch (error) {
+        console.error('Error fetching user badges:', error);
+        setUserBadges([]);
+        setVerificationBadges(defaultVerificationBadges);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserBadges();
+  }, []);
+
+  // Use verification badges from API or default badges
+  const achievements = verificationBadges.length > 0 ? verificationBadges : defaultVerificationBadges;
 
   return (
     <div className="bg-white h-full rounded-2xl border border-gray-200 p-6">
@@ -76,42 +216,47 @@ const AchievementsRoadmap = () => {
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-gray-700" />
           <h3 className="text-lg font-semibold text-gray-900">
-            Achievements Journey
+            Verification Badges 
           </h3>
         </div>
         <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
-          {achievements.filter(a => a.status === 'completed').length}/{achievements.length} Complete
+          {loading ? 'Loading...' : `${achievements.filter(a => a.status === 'completed').length}/${achievements.length} Complete`}
         </span>
       </div>
 
       <div className="relative h-[500px] bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100 p-8">
-        {/* Simplified curved path */}
+        {/* Curved path connecting all badge nodes */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 500" preserveAspectRatio="none">
           <defs>
-            <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.15" />
-              <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.15" />
+            <linearGradient id="contactPathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+              <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
             </linearGradient>
           </defs>
           
-          {/* Main path - connecting all achievement nodes */}
+          {/* Main path connecting all achievement nodes */}
           <path
-            d="M 200 40 
-               C 220 90, 260 110, 260 140
-               C 260 170, 220 200, 140 240
-               C 100 260, 140 300, 240 340
-               C 280 360, 250 400, 180 440"
+            d="M 98 10 
+                C 240 150, 320 200, 320 250
+                C 320 300, 150 350, 140 380
+                C 80 420, 150 460, 320 490"
             fill="none"
-            stroke="url(#pathGradient)"
-            strokeWidth="3"
+            stroke="url(#contactPathGradient)"
+            strokeWidth="5"
             strokeLinecap="round"
-            strokeDasharray="10 6"
+            strokeDasharray="12 8"
           />
         </svg>
 
-        {/* Achievement Nodes positioned along the path */}
-        {achievements.map((achievement, index) => {
+        {/* Loading state */}
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-gray-500">Loading verification badges...</div>
+          </div>
+        ) : (
+          /* Contact achievement nodes positioned along the path */
+          achievements.map((achievement, index) => {
           const Icon = achievement.icon;
           
           return (
@@ -122,14 +267,73 @@ const AchievementsRoadmap = () => {
                 top: achievement.position.top, 
                 left: achievement.position.left,
                 transform: 'translate(-50%, -50%)',
-                zIndex: 10 + index
+                zIndex: achievement.id === 1 ? 50 : 10 + index
               }}
             >
-              {/* Achievement card - always visible with all details */}
-              <div className="flex flex-col items-center group">
-                {/* Node button */}
+                {/* Achievement card */}
+              <div className="flex flex-col items-center group relative">
+                  {/* Info card - shown on hover (below for registration, above for others) */}
+                <div 
+                    className={`absolute ${achievement.id === 1 ? 'top-full mt-4' : 'bottom-full mb-4'} w-56 p-4 rounded-lg bg-white border-2 shadow-xl ${achievement.borderColor} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out transform group-hover:scale-105 left-1/2 -translate-x-1/2`}
+                  style={{ zIndex: 100 }}
+                >
+                  <div className="text-center">
+                      <h4 className="font-semibold text-gray-900 text-sm mb-2">
+                      {achievement.title}
+                    </h4>
+                    
+                     <p className="text-gray-600 text-xs mb-3 leading-relaxed">
+                      {achievement.description}
+                    </p>
+                    
+                    {/* Verification Status */}
+                    <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="text-xs font-medium text-gray-700">Verification Status</span>
+                      </div>
+                      <div className={`flex items-center justify-center px-3 py-2 rounded-lg ${
+                        achievement.status === 'completed'
+                          ? 'bg-green-50 text-green-700 border border-green-200' 
+                          : 'bg-gray-50 text-gray-500 border border-gray-200'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{achievement.status === 'completed' ? '✓' : '⏳'}</span>
+                          <span className="text-sm font-medium">
+                            {achievement.status === 'completed' ? 'Verified' : 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                     <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-100">
+                        <span className="text-gray-500">{achievement.date}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${achievement.iconColor} bg-gray-50`}>
+                          {achievement.status === 'completed' ? 'Complete' : 'Incomplete'}
+                      </span>
+                      </div>
+                      
+                      {achievement.status === 'in-progress' && achievement.progress && (
+                        <div className="mt-2 text-xs">
+                          <div className="flex justify-between text-gray-600 mb-1">
+                            <span>Progress</span>
+                          <span className={`font-medium ${achievement.iconColor}`}>
+                              {Math.round(achievement.progress)}%
+                          </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full ${achievement.color}`}
+                              style={{ width: `${achievement.progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                </div>
+
+                  {/* Badge node */}
                 <div
-                  className={`relative w-16 h-16 rounded-full border-3 bg-white shadow-lg flex items-center justify-center transition-all duration-300 mb-3 ${
+                  className={`relative w-16 h-16 rounded-full border-3 bg-white shadow-lg flex items-center justify-center transition-all duration-300 ${
                     achievement.status === 'completed' 
                       ? `${achievement.borderColor} border-4` 
                       : achievement.status === 'in-progress'
@@ -149,17 +353,17 @@ const AchievementsRoadmap = () => {
                   />
                   
                   {/* Progress ring for in-progress */}
-                  {achievement.status === 'in-progress' && (
+                    {achievement.status === 'in-progress' && achievement.progress && (
                     <svg className="absolute inset-0 w-full h-full -rotate-90">
                       <circle
                         cx="32"
                         cy="32"
                         r="28"
                         fill="none"
-                        stroke={achievement.color.replace('bg-', 'rgb(var(--')}
+                          stroke="currentColor"
                         strokeWidth="3"
                         strokeDasharray={`${achievement.progress * 1.76} 176`}
-                        className={`${achievement.iconColor.replace('text-', 'stroke-')} opacity-30`}
+                          className={`${achievement.iconColor} opacity-30`}
                       />
                     </svg>
                   )}
@@ -171,51 +375,22 @@ const AchievementsRoadmap = () => {
                     </div>
                   )}
                   {achievement.status === 'locked' && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center shadow-md">
+                    <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center shadow-md`}>
                       <span className="text-white text-xs">🔒</span>
                     </div>
                   )}
                 </div>
-
-                {/* Info card - hidden by default, shown on hover */}
-                <div 
-                  className={`w-52 p-3 rounded-lg bg-white border-2 shadow-xl ${achievement.borderColor} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out transform group-hover:translate-y-0 translate-y-2`}
-                  style={{ zIndex: 100 }}
-                >
-                  <div className="text-center">
-                    <h4 className="font-semibold text-gray-900 text-sm mb-1.5">
-                      {achievement.title}
-                    </h4>
-                    
-                    <p className="text-gray-600 text-xs mb-2 leading-relaxed">
-                      {achievement.description}
-                    </p>
-                    
-                    <div className="flex items-center justify-center gap-2 text-xs pt-1 border-t border-gray-100">
-                      <span className="text-gray-500">
-                        {achievement.date}
-                      </span>
-                      {achievement.status === 'in-progress' && (
-                        <>
-                          <span className="text-gray-300">•</span>
-                          <span className={`font-medium ${achievement.iconColor}`}>
-                            {achievement.progress}%
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           );
-        })}
+          })
+        )}
       </div>
 
       {/* Summary */}
       <div className="mt-4 text-center">
         <p className="text-sm text-gray-500">
-          Keep progressing on your freelancing journey!
+          Complete all verifications to build trust and credibility!
         </p>
       </div>
     </div>
