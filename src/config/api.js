@@ -107,4 +107,13 @@ export const freelancerJobAPI = {
   }
 };
 
+// Message API functions
+export const messageAPI = {
+  // Get prefilled messages
+  getPrefilledMessages: async () => {
+    const response = await api.get('/messages1');
+    return response.data;
+  }
+};
+
 export default api;

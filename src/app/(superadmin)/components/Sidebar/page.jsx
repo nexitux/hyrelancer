@@ -10,7 +10,8 @@ import {
   MdMenu,
   MdClose,
   MdLightMode,
-  MdDarkMode
+  MdDarkMode,
+  MdMessage
 } from 'react-icons/md';
 import Image from "next/image";
 import { usePathname, useRouter } from 'next/navigation';
@@ -146,6 +147,16 @@ export default function Sidebar() {
       subLinks: [
         { id: 'badgesList', label: 'Badges List', href: '/control/badgesList' },
         
+      ]
+    },
+    { 
+      id: 'prefilledMessages', 
+      label: ' Messages', 
+      icon: MdMessage, 
+      href: '/control/prefilled-messages',
+      subLinks: [
+        { id: 'messages-list', label: 'Messages List', href: '/control/prefilled-messages' },
+        { id: 'messages-add', label: 'Add Message', href: '/control/prefilled-messages/add-message' }
       ]
     },
   ];

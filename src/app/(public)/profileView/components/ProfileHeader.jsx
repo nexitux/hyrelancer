@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import { MapPin, Star, MessageCircle, User, CheckCircle, Phone } from "lucide-react";
+import { useSelector } from "react-redux";
 import api from "@/config/api";
 import { showSuccessNotification, showErrorNotification } from "@/utils/notificationService";
+import LoginModal from "@/components/LoginModal/LoginModal";
+import MessageModal from "@/components/MessageModal/MessageModal";
 
 const ProfileHeader = ({ profileData, userData, skills, languages }) => {
   // State for loading and button states
   const [isRequestingContact, setIsRequestingContact] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  
+  // Get authentication state from Redux
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   // Helper functions
   const getProfileImageUrl = (imagePath) => {
@@ -39,6 +47,23 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
   const getReviewCount = () => {
     // TODO: This should come from reviews data when available
     return 0; // No reviews available
+  };
+
+  // Handle Send Message button click
+  const handleSendMessage = () => {
+    if (!isAuthenticated) {
+      // Show login modal if user is not authenticated
+      setShowLoginModal(true);
+    } else {
+      // Show message modal if user is authenticated
+      setShowMessageModal(true);
+    }
+  };
+
+  // Handle successful login - close login modal and open message modal
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    setShowMessageModal(true);
   };
 
   // API call to request contact details
@@ -222,7 +247,10 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <button className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-white border-2 border-[#3e5a9a]/30 text-[#3e5a9a] rounded-xl font-semibold transition-all duration-200 hover:bg-[#3e5a9a]/5 hover:border-[#3e5a9a]/50 hover:shadow-sm">
+              <button 
+                onClick={handleSendMessage}
+                className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-white border-2 border-[#3e5a9a]/30 text-[#3e5a9a] rounded-xl font-semibold transition-all duration-200 hover:bg-[#3e5a9a]/5 hover:border-[#3e5a9a]/50 hover:shadow-sm"
+              >
                 <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
                 Send Message
               </button>
@@ -300,6 +328,20 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
           )}
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Message Modal */}
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        freelancerData={profileData}
+      />
     </div>
   );
 };
