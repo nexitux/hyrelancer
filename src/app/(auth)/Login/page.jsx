@@ -487,6 +487,13 @@ const AuthForm = () => {
     window.location.href = googleSignupUrl;
   };
 
+  const handleGoogleSignUp = () => {
+    // Redirect to Google signup with callback to complete-signup page
+    const frontendUrl = `${window.location.origin}/complete-signup`;
+    const googleSignupUrl = `https://test.hyrelancer.in/api/google/signup?redirect_url=${encodeURIComponent(frontendUrl)}`;
+    window.location.href = googleSignupUrl;
+  };
+
   // Phone OTP functions
   const isBackendSuccess = (data) => {
     if (!data) return false;

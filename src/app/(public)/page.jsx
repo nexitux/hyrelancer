@@ -20,6 +20,7 @@ export default function HomePage() {
       // Redirect to complete-signup page with Google parameters
       const completeSignupUrl = `/complete-signup?user_googleid=${googleId}&user_email=${encodeURIComponent(googleEmail)}`;
       router.replace(completeSignupUrl);
+<<<<<<< HEAD
       return;
     }
 
@@ -30,6 +31,8 @@ export default function HomePage() {
       // Clear the URL parameters to prevent repeated redirects
       router.replace('/');
       return;
+=======
+>>>>>>> 1229b14338b0244eb33d706807434741c3807c15
     }
   }, [searchParams, router]);
 
