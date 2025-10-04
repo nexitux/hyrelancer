@@ -235,7 +235,9 @@ const AuthForm = () => {
             user: data.user,
             token: data.token,
             userType: data.user.user_type,
-            slug: data.fp_slug
+            slug: data.fp_slug,
+            availability: data.u_avail || 'Offline',
+            u_avail: data.u_avail || 'Offline'
           }));
 
           // For Google signup, automatically redirect to select-user-type if no user_type
@@ -312,7 +314,9 @@ const AuthForm = () => {
           user: response.data.user,
           token: response.data.access_token,
           userType: response.data.user.user_type,
-          slug: response.data.fp_slug
+          slug: response.data.fp_slug,
+          availability: response.data.u_avail || 'Offline',
+          u_avail: response.data.u_avail || 'Offline'
         }));
 
         console.log("Login API Response:", response);
@@ -611,7 +615,9 @@ const AuthForm = () => {
           user: user,
           token: token,
           userType: user.user_type,
-          slug: fp_slug
+          slug: fp_slug,
+          availability: response.data.u_avail || 'Offline',
+          u_avail: response.data.u_avail || 'Offline'
         }));
 
         localStorage.setItem('token', token);
