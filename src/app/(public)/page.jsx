@@ -6,6 +6,8 @@ import FAQPage from './FAQPage/page';
 import VideSection from './VideSection/page';
 import ServicesHome from './Service/page';
 import Category from './Category/page';
+import WorkFlow from './workFlow/page';
+import FreelnacerList from './freelnacerList/page';
 
 export default function HomePage() {
   const router = useRouter();
@@ -37,8 +39,10 @@ export default function HomePage() {
     <main>
       <HeroSection />
       <Category />
+      <WorkFlow />
       <ServicesHome />
       <VideSection />
+      <FreelnacerList />
       <FAQPage />
     </main>
   );

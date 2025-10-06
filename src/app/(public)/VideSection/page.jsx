@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPlay } from "react-icons/fa6";
-import banner from "../../../../public/images/banner2.png";
+
 
 const VideSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -30,55 +29,48 @@ const VideSection = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handlePlayClick = () => console.log('Video play clicked');
-
   return (
     <div
       ref={sectionRef}
-      className="w-full h-100 bg-fixed bg-cover bg-center relative px-4 xl:px-0 text-white flex items-center overflow-hidden"
-      style={{ backgroundImage: `url('${banner.src}')` }}
+      className="w-full h-[60vh] relative px-4 xl:px-0 text-white flex items-center overflow-hidden"
     >
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-fill"
+        src="/images/testtt.mp4"
+        aria-label="Background video showing professional work environment"
+      />
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40 z-0">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#3e5a9a]/10 via-transparent to-[#3e5a9a]/10 animate-pulse"></div>
-      </div>
+      <div className="absolute inset-0 bg-black/70 z-0"></div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 text-left">
-        {/* Play Button */}
-        <div className="mb-7 relative">
-          <button
-            onClick={handlePlayClick}
-            className={`group relative w-13 h-13 md:w-15 md:h-15 bg-black/80 backdrop-blur-sm text-white rounded-full flex items-center justify-center shadow-2xl cursor-pointer transition-all duration-500 hover:bg-[#3e5a9a] hover:scale-110 active:scale-95 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}
-            >
-            <div className="absolute inset-0 rounded-full bg-[#3e5a9a]/80 animate-ping"></div>
-            <div className="absolute inset-0 rounded-full bg-[#3e5a9a]/60 animate-ping" style={{ animationDelay: '0.5s' }}></div>
-            <FaPlay className="w-5 h-5 md:w-6 md:h-6 ml-0.5 group-hover:scale-110 transition-transform duration-300" />
-            <div className="absolute inset-0 rounded-full bg-[#3e5a9a] opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"></div>
-          </button>
+      <div className="relative z-10 w-full mx-auto px-4 text-left"style={{ maxWidth: "1550px" }}>
+        {/* Small tagline */}
+        <div className={`mb-2 transition-all duration-1000 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
+          <p className="text-sm sm:text-base text-[#3A599C] font-medium">
+            Boost Your Working Flow
+          </p>
         </div>
 
-        {/* Headings */}
-        <h1 className={`text-2xl sm:text-3xl md:text-4xl font-semibold mb-3 leading-tight transition-all duration-1000 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
+        {/* Main Headings */}
+        <h1 className={`text-4xl sm:text-4xl md:text-4xl lg:text-4xl font-bold mb-4 leading-tight transition-all duration-1000 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
           <span className="inline-block">Embark On Your Journey To</span>
           <br />
-          <span className="inline-block font-bold">Success With Hyrelancer!</span>
+          <span className="inline-block">Success With Hyrelancer!</span>
         </h1>
 
-        {/* Subtitle */}
-        <p className={`text-sm sm:text-base md:text-lg text-gray-200 transition-all duration-1000 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
-          Explore opportunities and unleash your potential today.
+        {/* Description */}
+        <p className={`text-base sm:text-lg md:text-xl text-gray-200 mb-8 max-w-2xl transition-all duration-1000 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
+          Explore opportunities and unleash your potential today. Start building meaningful connections and achieve your goals with ease.
         </p>
 
         {/* CTA Button */}
-        <div className={`mt-6 transition-all duration-1000 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
-          <button className="group px-6 py-3 bg-[#3e5a9a] text-white rounded-lg font-semibold hover:bg-[#2d4373] transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
-            <span className="flex items-center justify-center gap-2">
-              Get Started Now
-              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </span>
+        <div className={`transition-all duration-1000 ${isVisible ? 'animate-fade-in-up' : 'opacity-0 translate-y-8'}`}>
+          <button className="px-8 py-4 bg-[#3A599C] hover:bg-[#3A599C]/80 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
+            Get Started Now
           </button>
         </div>
       </div>

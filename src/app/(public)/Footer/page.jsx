@@ -12,13 +12,44 @@ import {
 import { FiArrowRight } from "react-icons/fi";
 import AppStore from '../../../../public/images/app_store.png';
 import GoogleStore from '../../../../public/images/gg_play.png'
-import Logo from '../../../../public/images/image.png'
+import Logo from '../../../../public/images/Hyrelancer2.png'
+import NexitLogo from '../../../../public/images/Nexit.png'
 import api from '../../../config/api';
 import { showSuccessNotification, showErrorNotification } from '../../../utils/notificationService';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const companyLinks = [
+    { label: "About Us", href: "#about" },
+    { label: "Categories", href: "#categories" },
+    { label: "Create Services", href: "#create-services" },
+    { label: "Pricing", href: "#pricing" },
+    { label: "FAQ", href: "#faq" },
+  ];
+
+  const locations = [
+    { name: "Kochi", href: "#kochi" },
+    { name: "Thrissur", href: "#thrissur" },
+    { name: "Alappuzha", href: "#alappuzha" },
+    { name: "Bangalore", href: "#bangalore" },
+    { name: "Chennai", href: "#chennai" },
+  ];
+
+  const featuredServices = [
+    { name: "Plumbing Services", href: "#plumbing" },
+    { name: "Electrical Works", href: "#electrical" },
+    { name: "AC Repair & Maintenance", href: "#ac-repair" },
+    { name: "Deep Cleaning Services", href: "#deep-cleaning" },
+    { name: "Home Appliance Repair", href: "#appliance-repair" },
+  ];
+
+  const footerLinks = [
+    { label: "Content Privacy", href: "#content-privacy" },
+    { label: "Privacy Policy", href: "#privacy-policy" },
+    { label: "Terms of Service", href: "#terms-of-service" },
+  ];
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -44,7 +75,6 @@ const Footer = () => {
 
       if (response.status === 200 || response.status === 201) {
         showSuccessNotification('Thank you for subscribing! You will now receive our latest updates and exclusive offers.');
-
         setEmail(''); // Clear the input field
       }
     } catch (error) {
@@ -64,133 +94,224 @@ const Footer = () => {
   };
 
   return (
-    <footer className="px-6 pt-12 pb-6 text-white bg-black sm:px-8">
-  <div className="mx-auto max-w-7xl">
-    {/* Top Row */}
-    <div className="flex flex-col gap-6 justify-between items-center mb-12 sm:flex-row">
-      {/* Logo */}
-      <div>
-        <Image src={Logo} alt="hyrelancer-logo" className="w-36 h-auto" />
+    <footer className="relative w-full min-h-screen bg-gray-100">
+      {/* Background Image with People */}
+      <div className="absolute inset-0">
+        <div 
+          className="w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='1920' height='1080' viewBox='0 0 1920 1080' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1920' height='1080' fill='%23F5F5F5'/%3E%3Ccircle cx='300' cy='400' r='80' fill='%23E0E0E0'/%3E%3Ccircle cx='1200' cy='350' r='60' fill='%23E0E0E0'/%3E%3C/svg%3E")`,
+            filter: 'blur(2px) grayscale(0.8)'
+          }}
+        />
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
-      {/* Social Icons */}
-      <div className="flex flex-col gap-2 items-center sm:flex-row sm:gap-4">
-        <span className="text-sm text-gray-400 md:text-base">Follow Us:</span>
-        <div className="flex gap-3">
-          <a href="#" className="text-gray-400 transition-colors hover:text-blue-600"><FaFacebookF size={20} /></a>
-          <a href="#" className="text-gray-400 transition-colors hover:text-white"><FaLinkedinIn size={20} /></a>
-          <a href="#" className="text-gray-400 transition-colors hover:text-sky-400"><FaTwitter size={20} /></a>
-          <a href="#" className="text-gray-400 transition-colors hover:text-pink-400"><FaInstagram size={20} /></a>
-          <a href="#" className="text-gray-400 transition-colors hover:text-red-600"><FaYoutube size={20} /></a>
-        </div>
-      </div>
-    </div>
+      <div className="relative z-10 flex items-end justify-center w-full min-h-screen pb-8">
+        <div className="flex flex-col lg:flex-row items-end gap-8 w-full max-w-7xl px-4 lg:px-8">
+          {/* Main Footer Content */}
+          <div className="flex-1 bg-black/90 backdrop-blur-sm rounded-3xl p-6 lg:p-12 w-full">
+            {/* Logo */}
+            <div className="mb-8 lg:mb-12">
+              <Image 
+                src={Logo} 
+                alt="Hyrelancer logo" 
+                width={180} 
+                height={43}
+                className="w-auto h-auto"
+              />
+            </div>
 
-    {/* Grid Columns */}
-    <div className="grid grid-cols-1 gap-8 mb-12 md:grid-cols-2 lg:grid-cols-4">
-      {/* Our Company */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold text-white">Our Company</h3>
-        <ul className="space-y-2 text-sm md:text-base">
-          <li><a href="#" className="text-gray-400 hover:text-white">About Us</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Categories</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Create Services</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Pricing</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">FAQ</a></li>
-        </ul>
-      </div>
+            {/* Navigation Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-16 mb-8 lg:mb-12">
+              {/* Our Company */}
+              <nav className="flex flex-col items-start gap-4">
+                <h3 className="text-xl font-semibold text-white leading-6 mb-2">
+                  Our Company
+                </h3>
+                {companyLinks.map((link, index) => (
+                  <a
+                    key={index}
+                    href={link.href}
+                    className="text-white hover:text-gray-300 transition-colors text-sm"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
 
-      {/* Locations */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold text-white">Locations</h3>
-        <ul className="space-y-2 text-sm md:text-base">
-          <li><a href="#" className="text-gray-400 hover:text-white">Kochi</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Thrissur</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Alappuzha</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Bangalore</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Chennai</a></li>
-        </ul>
-      </div>
+              {/* Locations */}
+              <nav className="flex flex-col items-start gap-4">
+                <h3 className="text-xl font-semibold text-white leading-6 mb-2">
+                  Locations
+                </h3>
+                {locations.map((location, index) => (
+                  <a
+                    key={index}
+                    href={location.href}
+                    className="text-white hover:text-gray-300 transition-colors text-sm"
+                  >
+                    {location.name}
+                  </a>
+                ))}
+              </nav>
 
-      {/* Featured Services */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold text-white">Featured Services</h3>
-        <ul className="space-y-2 text-sm md:text-base">
-          <li><a href="#" className="text-gray-400 hover:text-white">Plumbing Services</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Electrical Works</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">AC Repair & Maintenance</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Deep Cleaning Services</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Home Appliance Repair</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Pest Control Services</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Carpentry & Woodwork</a></li>
-          <li><a href="#" className="text-gray-400 hover:text-white">Painting & Renovation</a></li>
-        </ul>
-      </div>
+              {/* Featured Services */}
+              <nav className="flex flex-col items-start gap-4">
+                <h3 className="text-xl font-semibold text-white leading-6 mb-2">
+                  Featured Services
+                </h3>
+                {featuredServices.map((service, index) => (
+                  <a
+                    key={index}
+                    href={service.href}
+                    className="text-white hover:text-gray-300 transition-colors text-sm"
+                  >
+                    {service.name}
+                  </a>
+                ))}
+              </nav>
 
-      {/* Subscribe + App Download */}
-      <div>
-        {/* Subscribe */}
-        <div className="mb-6 space-y-3">
-          <h3 className="text-lg font-semibold text-white">Subscribe</h3>
-          <form onSubmit={handleSubscribe} className="flex flex-col md:flex-row">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email address"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 placeholder-gray-400 text-white bg-gray-800 rounded-md md:rounded-l-md md:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <button 
-              type="submit"
-              disabled={isLoading}
-              className="flex justify-center items-center px-4 py-2 mt-2 bg-blue-600 rounded-md transition-colors hover:bg-blue-700 md:mt-0 md:rounded-r-md md:rounded-l-none disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <FiArrowRight size={20} />
-              )}
-            </button>
-          </form>
-        </div>
+              {/* Subscribe Section */}
+              <div className="flex flex-col items-start gap-6">
+                {/* Subscribe Form */}
+                <form onSubmit={handleSubscribe} className="flex flex-col items-start gap-3 w-full max-w-sm">
+                  <label className="text-white text-xl font-semibold">
+                    Subscribe
+                  </label>
+                  
+                  <div className="flex items-center w-full bg-blue-600 rounded-full p-1">
+                    <div className="flex items-center flex-1 bg-white rounded-full px-4 py-3">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="enter your email"
+                        required
+                        disabled={isLoading}
+                        className="w-full text-black text-sm border-0 outline-none bg-transparent placeholder-gray-500"
+                      />
+                    </div>
+                    
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex items-center justify-center w-10 h-10 bg-transparent border-0 cursor-pointer"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <FiArrowRight size={20} className="text-white" />
+                      )}
+                    </button>
+                  </div>
+                </form>
 
-        {/* App Download */}
-        <div className="space-y-3">
-          <h4 className="text-lg font-semibold text-white">Download App</h4>
-          <div className="flex flex-col gap-3 md:flex-row">
-            <a href="#" className="block w-36">
-              <Image src={GoogleStore} alt="Google Play Store" className="w-full h-auto" />
-            </a>
-            <a href="#" className="block w-36">
-              <Image src={AppStore} alt="App Store" className="w-full h-auto" />
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+                {/* Contact Information */}
+                <div className="flex flex-col gap-4">
+                  <address className="text-white not-italic">
+                    <span className="text-gray-400 text-sm">
+                      Toll Free Customer Care
+                    </span>
+                    <br />
+                    <a
+                      href="tel:+11234560000"
+                      className="text-white hover:underline text-sm"
+                    >
+                      +(1) 123 456 0000
+                    </a>
+                  </address>
 
-    {/* Footer Bottom */}
-    <div className="pt-6 mt-6 border-t border-gray-800">
-      <div className="flex flex-col gap-4 justify-between items-center text-sm text-gray-400 md:flex-row">
-        <div>©2025 Hyrelancer. All Rights Reserved.</div>
-        <div className="flex flex-col items-center justify-center">
-            <span className="text-xs text-gray-500 mb-1 text-center w-full">Powered by</span>
-            <div className="flex items-center justify-center gap-2 w-full">
-              <Image src="/images/Nexit.png" alt="Powered by Company" width={100} height={30} className="h-6 w-auto object-contain mx-auto" />
+                  <address className="text-white not-italic">
+                    <span className="text-gray-400 text-sm">
+                      Need live support?
+                    </span>
+                    <br />
+                    <a
+                      href="mailto:info@hyrelancer.com"
+                      className="text-white hover:underline text-sm"
+                    >
+                      info@hyrelancer.com
+                    </a>
+                  </address>
+                </div>
+
+                {/* Social Media */}
+                <div className="flex items-center gap-4">
+                  <span className="text-white text-sm">Follow Us</span>
+                  <div className="flex gap-3">
+                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
+                      <FaFacebookF size={14} />
+                    </a>
+                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
+                      <FaLinkedinIn size={14} />
+                    </a>
+                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
+                      <FaTwitter size={14} />
+                    </a>
+                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
+                      <FaInstagram size={14} />
+                    </a>
+                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
+                      <FaYoutube size={14} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Bottom */}
+            <div className="border-t border-gray-600 pt-6">
+              <div className="flex flex-col lg:flex-row items-center justify-between bg-gray-800/50 rounded-full px-4 lg:px-6 py-4 gap-4 lg:gap-0">
+                <p className="text-gray-400 text-sm text-center lg:text-left">
+                  Copyright © All Rights Reserved.2025
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 text-xs">
+                    Powered by
+                  </span>
+                  <Image
+                    src={NexitLogo}
+                    alt="Powered by NEXIT"
+                    width={58}
+                    height={25}
+                    className="object-cover"
+                  />
+                </div>
+
+                <nav className="flex items-center gap-2 lg:gap-4 flex-wrap justify-center">
+                  {footerLinks.map((link, index) => (
+                    <a
+                      key={index}
+                      href={link.href}
+                      className="text-gray-400 hover:underline transition-colors text-sm"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </nav>
+              </div>
             </div>
           </div>
-        <div className="flex gap-4 items-center">
-          <a href="#" className="transition-colors hover:text-white">Terms Of Services</a>
-          
-          <span className="hidden text-gray-600 md:inline">|</span>
-          <a href="#" className="transition-colors hover:text-white">Privacy Policy</a>
+
+          {/* App Download Section */}
+          <div className="bg-white rounded-3xl p-6 lg:p-8 flex flex-col items-center gap-4 w-full lg:min-w-[280px] lg:w-auto">
+            <span className="text-black font-medium text-lg">
+              Download App!
+            </span>
+            <div className="flex flex-col gap-3">
+              <a href="#" className="block">
+                <Image src={GoogleStore} alt="Google Play Store" className="w-36 h-auto" />
+              </a>
+              <a href="#" className="block">
+                <Image src={AppStore} alt="App Store" className="w-36 h-auto" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-</footer>
-
+    </footer>
   );
 };
 
