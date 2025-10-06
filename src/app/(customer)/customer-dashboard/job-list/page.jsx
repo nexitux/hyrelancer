@@ -92,29 +92,48 @@ const ServiceOrders = () => {
         });
 
         const mapped = sorted.map((job, index) => {
-          const updated = job.updated_at  || job.created_at ;
+          const updated = job.updated_at || job.created_at;
           const postedOn = updated
             ? new Date(updated).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
             : '';
             
-            // Check active status
-            let isActive = false;
-            if (typeof job.cuj_is_active !== 'undefined') {
-              isActive = Number(job.cuj_is_active) === 1;
-            } 
-            
-            const status = isActive ? 'Active' : 'Inactive';
+          // Check active status
+          let isActive = false;
+          if (typeof job.cuj_is_active !== 'undefined') {
+            isActive = Number(job.cuj_is_active) === 1;
+          } 
+          
+          const status = isActive ? 'Active' : 'Inactive';
 
           const subCategoryName = job.subcategory_name || job.sc_name || subCategoryIdToName[job.cuj_sc_id] || '—';
           const serviceName = job.service_name || job.service || job.job_type || serviceIdToName[job.cuj_se_id] || '—';
 
+          // Get job status based on cuj_is_assigned only
+          let jobStatus = 'Not Assigned';
+          if (job.cuj_is_assigned === 1) {
+            jobStatus = 'Assigned';
+          }
+
+          // Format salary range
+          const salaryFrom = job.cuj_salary_range_from ? `₹${Number(job.cuj_salary_range_from).toLocaleString()}` : '—';
+          const salaryTo = job.cuj_salary_range_to ? `₹${Number(job.cuj_salary_range_to).toLocaleString()}` : '—';
+          const salaryRange = salaryFrom !== '—' && salaryTo !== '—' ? `${salaryFrom} - ${salaryTo}` : '—';
+
           return {
-            id: job.id ?? index + 1,
+            id: job.cuj_id ?? job.id ?? index + 1,
+            title: job.cuj_title || 'Untitled Job',
             category: subCategoryName,
             service: serviceName,
+            location: job.cuj_location || 'Not specified',
+            jobType: job.cuj_job_type || '—',
+            workMode: job.cuj_work_mode || '—',
+            experience: job.cuj_u_experience || '—',
+            salaryRange,
             postedOn,
             status,
+            jobStatus,
             statusColor: getStatusColor(status),
+            jobStatusColor: getJobStatusColor(jobStatus),
             raw: job
           };
         });
@@ -152,6 +171,17 @@ const ServiceOrders = () => {
         return 'bg-green-100 text-green-800';
       case 'Inactive':
         return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getJobStatusColor = (jobStatus) => {
+    switch (jobStatus) {
+      case 'Assigned':
+        return 'bg-green-100 text-green-800';
+      case 'Not Assigned':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -256,32 +286,41 @@ const ServiceOrders = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-[1600px] mx-auto">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+      <div className="w-full max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Posted Jobs</h1>
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden lg:block bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="hidden lg:block bg-white rounded-lg shadow-sm w-full">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 w-full">
+            <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    categories
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[250px]">
+                    Job Title
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]">
+                    Category
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+                    Location
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+                    Salary Range
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
+                    Job Status
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                     Posted On
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                   Job Status
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
+                    Status
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                     Actions
                   </th>
                 </tr>
@@ -289,43 +328,62 @@ const ServiceOrders = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">Loading jobs...</td>
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">Loading jobs...</td>
                   </tr>
                 )}
                 {error && !loading && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-red-600">{error}</td>
+                    <td colSpan={8} className="px-6 py-8 text-center text-red-600">{error}</td>
                   </tr>
                 )}
                 {!loading && !error && currentOrders.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No jobs found</td>
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">No jobs found</td>
                   </tr>
                 )}
                 {!loading && !error && currentOrders.map((order) => (
                   <tr key={order.id} className="group hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-start">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 mb-1">
-                            {order.category}
+                          <p className="text-sm font-medium text-gray-900 mb-1 truncate max-w-[200px]" title={order.title}>
+                            {order.title}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {order.jobType} • {order.workMode}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {order.service}
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900">
+                        <p className="font-medium">{order.category}</p>
+                        <p className="text-xs text-gray-500">{order.service}</p>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {order.postedOn}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
-                            {order.status}
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <span className="truncate block max-w-[150px]" title={order.location}>
+                        {order.location}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <span className="font-medium">{order.salaryRange}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.jobStatusColor}`}>
+                        {order.jobStatus}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                      {order.postedOn}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center space-x-1">
                         <button
                           onClick={() => handleViewOrder(order.id)}
                           className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
@@ -371,64 +429,82 @@ const ServiceOrders = () => {
         <div className="lg:hidden space-y-4">
           {currentOrders.map((order) => (
             <div key={order.id} className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-start mb-3">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-gray-900 mb-1">
-                    {order.category}
+                  <h3 className="text-sm font-medium text-gray-900 mb-1 truncate" title={order.title}>
+                    {order.title}
                   </h3>
                   <div className="flex items-center text-xs text-gray-500 mb-2">
-                    <span>{order.service}</span>
+                    <span>{order.category} • {order.service}</span>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500">
+                    <span>{order.jobType} • {order.workMode}</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
-                <div>
-                  <span className="text-gray-500">Posted On:</span>
-                  <span className="ml-1 text-gray-900">{order.postedOn}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                  <div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
-                      {order.status}
+                <div className="flex flex-col items-end space-y-1">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.jobStatusColor}`}>
+                    {order.jobStatus}
                   </span>
-                  </div>
-                <div className="flex items-center space-x-2 opacity-100">
-                        <button
-                    onClick={() => handleViewOrder(order.id)}
-                    className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
-                    title="View"
-                    aria-label="View"
-                        >
-                    <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                    onClick={() => handleEditOrder(order.id)}
-                    className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
-                    title="Edit"
-                    aria-label="Edit"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteOrder(order.id)}
-                    className={`p-1.5 rounded-md border transition-colors ${
-                      order.status === 'Active'
-                        ? 'text-red-600 border-red-200 hover:bg-red-50'
-                        : 'text-green-600 border-green-200 hover:bg-green-50'
-                    }`}
-                    title={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
-                    aria-label={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
-                  >
-                    {order.status === 'Active' ? (
-                      <XCircle className="w-4 h-4" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4" />
-                    )}
-                  </button>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
+                    {order.status}
+                  </span>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 mb-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Location:</span>
+                  <span className="text-gray-900 text-right max-w-[200px] truncate" title={order.location}>
+                    {order.location}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Salary Range:</span>
+                  <span className="text-gray-900 font-medium">{order.salaryRange}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Posted On:</span>
+                  <span className="text-gray-900">{order.postedOn}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Experience:</span>
+                  <span className="text-gray-900">{order.experience}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => handleViewOrder(order.id)}
+                  className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
+                  title="View"
+                  aria-label="View"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleEditOrder(order.id)}
+                  className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                  title="Edit"
+                  aria-label="Edit"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteOrder(order.id)}
+                  className={`p-1.5 rounded-md border transition-colors ${
+                    order.status === 'Active'
+                      ? 'text-red-600 border-red-200 hover:bg-red-50'
+                      : 'text-green-600 border-green-200 hover:bg-green-50'
+                  }`}
+                  title={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
+                  aria-label={order.status === 'Active' ? 'Deactivate Job' : 'Activate Job'}
+                >
+                  {order.status === 'Active' ? (
+                    <XCircle className="w-4 h-4" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
           ))}

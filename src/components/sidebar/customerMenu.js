@@ -15,10 +15,10 @@ export const customerMenu = [
   },
   {
     icon: <FaBriefcase className="w-4 h-4" />,
-    name: "Post a Job",
+    name: "Manage Jobs",
     subItems: [
-      { name: "New Job", path: "/customer-dashboard/job-post" },
-      { name: "Manage Jobs", path: "/customer-dashboard/job-list" },
+      { name: "Add Job", path: "/customer-dashboard/job-post" },
+      { name: "Posted Jobs", path: "/customer-dashboard/job-list" },
       { name: "Freelancers Request", path: "/customer-dashboard/work-request" },
     ],
   },
