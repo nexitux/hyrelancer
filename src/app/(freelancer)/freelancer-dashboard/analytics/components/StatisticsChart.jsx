@@ -7,7 +7,7 @@ import { freelancerDashboardService } from '@/services/freelancerDashboardServic
 
 // Chart Tab component with period selection
 const ChartTab = ({ selectedPeriod, onPeriodChange }) => {
-  const periods = ["Monthly", "Quarterly", "Annually"];
+  const periods = ["Monthly", "Yearly"];
 
   return (
     <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg dark:bg-gray-800">
@@ -65,6 +65,8 @@ export default function StatisticsChart() {
   const [selectedPeriod, setSelectedPeriod] = useState("Monthly");
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [appliedJobs, setAppliedJobs] = useState(0);
+  const [assignedJobs, setAssignedJobs] = useState(0);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -72,20 +74,17 @@ export default function StatisticsChart() {
         const data = await freelancerDashboardService.getFreelancerDashboard();
         const transformedData = freelancerDashboardService.transformFreelancerDashboardData(data);
         
-        // Create chart data with monthly job statistics
+        // Create chart data with simple monthly job statistics
+        const appliedJobsValue = data?.sendReCount || 0;
+        const assignedJobsValue = data?.AssignJobCount || 0;
+        
+        // Update state with API values
+        setAppliedJobs(appliedJobsValue);
+        setAssignedJobs(assignedJobsValue);
+        
         const monthlyData = [
-          { month: "Jan", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Feb", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Mar", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Apr", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "May", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Jun", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Jul", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Aug", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Sep", AppliedJobs: transformedData?.monthlyStats?.sentProposals || 0, AssignedJobs: transformedData?.monthlyStats?.assignedJobs || 0 },
-          { month: "Oct", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Nov", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Dec", AppliedJobs: 0, AssignedJobs: 0 }
+          { AppliedJobs: 0, AssignedJobs: 0 },
+          { AppliedJobs: appliedJobsValue, AssignedJobs: assignedJobsValue }
         ];
         
         setChartData(monthlyData);
@@ -117,37 +116,25 @@ export default function StatisticsChart() {
   // Function to get data based on selected period
   const getDataForPeriod = (period) => {
     if (period === "Monthly") {
+      // Show all months
       return chartData;
-    } else if (period === "Quarterly") {
-      // Group monthly data into quarters
-      const quarterlyData = [];
-      const quarterNames = [
-        "Jan-Mar", "Apr-Jun", "Jul-Sep", "Oct-Dec"
+    } else if (period === "Yearly") {
+      // Show Jan-Dec data for yearly view
+      const yearlyData = [
+        { month: "Jan", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Feb", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Mar", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Apr", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "May", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Jun", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Jul", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Aug", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Sep", AppliedJobs: appliedJobs, AssignedJobs: assignedJobs },
+        { month: "Oct", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Nov", AppliedJobs: 0, AssignedJobs: 0 },
+        { month: "Dec", AppliedJobs: 0, AssignedJobs: 0 }
       ];
-      
-      for (let i = 0; i < chartData.length; i += 3) {
-        const quarter = chartData.slice(i, i + 3);
-        const quarterName = quarterNames[Math.floor(i / 3)];
-        const appliedJobs = quarter.reduce((sum, item) => sum + item.AppliedJobs, 0);
-        const assignedJobs = quarter.reduce((sum, item) => sum + item.AssignedJobs, 0);
-        quarterlyData.push({
-          month: quarterName,
-          AppliedJobs: appliedJobs,
-          AssignedJobs: assignedJobs
-        });
-      }
-      return quarterlyData;
-    } else if (period === "Annually") {
-      // Sum all data for the year
-      const appliedJobs = chartData.reduce((sum, item) => sum + item.AppliedJobs, 0);
-      const assignedJobs = chartData.reduce((sum, item) => sum + item.AssignedJobs, 0);
-      return [
-        {
-          month: "2025",
-          AppliedJobs: appliedJobs,
-          AssignedJobs: assignedJobs
-        }
-      ];
+      return yearlyData;
     }
     return chartData;
   };
@@ -233,9 +220,10 @@ export default function StatisticsChart() {
               />
 
               <XAxis
-                dataKey="month"
+                dataKey={selectedPeriod === "Yearly" ? "month" : "Date"}
                 axisLine={false}
                 tickLine={false}
+                hide={selectedPeriod !== "Yearly"}
                 tick={{
                   fontSize: 11,
                   fill: '#6B7280',
