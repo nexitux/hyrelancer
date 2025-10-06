@@ -31,12 +31,17 @@ const loadInitialState = () => {
         
         console.log('🏷️ Final slug resolved:', finalSlug);
         
+        // Map availability to isOnline boolean
+        const availability = parsedUser.availability || 'Offline';
+        const isOnline = availability === 'Available now' || availability === 'Online' || availability === true;
+        
         return {
           user: parsedUser,
           token,
           userType: userType || parsedUser.user_type,
           slug: finalSlug,
-          isOnline: parsedUser.is_online || false, // Default to false if not present
+          isOnline: isOnline,
+          availability: availability,
           isLoading: false,
           error: null,
           isAuthenticated: true,
@@ -58,6 +63,7 @@ const loadInitialState = () => {
     userType: null,
     slug: null,
     isOnline: false,
+    availability: 'Offline',
     isLoading: false,
     error: null,
     isAuthenticated: false,
@@ -93,7 +99,19 @@ const authSlice = createSlice({
       console.log('🏷️ Generated slug:', slug);
       
       state.slug = slug;
-      state.isOnline = action.payload.isOnline || action.payload.user?.is_online || false;
+      
+      // Map availability to isOnline boolean
+      const availability = action.payload.availability || action.payload.user?.availability || action.payload.u_avail || 'Offline';
+      state.isOnline = availability === 'Available now' || availability === 'Online' || availability === true;
+      state.availability = availability;
+      
+      console.log('🔍 Login Success Debug:', {
+        'action.payload.u_avail': action.payload.u_avail,
+        'action.payload.availability': action.payload.availability,
+        'action.payload.user?.availability': action.payload.user?.availability,
+        'final availability': availability,
+        'isOnline': state.isOnline
+      });
       state.error = null;
       state.isAuthenticated = true;
 
@@ -156,6 +174,8 @@ const authSlice = createSlice({
       state.token = null;
       state.userType = null;
       state.slug = null; // Clear slug on logout
+      state.isOnline = false;
+      state.availability = 'Offline';
       state.isAuthenticated = false;
       state.error = null;
       state.isLoading = false;
@@ -197,6 +217,21 @@ const authSlice = createSlice({
         }
       }
     },
+    // Action to update availability status
+    updateAvailability: (state, action) => {
+      state.availability = action.payload;
+      // Map availability to isOnline boolean
+      state.isOnline = action.payload === 'Available now' || action.payload === 'Online' || action.payload === true;
+      
+      if (state.user) {
+        state.user.availability = action.payload;
+        state.user.is_online = state.isOnline;
+        // Update localStorage with new user data
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
+      }
+    },
     // Action to restore auth state from localStorage
     restoreAuthState: (state, action) => {
       console.log('🔄 Restoring auth state:', action.payload);
@@ -217,6 +252,7 @@ const authSlice = createSlice({
       console.log('🏷️ Restored slug:', slug);
       state.slug = slug;
       state.isOnline = action.payload.isOnline || action.payload.user?.is_online || false;
+      state.availability = action.payload.availability || action.payload.user?.availability || 'Offline';
       state.isAuthenticated = true;
     },
   },
@@ -234,6 +270,7 @@ export const {
   emailVerified,
   mobileVerified,
   updateOnlineStatus,
+  updateAvailability,
   restoreAuthState
 } = authSlice.actions;
 

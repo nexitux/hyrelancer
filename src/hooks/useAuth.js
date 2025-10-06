@@ -47,7 +47,9 @@ const useAuth = () => {
         user: user,
         token: access_token,
         userType: user.user_type,
-        slug: fp_slug
+        slug: fp_slug,
+        availability: response.data.u_avail || 'Offline',
+        u_avail: response.data.u_avail || 'Offline'
       }));
 
       toast.success("Login successful!");

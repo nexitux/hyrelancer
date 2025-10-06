@@ -123,7 +123,7 @@ const AchievementsRoadmap = () => {
     const fetchUserBadges = async () => {
       try {
         console.log('Fetching user badges...');
-        const response = await api.post('/UserDashboard');
+        const response = await api.get('/UserDashboard');
         const data = response.data;
         console.log('API Response:', data);
         
