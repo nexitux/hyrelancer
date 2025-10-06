@@ -11,6 +11,7 @@ import EmailVerificationModal from '../../../components/EmailModal/page';
 import { handleAuthErrors, handleRegistrationErrors, showSuccessNotification } from '../../../utils/notificationService';
 import ForgotPasswordModal from './components/ForgotPasswordModal'
 import { Check, X, Eye, EyeOff } from 'lucide-react';
+import { sanitizeInput, validationConfigs } from '../../../utils/inputValidation';
 
 // Custom hook for password validation
 const usePasswordValidation = (password) => {
@@ -39,8 +40,21 @@ const usePasswordValidation = (password) => {
 
 // Validation functions
 const validateEmail = (email) => {
+  if (!email) return false;
+  // First check if there are any whitespace characters - if so, it's invalid
+  if (/\s/.test(email)) {
+    return false;
+  }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+};
+
+// Email input validation - only allow @ and . characters, no spaces
+const validateEmailInput = (value) => {
+  if (!value) return '';
+  // Remove any characters that are not alphanumeric, @, or .
+  // Also remove all whitespace characters (spaces, tabs, newlines, etc.)
+  return value.replace(/\s/g, '').replace(/[^a-zA-Z0-9@.]/g, '');
 };
 
 const validatePhoneNumber = (phone) => {
@@ -292,6 +306,32 @@ const AuthForm = () => {
     }
   }, [countdown]);
 
+  // Clean up email fields to remove spaces
+  useEffect(() => {
+    const cleanedFormData = { ...formData };
+    let hasChanges = false;
+
+    if (formData.email) {
+      const cleanedEmail = validateEmailInput(formData.email);
+      if (cleanedEmail !== formData.email) {
+        cleanedFormData.email = cleanedEmail;
+        hasChanges = true;
+      }
+    }
+
+    if (formData['signin-username']) {
+      const cleanedUsername = validateEmailInput(formData['signin-username']);
+      if (cleanedUsername !== formData['signin-username']) {
+        cleanedFormData['signin-username'] = cleanedUsername;
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      setFormData(cleanedFormData);
+    }
+  }, [formData.email, formData['signin-username']]);
+
   const handleSignInSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -450,7 +490,24 @@ const AuthForm = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    // Apply validation based on field type
+    let sanitizedValue = value;
+    
+    if (field === 'email' || field === 'signin-username') {
+      // For email, only allow alphanumeric, @, and .
+      sanitizedValue = value.replace(/[^a-zA-Z0-9@.]/g, '');
+    } else if (field === 'mobile') {
+      // For phone, only allow digits and +
+      sanitizedValue = value.replace(/[^0-9+]/g, '');
+    } else if (field === 'name') {
+      sanitizedValue = sanitizeInput(value, validationConfigs.name);
+    } else if (field === 'signin-password' || field === 'password' || field === 'confirmPassword') {
+      sanitizedValue = sanitizeInput(value, { allowLimitedChars: true, strict: false });
+    } else if (['title', 'description'].includes(field)) {
+      sanitizedValue = sanitizeInput(value, validationConfigs.title);
+    }
+    
+    setFormData({ ...formData, [field]: sanitizedValue });
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
@@ -459,10 +516,26 @@ const AuthForm = () => {
 
   const handleFocus = (field) => {
     setFocusedField(field);
+    
+    // Clean up email fields when focused to remove any spaces
+    if (field === 'email' || field === 'signin-username') {
+      const currentValue = formData[field] || '';
+      const cleanedValue = validateEmailInput(currentValue);
+      if (cleanedValue !== currentValue) {
+        setFormData({ ...formData, [field]: cleanedValue });
+      }
+    }
   };
 
   const handleBlur = () => {
     setFocusedField('');
+  };
+
+  // Handle key down events to prevent spaces in email fields
+  const handleKeyDown = (e, field) => {
+    if ((field === 'email' || field === 'signin-username') && e.key === ' ') {
+      e.preventDefault();
+    }
   };
 
   const isFieldActive = (field) => {
@@ -922,6 +995,7 @@ const AuthForm = () => {
                       autoComplete="new-password"
                       onFocus={() => handleFocus('signin-username')}
                       onBlur={handleBlur}
+                      onKeyDown={(e) => handleKeyDown(e, 'signin-username')}
                       onChange={(e) => handleInputChange('signin-username', e.target.value)}
                       placeholder=""
                     />
@@ -1102,6 +1176,7 @@ const AuthForm = () => {
                                 autoComplete="new-password"
                                 onFocus={() => handleFocus(field)}
                                 onBlur={handleBlur}
+                                onKeyDown={(e) => handleKeyDown(e, field)}
                                 onChange={(e) => {
                                   if (field === 'mobile') {
                                     // Only allow digits and limit to 10 characters
@@ -1136,6 +1211,7 @@ const AuthForm = () => {
                                 autoComplete="new-password"
                                 onFocus={() => handleFocus(field)}
                                 onBlur={handleBlur}
+                                onKeyDown={(e) => handleKeyDown(e, field)}
                                 onChange={(e) => {
                                   if (field === 'mobile') {
                                     // Only allow digits and limit to 10 characters
@@ -1288,6 +1364,7 @@ const AuthForm = () => {
                       autoComplete="new-password"
                       onFocus={() => handleFocus('signin-username')}
                       onBlur={handleBlur}
+                      onKeyDown={(e) => handleKeyDown(e, 'signin-username')}
                       onChange={(e) => handleInputChange('signin-username', e.target.value)}
                       placeholder=""
                     />
@@ -1476,6 +1553,7 @@ const AuthForm = () => {
                                 autoComplete="new-password"
                                 onFocus={() => handleFocus(field)}
                                 onBlur={handleBlur}
+                                onKeyDown={(e) => handleKeyDown(e, field)}
                                 onChange={(e) => {
                                   if (field === 'mobile') {
                                     // Only allow digits and limit to 10 characters
@@ -1510,6 +1588,7 @@ const AuthForm = () => {
                                 autoComplete="new-password"
                                 onFocus={() => handleFocus(field)}
                                 onBlur={handleBlur}
+                                onKeyDown={(e) => handleKeyDown(e, field)}
                                 onChange={(e) => {
                                   if (field === 'mobile') {
                                     // Only allow digits and limit to 10 characters

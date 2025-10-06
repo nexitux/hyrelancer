@@ -28,6 +28,8 @@ import {
 } from "@ant-design/icons";
 import api from '@/config/api'; // Update this import path
 import Loader from "../../../../components/Loader/page";
+import { sanitizeInput, validationConfigs } from "@/utils/inputValidation";
+import { ValidatedAntdInput } from "../../../../components/ValidatedAntdInput";
 
 const { Title, Text } = Typography;
 
@@ -272,10 +274,12 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
                           <Text strong className="block text-gray-700">
                             {platform.name}
                           </Text>
-                          <Input
+                          <ValidatedAntdInput
                             placeholder={platform.placeholder}
                             className="w-full mt-1"
                             size="large"
+                            validationType="url"
+                            validationConfig={validationConfigs.title}
                             allowClear
                           />
                         </div>

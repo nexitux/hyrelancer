@@ -7,6 +7,7 @@ import api from '../../../../../config/api';
 import breadcrumb from '../../../../../../public/images/breadcrumb_service.webp';
 import { ArrowLeft, Upload, Camera, MapPin, User, Phone, Mail, DollarSign, Calendar, FileText } from 'lucide-react';
 import { Select } from 'antd';
+import { sanitizeInput, validationConfigs } from '../../../../../utils/inputValidation';
 const { Option } = Select;
 
 const JobPostForm = () => {
@@ -132,23 +133,43 @@ const JobPostForm = () => {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
 
+    // Apply validation based on field type
+    let sanitizedValue = value;
+    
+    if (name === 'title') {
+      sanitizedValue = sanitizeInput(value, validationConfigs.title);
+    } else if (name === 'description') {
+      sanitizedValue = sanitizeInput(value, validationConfigs.description);
+    } else if (name === 'contact_name' || name === 'name') {
+      sanitizedValue = sanitizeInput(value, validationConfigs.name);
+    } else if (name === 'contact_email' || name === 'email') {
+      // For email, only allow alphanumeric, @, and .
+      sanitizedValue = value.replace(/[^a-zA-Z0-9@.]/g, '');
+    } else if (name === 'contact_mobile' || name === 'phone') {
+      // For phone, only allow digits and +
+      sanitizedValue = value.replace(/[^0-9+]/g, '');
+    } else if (['category', 'subcategory', 'service', 'location', 'state', 'city', 'district', 'landmark'].includes(name)) {
+      sanitizedValue = sanitizeInput(value, validationConfigs.title);
+    }
+
     // Normalize specific fields
     if (name === 'contact_name') {
-      setFormData(prev => ({ ...prev, name: value }));
+      setFormData(prev => ({ ...prev, name: sanitizedValue }));
       return;
     }
     if (name === 'contact_email') {
-      setFormData(prev => ({ ...prev, email: value }));
+      setFormData(prev => ({ ...prev, email: sanitizedValue }));
       return;
     }
     if (name === 'contact_mobile') {
-      const onlyDigits = value.replace(/[^0-9+]/g, '');
-      setFormData(prev => ({ ...prev, phone: onlyDigits }));
+      setFormData(prev => ({ ...prev, phone: sanitizedValue }));
       return;
     }
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
+    
     if (name === 'workMode') {
-      if (value === 'Remote') {
+      if (sanitizedValue === 'Remote') {
         setFormData(prev => ({ ...prev, location: '' }));
         // Clear location error if switching to remote
         if (errors.location) {
@@ -157,7 +178,7 @@ const JobPostForm = () => {
       }
     }
     if (['title', 'description', 'name'].includes(name)) {
-      setCharCounts(prev => ({ ...prev, [name]: value.length }));
+      setCharCounts(prev => ({ ...prev, [name]: sanitizedValue.length }));
     }
   };
 

@@ -11,6 +11,8 @@ import {
 } from '@ant-design/icons';
 import api from '../../../../config/api'; // Adjust path to your api config
 import Loader from "../../../../components/Loader/page";
+import { sanitizeInput, validationConfigs } from "@/utils/inputValidation";
+import { ValidatedAntdInput, ValidatedAntdTextArea } from "../../../../components/ValidatedAntdInput";
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -848,10 +850,12 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
           <div className="py-2 sm:py-4">
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Add New Skill</label>
-              <Input
+              <ValidatedAntdInput
                 placeholder="Enter skill name (e.g., React, JavaScript, UI Design)"
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
+                validationType="title"
+                validationConfig={validationConfigs.title}
                 onPressEnter={handleAddSkill}
                 size="large"
                 className="h-10 sm:h-11 text-sm sm:text-base"
@@ -916,7 +920,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
           <div className="py-2 sm:py-4 space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
-              <Input
+              <ValidatedAntdInput
                 placeholder="Project title"
                 value={currentPortfolio.title}
                 onChange={(e) => setCurrentPortfolio(prev => ({ ...prev, title: e.target.value }))}
@@ -928,7 +932,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
-              <TextArea
+              <ValidatedAntdTextArea
                 placeholder="Project description"
                 rows={3}
                 value={currentPortfolio.description}
@@ -949,7 +953,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
               <Space direction="vertical" className="w-full">
                 {currentPortfolio.videoUrls.map((url, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <Input
+                    <ValidatedAntdInput
                       placeholder="https://example.com/video"
                       value={url}
                       onChange={(e) => updateVideoUrl(index, e.target.value)}
@@ -1020,7 +1024,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
           <div className="py-2 sm:py-4 space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
-              <Input
+              <ValidatedAntdInput
                 placeholder="Project title"
                 value={currentPortfolio.title}
                 onChange={(e) => setCurrentPortfolio(prev => ({ ...prev, title: e.target.value }))}
@@ -1032,7 +1036,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
-              <TextArea
+              <ValidatedAntdTextArea
                 placeholder="Project description"
                 rows={3}
                 value={currentPortfolio.description}
@@ -1053,7 +1057,7 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
               <Space direction="vertical" className="w-full">
                 {currentPortfolio.videoUrls.map((url, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <Input
+                    <ValidatedAntdInput
                       placeholder="https://example.com/video"
                       value={url}
                       onChange={(e) => updateVideoUrl(index, e.target.value)}

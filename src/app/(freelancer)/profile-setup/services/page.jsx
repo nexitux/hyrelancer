@@ -13,6 +13,8 @@ import {
 } from "@ant-design/icons";
 import api from "../../../../config/api";
 import Loader from "../../../../components/Loader/page";
+import { sanitizeInput, validationConfigs } from "@/utils/inputValidation";
+import { ValidatedAntdInput, ValidatedAntdTextArea } from "../../../../components/ValidatedAntdInput";
 
 const { Option } = Select;
 const { Text, Title } = Typography;
@@ -1255,6 +1257,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                         <Checkbox
                           onChange={(e) => {
                             setIsRemote(e.target.checked);
+                            form.setFieldValue('is_remote', e.target.checked);
                           }}
                         >
                           I work remotely
@@ -1403,12 +1406,14 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                           }
                         ]}
                       >
-                        <Input
+                        <ValidatedAntdInput
                           placeholder="Enter amount"
                           prefix={<span className="text-gray-400">₹</span>}
                           suffix="INR"
                           className="w-full"
                           size="large"
+                          validationType="text"
+                          validationConfig={validationConfigs.title}
                         />
                       </Form.Item>
                     </Col>
@@ -1527,11 +1532,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                             })
                           ]}
                         >
-                          <Input
+                          <ValidatedAntdInput
                             placeholder="Enter ID number"
                             className="w-full"
                             size="large"
                             disabled={isIdProofApproved}
+                            validationType="text"
+                            validationConfig={validationConfigs.title}
                             onBlur={() => {
                               if (form.getFieldValue('idType') === 'PAN Card') {
                                 const cur = form.getFieldValue('idNumber') || '';
@@ -1979,11 +1986,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
               { max: 200, message: "Suggestion must not exceed 200 characters" }
             ]}
           >
-            <Input.TextArea
+            <ValidatedAntdTextArea
               placeholder="Enter new service category name..."
               rows={4}
               maxLength={200}
               showCount
+              validationType="title"
+              validationConfig={validationConfigs.title}
             />
           </Form.Item>
 
@@ -2042,11 +2051,13 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
               { max: 200, message: "Suggestion must not exceed 200 characters" }
             ]}
           >
-            <Input.TextArea
+            <ValidatedAntdTextArea
               placeholder="Enter new service name..."
               rows={4}
               maxLength={200}
               showCount
+              validationType="title"
+              validationConfig={validationConfigs.title}
             />
           </Form.Item>
 

@@ -31,6 +31,8 @@ import {
 import api from "@/config/api";
 import { useSelector } from "react-redux";
 import Loader from "../../../../components/Loader/page";
+import { sanitizeInput, validationConfigs } from "@/utils/inputValidation";
+import { ValidatedAntdInput, ValidatedAntdTextArea } from "../../../../components/ValidatedAntdInput";
 
 
 const { Option } = Select;
@@ -670,10 +672,12 @@ export default function ProfileTab({
                       { required: true, message: "Please enter your name" },
                     ]}
                   >
-                    <Input
+                    <ValidatedAntdInput
                       prefix={<UserOutlined />}
                       className="h-10 rounded-lg"
                       placeholder="Enter your full name"
+                      validationType="name"
+                      validationConfig={validationConfigs.name}
                     />
                   </Form.Item>
 
@@ -728,10 +732,12 @@ export default function ProfileTab({
                   name="tagLine"
                   label="Professional Headline (Optional)"
                 >
-                  <Input
+                  <ValidatedAntdInput
                     prefix={<TagOutlined />}
                     className="h-10 rounded-lg"
                     placeholder="e.g., Senior Software Engineer | React Specialist"
+                    validationType="title"
+                    validationConfig={validationConfigs.title}
                   />
                 </Form.Item>
 
@@ -742,10 +748,12 @@ export default function ProfileTab({
                     { required: true, message: "Please describe yourself" },
                   ]}
                 >
-                  <TextArea
+                  <ValidatedAntdTextArea
                     rows={5}
                     className="rounded-lg"
                     placeholder="Tell us about your skills, experience, and what you do..."
+                    validationType="description"
+                    validationConfig={validationConfigs.description}
                   />
                 </Form.Item>
 

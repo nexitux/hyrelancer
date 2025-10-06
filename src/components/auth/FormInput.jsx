@@ -1,6 +1,7 @@
 'use client'
 import { FaEye, FaEyeSlash, FaExclamationCircle } from 'react-icons/fa';
 import { capitalizeFirst } from '@/lib/utils';
+import { sanitizeInput, inputValidators } from '@/utils/inputValidation';
 
 const FormInput = ({
   label,
@@ -12,10 +13,98 @@ const FormInput = ({
   showPassword,
   onTogglePassword,
   placeholder,
-  required = false
+  required = false,
+  validationType = 'text',
+  validationConfig = {},
+  maxLength = null,
+  onValidationChange = null
 }) => {
   const hasError = error && (Array.isArray(error) ? error.length > 0 : error);
   const errorMessage = Array.isArray(error) ? error[0] : error;
+
+  // Handle input change with validation
+  const handleInputChange = (e) => {
+    const originalValue = e.target.value;
+    
+    // Apply sanitization based on input type
+    let sanitizedValue = originalValue;
+    
+    if (type === 'email') {
+      // For email, only allow alphanumeric, @, and .
+      sanitizedValue = originalValue.replace(/[^a-zA-Z0-9@.]/g, '');
+    } else if (type === 'tel') {
+      // For phone, only allow digits and +
+      sanitizedValue = originalValue.replace(/[^0-9+]/g, '');
+    } else if (type === 'password') {
+      // For password, use general sanitization
+      sanitizedValue = sanitizeInput(originalValue, validationConfig);
+    } else {
+      // For other text inputs, use validation type
+      const validator = inputValidators[validationType];
+      if (validator) {
+        sanitizedValue = sanitizeInput(originalValue, validationConfig);
+      }
+    }
+    
+    // Update the input value
+    e.target.value = sanitizedValue;
+    
+    // Call the original onChange with the sanitized value
+    if (onChange) {
+      onChange(e);
+    }
+    
+    // Validate and notify parent component
+    if (onValidationChange) {
+      const validator = inputValidators[validationType];
+      if (validator) {
+        const validation = validator(sanitizedValue, validationConfig);
+        onValidationChange(validation);
+      }
+    }
+  };
+
+  // Handle key press to prevent forbidden characters
+  const handleKeyPress = (e) => {
+    const char = e.key;
+    
+    // Allow control keys (backspace, delete, arrow keys, etc.)
+    if (e.ctrlKey || e.metaKey || e.altKey || 
+        ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'].includes(char)) {
+      return;
+    }
+    
+    // For email inputs
+    if (type === 'email') {
+      if (!/[a-zA-Z0-9@.]/.test(char)) {
+        e.preventDefault();
+        return;
+      }
+    }
+    
+    // For phone inputs
+    if (type === 'tel') {
+      if (!/[0-9+]/.test(char)) {
+        e.preventDefault();
+        return;
+      }
+    }
+    
+    // For other text inputs, check against forbidden characters
+    if (type === 'text' || type === 'textarea') {
+      const forbiddenChars = /[<>{}[\]\\|`~;$\^]/;
+      if (forbiddenChars.test(char)) {
+        e.preventDefault();
+        return;
+      }
+      
+      // Check limited characters based on validation config
+      if (!validationConfig.allowLimitedChars && /[&]/.test(char)) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   return (
     <div className="mb-4">
@@ -28,8 +117,10 @@ const FormInput = ({
           id={name}
           name={name}
           value={value}
-          onChange={onChange}
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
           placeholder={placeholder}
+          maxLength={maxLength}
           className={`block px-3 py-3 mt-1 w-full rounded-lg border shadow-sm focus:outline-none focus:ring-2 transition-all duration-200 dark:bg-gray-700 dark:text-white ${
             hasError 
               ? 'bg-red-50 border-red-300 focus:ring-red-500 focus:border-red-500' 
@@ -61,6 +152,13 @@ const FormInput = ({
         <div className="flex items-center mt-2">
           <FaExclamationCircle className="mr-2 text-red-500 text-sm flex-shrink-0" />
           <p className="text-sm text-red-600 leading-tight">{errorMessage}</p>
+        </div>
+      )}
+      
+      {/* Character Count */}
+      {maxLength && (
+        <div className="mt-1 text-xs text-gray-500 text-right">
+          {value ? value.length : 0}/{maxLength}
         </div>
       )}
       

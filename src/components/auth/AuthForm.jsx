@@ -4,6 +4,7 @@ import FormInput from './FormInput';
 import SocialLoginButtons from './SocialLoginButtons';
 import useAuth from '@/hooks/useAuth'
 import { capitalizeFirst, capitalizeWords } from '@/lib/utils';
+import { sanitizeInput, validationConfigs } from '@/utils/inputValidation';
 const AuthForm = ({ isLogin, toggleAuthMode }) => {
   const { isLoading, errors, handleRegister, handleLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -18,9 +19,25 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Apply validation based on field type
+    let sanitizedValue = value;
+    
+    if (name === 'name') {
+      sanitizedValue = sanitizeInput(value, validationConfigs.name);
+    } else if (name === 'email') {
+      // For email, only allow alphanumeric, @, and .
+      sanitizedValue = value.replace(/[^a-zA-Z0-9@.]/g, '');
+    } else if (name === 'mobile') {
+      // For phone, only allow digits and +
+      sanitizedValue = value.replace(/[^0-9+]/g, '');
+    } else if (name === 'password' || name === 'confirm_password') {
+      sanitizedValue = sanitizeInput(value, { allowLimitedChars: true, strict: false });
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: sanitizedValue,
     }));
   };
 
@@ -83,6 +100,9 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
               error={errors.name}
               placeholder="John Doe"
               required
+              validationType="name"
+              validationConfig={validationConfigs.name}
+              maxLength={50}
             />
           )}
 
@@ -95,6 +115,8 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
             error={errors.email}
             placeholder="you@example.com"
             required
+            validationType="email"
+            maxLength={100}
           />
 
           {!isLogin && (
@@ -107,6 +129,8 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
               error={errors.mobile}
               placeholder="+1 (555) 123-4567"
               required
+              validationType="phone"
+              maxLength={15}
             />
           )}
 
@@ -121,6 +145,8 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
             onTogglePassword={() => setShowPassword(!showPassword)}
             placeholder="••••••••"
             required
+            validationType="password"
+            maxLength={50}
           />
 
           {!isLogin && (
@@ -135,6 +161,8 @@ const AuthForm = ({ isLogin, toggleAuthMode }) => {
               onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
               placeholder="••••••••"
               required
+              validationType="password"
+              maxLength={50}
             />
           )}
 

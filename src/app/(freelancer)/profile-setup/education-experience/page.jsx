@@ -11,6 +11,8 @@ import {
 import { useSelector } from 'react-redux';
 import api from "@/config/api";
 import Loader from "../../../../components/Loader/page";
+import { sanitizeInput, validationConfigs } from "@/utils/inputValidation";
+import { ValidatedAntdInput, ValidatedAntdTextArea } from "../../../../components/ValidatedAntdInput";
 
 const { Panel } = Collapse;
 const { TextArea } = Input;
@@ -1005,9 +1007,11 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                           label={<span className="font-medium text-sm sm:text-base">Year</span>}
                                           rules={[{ required: true, message: "Please enter year" }]}
                                         >
-                                          <Input
+                                          <ValidatedAntdInput
                                             placeholder="e.g., 2018"
                                             size="middle"
+                                            validationType="text"
+                                            validationConfig={validationConfigs.title}
                                           />
                                         </Form.Item>
                                       </Col>
@@ -1022,7 +1026,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                           </span>}
                                           rules={[{ required: false, message: "This field is required" }]}
                                         >
-                                          <Input
+                                          <ValidatedAntdInput
                                             placeholder={
                                               field.type === 'UG' ? "e.g., Computer Science" :
                                                 field.type === 'PG' ? "e.g., MBA, M.Tech" :
@@ -1030,6 +1034,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                                     "e.g., Web Development, Graphic Design"
                                             }
                                             size="middle"
+                                            validationType="title"
+                                            validationConfig={validationConfigs.title}
                                           />
                                         </Form.Item>
                                       </Col>
@@ -1042,7 +1048,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                           </span>}
                                           rules={[{ required: false, message: "Please enter institution name" }]}
                                         >
-                                          <Input
+                                          <ValidatedAntdInput
                                             placeholder={
                                               field.type === 'Other' ?
                                                 "e.g., Coursera, Udemy, Self-taught" :
@@ -1050,6 +1056,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                                   "University or College name"
                                             }
                                             size="middle"
+                                            validationType="title"
+                                            validationConfig={validationConfigs.title}
                                           />
                                         </Form.Item>
                                       </Col>
@@ -1112,9 +1120,11 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                       rules={[{ required: false, message: "Please enter occupation" }]}
                                       className="mb-0"
                                     >
-                                      <Input
+                                      <ValidatedAntdInput
                                         placeholder="e.g., Software Engineer"
                                         size="middle"
+                                        validationType="title"
+                                        validationConfig={validationConfigs.title}
                                       />
                                     </Form.Item>
                                   </Col>
@@ -1156,9 +1166,11 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                         label={<span className="font-medium text-sm sm:text-base">Position & Company</span>}
                                         rules={[{ required: true, message: "Please enter position and company" }]}
                                       >
-                                        <Input
+                                        <ValidatedAntdInput
                                           placeholder="e.g., Senior Developer at Tech Corp"
                                           size="middle"
+                                          validationType="title"
+                                          validationConfig={validationConfigs.title}
                                         />
                                       </Form.Item>
                                     </Col>
@@ -1234,10 +1246,12 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                                         label={<span className="font-medium text-sm sm:text-base">Job Description</span>}
                                         rules={[{ required: false, message: "Please enter job description" }]}
                                       >
-                                        <TextArea
+                                        <ValidatedAntdTextArea
                                           rows={3}
                                           placeholder="Describe your responsibilities and achievements..."
                                           className="resize-none"
+                                          validationType="description"
+                                          validationConfig={validationConfigs.description}
                                         />
                                       </Form.Item>
                                     </Col>

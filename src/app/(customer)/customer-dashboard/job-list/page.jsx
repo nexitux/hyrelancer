@@ -294,9 +294,9 @@ const ServiceOrders = () => {
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden lg:block bg-white rounded-lg shadow-sm w-full">
-          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 w-full">
-            <table className="w-full min-w-[1200px]">
+        <div className="hidden lg:block bg-white rounded-lg shadow-sm w-full overflow-hidden">
+          <div className="overflow-x-auto w-full" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[1000px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[250px]">
@@ -304,9 +304,6 @@ const ServiceOrders = () => {
                   </th>
                   <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]">
                     Category
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
-                    Location
                   </th>
                   <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
                     Salary Range
@@ -328,17 +325,17 @@ const ServiceOrders = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">Loading jobs...</td>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading jobs...</td>
                   </tr>
                 )}
                 {error && !loading && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-red-600">{error}</td>
+                    <td colSpan={7} className="px-6 py-8 text-center text-red-600">{error}</td>
                   </tr>
                 )}
                 {!loading && !error && currentOrders.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">No jobs found</td>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No jobs found</td>
                   </tr>
                 )}
                 {!loading && !error && currentOrders.map((order) => (
@@ -360,11 +357,6 @@ const ServiceOrders = () => {
                         <p className="font-medium">{order.category}</p>
                         <p className="text-xs text-gray-500">{order.service}</p>
                       </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <span className="truncate block max-w-[150px]" title={order.location}>
-                        {order.location}
-                      </span>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                       <span className="font-medium">{order.salaryRange}</span>

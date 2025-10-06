@@ -20,7 +20,7 @@ export default function DashboardLayout({ children, showSidebar = true }) {
         )}
 
         {/* Right side: content only */}
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 overflow-x-hidden">
           {/* Content */}
           <main className="flex-1 overflow-y-auto">
             {children}

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { sanitizeInput, validationConfigs } from '@/utils/inputValidation';
 
 const Sidebar = ({ navItems, isCollapsed = false }) => {
   const pathname = usePathname();
@@ -89,9 +90,18 @@ const Sidebar = ({ navItems, isCollapsed = false }) => {
         file: file || null
       }));
     } else {
+      // Apply validation based on field type
+      let sanitizedValue = value;
+      
+      if (name === 'subject') {
+        sanitizedValue = sanitizeInput(value, validationConfigs.title);
+      } else if (name === 'message') {
+        sanitizedValue = sanitizeInput(value, validationConfigs.message);
+      }
+      
       setFormData(prev => ({
         ...prev,
-        [name]: value
+        [name]: sanitizedValue
       }));
     }
   };
