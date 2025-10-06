@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Trophy, Target, Zap, Award, Star, Shield, Users, Clock, DollarSign, Crown, Mail, Phone, MessageSquare, CheckCircle, XCircle, UserCheck, Globe, Briefcase } from 'lucide-react';
 import api from '@/config/api';
 import { freelancerDashboardService } from '@/services/freelancerDashboardService';
@@ -24,6 +25,7 @@ const AchievementsRoadmap = () => {
       title: 'Registration Complete',
       description: 'Complete your account registration',
       icon: UserCheck,
+      iconSrc: '/images/logo/icon-01.png', // replace with your exact file name
       color: 'bg-purple-500',
       iconColor: 'text-purple-500',
       borderColor: 'border-purple-500',
@@ -37,6 +39,7 @@ const AchievementsRoadmap = () => {
       title: 'Email Verified',
       description: 'Verify your email address',
       icon: Mail,
+      iconSrc: '/images/logo/icon.png', // replace with your exact file name
       color: 'bg-blue-500',
       iconColor: 'text-blue-500',
       borderColor: 'border-blue-500',
@@ -50,6 +53,7 @@ const AchievementsRoadmap = () => {
       title: 'Mobile Verified',
       description: 'Verify your mobile number',
       icon: Phone,
+      iconSrc: '/image/logo/mobile.png', // replace with your exact file name
       color: 'bg-green-500',
       iconColor: 'text-green-500',
       borderColor: 'border-green-500',
@@ -63,6 +67,7 @@ const AchievementsRoadmap = () => {
       title: 'ID Proof Verified',
       description: 'Verify your identity document',
       icon: Shield,
+      iconSrc: '/image/logo/id-proof.png', // replace with your exact file name
       color: 'bg-indigo-500',
       iconColor: 'text-indigo-500',
       borderColor: 'border-indigo-500',
@@ -76,6 +81,7 @@ const AchievementsRoadmap = () => {
       title: 'Social Media Verified',
       description: 'Connect your social media accounts',
       icon: Globe,
+      iconSrc: '/image/logo/social.png', // replace with your exact file name
       color: 'bg-pink-500',
       iconColor: 'text-pink-500',
       borderColor: 'border-pink-500',
@@ -341,16 +347,26 @@ const AchievementsRoadmap = () => {
                       : 'border-4 border-gray-300'
                   }`}
                 >
-                  <Icon 
-                    className={`w-7 h-7 ${
-                      achievement.status === 'completed' 
-                        ? achievement.iconColor
-                        : achievement.status === 'in-progress'
-                        ? achievement.iconColor
-                        : 'text-gray-400'
-                    }`} 
-                    fill="currentColor"
-                  />
+                  {achievement.iconSrc ? (
+                    <Image
+                      src={achievement.iconSrc}
+                      alt={achievement.title}
+                      width={28}
+                      height={28}
+                      className="object-contain"
+                    />
+                  ) : (
+                    <Icon 
+                      className={`w-7 h-7 ${
+                        achievement.status === 'completed' 
+                          ? achievement.iconColor
+                          : achievement.status === 'in-progress'
+                          ? achievement.iconColor
+                          : 'text-gray-400'
+                      }`} 
+                      fill="currentColor"
+                    />
+                  )}
                   
                   {/* Progress ring for in-progress */}
                     {achievement.status === 'in-progress' && achievement.progress && (

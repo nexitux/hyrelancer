@@ -148,6 +148,16 @@ export default function Sidebar() {
         
       ]
     },
+    { 
+      id: 'searchKeywords', 
+      label: 'Search Keywords', 
+      icon: MdMiscellaneousServices, 
+      href: '/search-keywords',
+      subLinks: [
+        { id: 'search-keywords-list', label: 'Keywords List', href: '/control/search-keywords' },
+        
+      ]
+    },
   ];
 
   const isActive = (href) => {
