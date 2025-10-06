@@ -2,8 +2,25 @@
 
 import { useState } from 'react';
 import { Star, Send } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { testimonialAPI } from '@/config/api';
+import LoginModal from '@/components/LoginModal/LoginModal';
 
-export default function CommentForm({ profileData }) {
+export default function CommentForm({ profileData, onTestimonialAdded }) {
+  const { user, isAuthenticated, userType } = useSelector(state => state.auth);
+  
+  // Debug logging
+  console.log('🔍 CommentForm Debug:', {
+    isAuthenticated,
+    userType,
+    user: user?.name,
+    userTypeFromUser: user?.userType
+  });
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,19 +38,68 @@ export default function CommentForm({ profileData }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.name && formData.email && formData.comment) {
-      console.log('Form submitted:', { 
-        ...formData, 
-        rating,
+    
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // Check if user is a customer (case-insensitive) - check both Redux state and user object
+    const currentUserType = userType || user?.userType;
+    if (currentUserType?.toLowerCase() !== 'customer') {
+      alert('Only customers can leave testimonials.');
+      return;
+    }
+    
+    // Validate form data
+    if (!formData.comment.trim() || rating === 0) {
+      alert('Please fill in your review and select a rating.');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      const testimonialData = {
         freelancerId: profileData?.fp_u_id,
-        profileSlug: profileData?.fp_slug
-      });
-      // Handle form submission here
-      alert('Comment submitted successfully!');
-    } else {
-      alert('Please fill in all required fields.');
+        comment: formData.comment.trim(),
+        rating: rating
+      };
+      
+      const response = await testimonialAPI.storeTestimonial(testimonialData);
+      
+      if (response.message === 'Testimonial  saved') {
+        setSubmitSuccess(true);
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          comment: '',
+          saveInfo: false
+        });
+        setRating(0);
+        
+        // Notify parent component to refresh testimonials
+        if (onTestimonialAdded) {
+          onTestimonialAdded();
+        }
+        
+        // Show success message
+        setTimeout(() => {
+          setSubmitSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error(response.message || 'Failed to submit testimonial');
+      }
+    } catch (error) {
+      console.error('Error submitting testimonial:', error);
+      setSubmitError(error.response?.data?.message || error.message || 'Failed to submit testimonial');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -69,7 +135,7 @@ export default function CommentForm({ profileData }) {
   };
 
   return (
-    <div className="mx-auto p-8 bg-white">
+    <div className="mx-auto p-8 bg-white" data-comment-form>
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           Leave a Review for {profileData?.fp_display_name || 'this freelancer'}
@@ -78,44 +144,49 @@ export default function CommentForm({ profileData }) {
       </div>
 
       <div className="space-y-6">
-        {/* Name and Email Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="group">
-            <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
-              Name
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg transition-all duration-200 group-hover:border-gray-300"
-                placeholder="Your Name"
-                required
-              />
+        {/* Authentication Status */}
+        {isAuthenticated ? (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-green-600 font-semibold text-sm">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-green-800">
+                  Logged in as {user?.name || 'User'}
+                </p>
+                <p className="text-xs text-green-600">
+                  {(userType || user?.userType)?.toLowerCase() === 'customer' ? 'Customer Account' : 'Account Type: ' + (userType || user?.userType)}
+                </p>
+              </div>
             </div>
           </div>
+        ) : (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              Please log in to leave a testimonial. Only customers can submit testimonials.
+            </p>
+          </div>
+        )}
 
-          <div className="group">
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-              Email
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg transition-all duration-200 group-hover:border-gray-300"
-                placeholder="your.email@example.com"
-                required
-              />
-            </div>
+        {/* Success/Error Messages */}
+        {submitSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800">
+              ✅ Testimonial submitted successfully! It will be reviewed before being published.
+            </p>
           </div>
-        </div>
+        )}
+        
+        {submitError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-800">
+              ❌ {submitError}
+            </p>
+          </div>
+        )}
 
         {/* Comment Field */}
         <div className="group">
@@ -168,14 +239,27 @@ export default function CommentForm({ profileData }) {
         {/* Submit Button */}
         <div className="pt-4">
           <button
-            className="group relative px-8 py-3 bg-[#3e5a9a] text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg hover:shadow-xl"
+            className="group relative px-8 py-3 bg-[#3e5a9a] text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleSubmit}
+            disabled={isSubmitting || !isAuthenticated || (userType || user?.userType)?.toLowerCase() !== 'customer'}
           >
             <span className="flex items-center gap-2">
-              Post Comment
+              {isSubmitting ? 'Submitting...' : 'Post Testimonial'}
               <Send size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
             </span>
           </button>
+          
+          {!isAuthenticated && (
+            <p className="text-sm text-gray-600 mt-2">
+              You need to be logged in as a customer to leave a testimonial.
+            </p>
+          )}
+          
+          {isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer' && (
+            <p className="text-sm text-gray-600 mt-2">
+              Only customers can leave testimonials for freelancers.
+            </p>
+          )}
         </div>
       </div>
 
@@ -192,6 +276,16 @@ export default function CommentForm({ profileData }) {
           ))}
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          // The parent component will handle refreshing testimonials
+        }}
+      />
     </div>
   );
 }

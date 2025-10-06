@@ -116,4 +116,24 @@ export const messageAPI = {
   }
 };
 
+// Testimonial API functions
+export const testimonialAPI = {
+  // Get testimonials for a freelancer
+  getFreelancerTestimonials: async (freelancerId) => {
+    const encodedId = btoa(freelancerId.toString());
+    const response = await api.get(`/getFeTestimonial/${encodedId}`);
+    return response.data;
+  },
+
+  // Store a new testimonial
+  storeTestimonial: async (testimonialData) => {
+    const response = await api.post('/storetestimonial', {
+      fp_u_id: testimonialData.freelancerId,
+      testimonial_val: testimonialData.comment,
+      rating_val: testimonialData.rating
+    });
+    return response.data;
+  }
+};
+
 export default api;
