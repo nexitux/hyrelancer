@@ -9,12 +9,21 @@ import ProfileHeader from "../components/ProfileHeader";
 import ReviewsSection from "../components/ReviewsSection";
 import Loader from "../../../../components/Loader/page";
 import { capitalizeFirst, capitalizeWords } from "@/lib/utils";
+import { useSelector } from "react-redux";
+import LoginModal from "@/components/LoginModal/LoginModal";
+import { messageAPI } from "@/config/api";
 
 export default function Page({ params }) {
   const slug = params?.slug; // <-- correct place to read dynamic param
+  const { user, isAuthenticated, userType } = useSelector(state => state.auth);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(Boolean(slug)); // show loading only when slug exists
   const [error, setError] = useState(null);
+  const [testimonialsRefreshKey, setTestimonialsRefreshKey] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
+  const [loginRefreshTrigger, setLoginRefreshTrigger] = useState(0);
 
   useEffect(() => {
     // debug: confirm slug presence
@@ -70,6 +79,36 @@ export default function Page({ params }) {
 
     fetchProfileData();
   }, [slug]);
+
+  // Callback to refresh testimonials when a new one is added
+  const handleTestimonialAdded = () => {
+    setTestimonialsRefreshKey(prev => prev + 1);
+  };
+
+  // Handle message sending functionality
+  const handleSendMessage = async () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+    
+    if (userType?.toLowerCase() !== 'customer') {
+      alert('Only customers can send messages to freelancers.');
+      return;
+    }
+    
+    setMessageLoading(true);
+    try {
+      // Here you would implement the actual message sending logic
+      // For now, we'll just show a success message
+      alert('Message functionality will be implemented here. This would typically open a chat or message form.');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setMessageLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -176,11 +215,18 @@ export default function Page({ params }) {
             </div>
 
             <div className="w-full">
-              <ReviewsSection profileData={profileData.u_profile} />
+              <ReviewsSection 
+                key={testimonialsRefreshKey}
+                profileData={profileData.u_profile}
+                refreshTrigger={loginRefreshTrigger}
+              />
             </div>
 
             <div className="w-full">
-              <CommentForm profileData={profileData.u_profile} />
+              <CommentForm 
+                profileData={profileData.u_profile}
+                onTestimonialAdded={handleTestimonialAdded}
+              />
             </div>
           </div>
 
@@ -201,6 +247,17 @@ export default function Page({ params }) {
           </div>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          // Trigger refresh of testimonials and other data
+          setLoginRefreshTrigger(prev => prev + 1);
+        }}
+      />
     </div>
   );
 }
