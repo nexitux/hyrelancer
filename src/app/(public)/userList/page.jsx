@@ -16,12 +16,24 @@ import {
     Minus,
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import LoginModal from '@/components/LoginModal/LoginModal';
 
 const FreelancerGridPage = () => {
     const searchParams = useSearchParams();
     const categoryFromUrl = searchParams.get('category');
+    const { user, isAuthenticated, userType } = useSelector(state => state.auth);
+    
+    // Debug logging
+    console.log('🔍 UserList Debug:', {
+        isAuthenticated,
+        userType,
+        user: user?.name,
+        userTypeFromUser: user?.userType
+    });
     
     const [showFilterModal, setShowFilterModal] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [cardsPerPage] = useState(6);
     const [salaryRange, setSalaryRange] = useState({ min: 0, max: 3000 });
@@ -248,6 +260,23 @@ const FreelancerGridPage = () => {
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
         }
+    };
+
+    const handleViewProfile = (freelancerId) => {
+        if (!isAuthenticated) {
+            setShowLoginModal(true);
+            return;
+        }
+        
+        // Check if user is a customer (case-insensitive) - check both Redux state and user object
+        const currentUserType = userType || user?.userType;
+        if (currentUserType?.toLowerCase() !== 'customer') {
+            alert('Only customers can view freelancer profiles.');
+            return;
+        }
+        
+        // Navigate to profile page
+        window.location.href = `/profileView/${freelancerId}`;
     };
 
     return (
@@ -606,6 +635,61 @@ const FreelancerGridPage = () => {
                         </div>
                     </div>
 
+                    {/* Authentication Status Banner */}
+                    {!isAuthenticated && (
+                        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <span className="text-blue-600 font-semibold text-sm">🔐</span>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-blue-800">
+                                        Please log in to view freelancer profiles
+                                    </p>
+                                    <p className="text-xs text-blue-600">
+                                        Only customers can access detailed freelancer profiles
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer' && (
+                        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="flex items-center">
+                                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                                    <span className="text-yellow-600 font-semibold text-sm">⚠️</span>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-yellow-800">
+                                        Only customers can view freelancer profiles
+                                    </p>
+                                    <p className="text-xs text-yellow-600">
+                                        Your account type: {userType || user?.userType}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {isAuthenticated && (userType || user?.userType)?.toLowerCase() === 'customer' && (
+                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-center">
+                                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                    <span className="text-green-600 font-semibold text-sm">✅</span>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-green-800">
+                                        Welcome, {user?.name || 'Customer'}!
+                                    </p>
+                                    <p className="text-xs text-green-600">
+                                        You can view freelancer profiles and contact them
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Freelancer Cards Grid */}
                     {filteredFreelancers.length > 0 ? (
                         <>
@@ -682,7 +766,9 @@ const FreelancerGridPage = () => {
 
                                             {/* View Profile Button */}
                                             <button
-                                                className="w-full py-3 border-2 border-[#3a599c] text-[#3a599c] hover:bg-[#3a599c] hover:text-white transition-colors rounded-lg font-medium"
+                                                onClick={() => handleViewProfile(freelancer.id)}
+                                                disabled={isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer'}
+                                                className="w-full py-3 border-2 border-[#3a599c] text-[#3a599c] hover:bg-[#3a599c] hover:text-white transition-colors rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ borderColor: primaryColor }}
                                             >
                                                 View Profile
@@ -909,6 +995,16 @@ const FreelancerGridPage = () => {
             >
                 <ChevronUp size={24} />
             </button>
+
+            {/* Login Modal */}
+            <LoginModal
+                isOpen={showLoginModal}
+                onClose={() => setShowLoginModal(false)}
+                onLoginSuccess={() => {
+                    setShowLoginModal(false);
+                    // Refresh the page or update state as needed
+                }}
+            />
         </div>
     );
 };
