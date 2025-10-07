@@ -195,6 +195,7 @@ function AuthWrapperInner({ children }) {
         "/job-details",
         "/job-list",
         "/complete-signup",
+        "/privacy-policy",
       ];
       if (!publicRoutes.includes(pathname)) {
         console.log('🚫 Not authenticated, redirecting to login');

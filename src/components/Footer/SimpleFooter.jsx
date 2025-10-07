@@ -20,7 +20,7 @@ const SimpleFooter = () => {
             <div className="flex gap-4 items-center">
               <a href="#" className="transition-colors hover:text-white">Terms Of Services</a>
               <span className="hidden text-gray-600 md:inline">|</span>
-              <a href="#" className="transition-colors hover:text-white">Privacy Policy</a>
+              <a href="/privacy-policy" className="transition-colors hover:text-white">Privacy Policy</a>
             </div>
           </div>
         </div>

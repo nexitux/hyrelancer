@@ -136,4 +136,13 @@ export const testimonialAPI = {
   }
 };
 
+// Terms and Conditions API functions
+export const termsAPI = {
+  // Get terms and conditions
+  getTermsAndConditions: async () => {
+    const response = await api.get('/cms-pages/MQ=='); // 'MQ==' is base64 for '1'
+    return response.data;
+  }
+};
+
 export default api;

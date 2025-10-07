@@ -137,6 +137,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
           setProfileData(u_profile);
           setEducationData(fe_edu || []);
           setExperienceData(fe_work || []);
+          // Set the education profile checkbox state from API response
+          setAddEducationToProfile(u_profile.fp_add_edu_profile === "1" || u_profile.fp_add_edu_profile === 1);
           setCurrentView('education'); // Start with education review
         } else {
           // No meaningful data, show form
@@ -232,7 +234,9 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
     setCurrentView('form');
 
     // Prepare form data
-    const formData = {};
+    const formData = {
+      fp_add_edu_profile: profileData?.fp_add_edu_profile === "1" || profileData?.fp_add_edu_profile === 1
+    };
     const eduFields = [];
 
     // Process education data
@@ -267,6 +271,9 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
 
     setEducationFields(eduFields);
     form.setFieldsValue(formData);
+    
+    // Set the education profile checkbox state
+    setAddEducationToProfile(profileData?.fp_add_edu_profile === "1" || profileData?.fp_add_edu_profile === 1);
   };
 
   // Handle experience edit  
@@ -318,7 +325,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
           title: item.title,
           year: item.year,
           collage: item.college,
-          type: item.type
+          type: item.type,
+          fp_add_edu_profile: addEducationToProfile ? "1" : "0"
         };
 
         if (item.fc_id) {
@@ -382,6 +390,8 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
         // Handle education update
         const educationItems = [];
 
+        // Update the checkbox state from form values
+        setAddEducationToProfile(values.fp_add_edu_profile || false);
 
         // Process education fields (prefer form values for `type`)
         educationFields.forEach(field => {
@@ -430,6 +440,9 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
 
       } else {
         // Handle new resume creation
+        // Update the checkbox state from form values
+        setAddEducationToProfile(values.fp_add_edu_profile || false);
+        
         const formattedData = {
           occupation: values.occupation,
           yearsOfExperience: values.yearsOfExperience,
@@ -440,7 +453,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
           position: [],
           duration: [],
           description: [],
-          fp_add_edu_profile: addEducationToProfile ? "1" : "0"
+          fp_add_edu_profile: (values.fp_add_edu_profile || addEducationToProfile) ? "1" : "0"
         };
 
 

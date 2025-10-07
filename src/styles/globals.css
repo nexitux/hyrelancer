@@ -62,3 +62,32 @@ a {
 .animate-spin-dot-four {
   animation: spin-dot 1.2s ease-in-out infinite 0.9s;
 }
+
+/* Terms and Conditions Content Styling */
+.terms-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.terms-content li {
+  margin-bottom: 0.25rem;
+  line-height: 1.6;
+}
+
+.terms-content p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.terms-content h1,
+.terms-content h2,
+.terms-content h3,
+.terms-content h4,
+.terms-content h5,
+.terms-content h6 {
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}

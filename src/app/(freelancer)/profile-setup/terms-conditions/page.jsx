@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState } from 'react';
-import { Button, Checkbox, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Button, Checkbox, message, Spin } from 'antd';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import api from "@/config/api";
+import api, { termsAPI } from "@/config/api";
 import {
   InfoCircleOutlined,
   LockOutlined,
@@ -18,16 +18,84 @@ import AIPlanOfferModal from '../offerPage/page';
 
 const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegistration = false, showCompletionModal }) => {
   const [agreed, setAgreed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({
-    section1: true,
-    section2: false,
-    section3: false
-  });
+  const [expandedSections, setExpandedSections] = useState({});
   const [loading, setLoading] = useState(false);
+  const [termsData, setTermsData] = useState([]);
+  const [mainDescription, setMainDescription] = useState('');
+  const [lastUpdated, setLastUpdated] = useState('');
+  const [dataLoading, setDataLoading] = useState(true);
   const [showOfferModal, setShowOfferModal] = useState(isRegistrationFlow); // Show modal only in registration flow
   const token = useSelector((state) => state.auth.token);
   const dispatch = useDispatch();
   const router = useRouter();
+
+  // Fetch terms and conditions data
+  useEffect(() => {
+    const fetchTermsData = async () => {
+      try {
+        setDataLoading(true);
+        const response = await termsAPI.getTermsAndConditions();
+        
+        if (response.status === 'success' && response.data) {
+          // Sort by tc_number
+          const sortedData = response.data.sort((a, b) => a.tc_number - b.tc_number);
+          
+          // Find main description (tc_number = 0)
+          const mainDesc = sortedData.find(item => item.tc_number === 0);
+          if (mainDesc) {
+            setMainDescription(mainDesc.tc_content);
+          }
+          
+          // Filter out main description and set terms data
+          const termsSections = sortedData.filter(item => item.tc_number !== 0);
+          setTermsData(termsSections);
+          
+          // Find the latest updated date
+          const latestUpdate = sortedData.reduce((latest, item) => {
+            const itemDate = new Date(item.updated_at);
+            const latestDate = new Date(latest);
+            return itemDate > latestDate ? item.updated_at : latest;
+          }, sortedData[0]?.updated_at || '');
+          
+          if (latestUpdate) {
+            const date = new Date(latestUpdate);
+            setLastUpdated(date.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long' 
+            }));
+          }
+          
+          // Initialize expanded sections - first section expanded by default
+          const initialExpanded = {};
+          termsSections.forEach((_, index) => {
+            initialExpanded[`section${index}`] = index === 0;
+          });
+          setExpandedSections(initialExpanded);
+        }
+      } catch (error) {
+        console.error('Error fetching terms data:', error);
+        message.error('Failed to load terms and conditions. Please try again.');
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    fetchTermsData();
+  }, []);
+
+  // Utility function to convert URLs to clickable links
+  const convertUrlsToLinks = (text) => {
+    if (!text) return text;
+    
+    // Regular expression to match URLs
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    
+    return text.replace(urlRegex, (url) => {
+      // Add https:// if it starts with www.
+      const href = url.startsWith('www.') ? `https://${url}` : url;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${url}</a>`;
+    });
+  };
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -143,7 +211,9 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
                 <div className="flex items-center space-x-2 mt-1">
                   <span className="text-sm font-medium text-blue-600">Hyerlancer</span>
                   <span className="text-gray-300">•</span>
-                  <span className="text-xs text-gray-500">Last updated: July 2025</span>
+                  <span className="text-xs text-gray-500">
+                    Last updated: {lastUpdated || 'Loading...'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -152,151 +222,114 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
           {/* Content */}
           <div className="p-6">
             <div className="space-y-4">
-              <p className="text-gray-700 leading-relaxed mb-6">
-                Welcome to <span className="font-semibold text-blue-600">Hyerlancer</span> services.
-                These Terms govern your use of our platform and services.
-              </p>
-
-              {/* Section 1 - Accordion */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => toggleSection('section1')}
-                  className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0 bg-blue-100 p-2 rounded-lg text-blue-600">
-                      <InfoCircleOutlined className="text-lg" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">1. Agreement to Terms</h3>
-                  </div>
-                  {expandedSections.section1 ? (
-                    <UpOutlined className="text-gray-500" />
-                  ) : (
-                    <DownOutlined className="text-gray-500" />
+              {dataLoading ? (
+                <div className="flex justify-center py-8">
+                  <Spin size="large" />
+                </div>
+              ) : (
+                <>
+                  {mainDescription && (
+                    <div 
+                      className="text-gray-700 leading-relaxed mb-6 terms-content"
+                      dangerouslySetInnerHTML={{ __html: convertUrlsToLinks(mainDescription) }}
+                    />
                   )}
-                </button>
-                {expandedSections.section1 && (
-                  <div className="p-4 pt-2 bg-white">
-                    <p className="text-gray-600 leading-relaxed">
-                      By accessing or using our services, you agree to comply with and be bound by these Terms and Conditions.
-                      If you do not agree with any part of these terms, you are not permitted to use our services.
-                      You agree to use our services only for lawful purposes and in a manner that does not infringe the rights of others.
-                      Providing false information or engaging in unauthorized activities may result in suspension or termination of your access.
-                    </p>
-                  </div>
-                )}
-              </div>
+                </>
+              )}
 
-              {/* Section 2 - Accordion */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => toggleSection('section2')}
-                  className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0 bg-blue-100 p-2 rounded-lg text-blue-600">
-                      <LockOutlined className="text-lg" />
+              {/* Dynamic Terms Sections */}
+              {!dataLoading && termsData.map((term, index) => {
+                const sectionKey = `section${index}`;
+                const isExpanded = expandedSections[sectionKey] || false;
+                
+                return (
+                  <div key={term.tc_id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleSection(sectionKey)}
+                      className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 bg-blue-100 p-2 rounded-lg text-blue-600">
+                          {index === 0 && <InfoCircleOutlined className="text-lg" />}
+                          {index === 1 && <LockOutlined className="text-lg" />}
+                          {index >= 2 && <FileTextOutlined className="text-lg" />}
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {term.tc_number}. {term.tc_heading || 'Terms Section'}
+                        </h3>
+                      </div>
+                      {isExpanded ? (
+                        <UpOutlined className="text-gray-500" />
+                      ) : (
+                        <DownOutlined className="text-gray-500" />
+                      )}
+                    </button>
+                    {isExpanded && (
+                      <div className="p-4 pt-2 bg-white">
+                        <div 
+                          className="text-gray-600 leading-relaxed terms-content"
+                          dangerouslySetInnerHTML={{ __html: convertUrlsToLinks(term.tc_content) }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Agreement Checkbox - Only show when data is loaded */}
+              {!dataLoading && (
+                <div className="mt-8 p-5 bg-gray-50 rounded-lg border border-gray-200">
+                  <Checkbox
+                    checked={agreed}
+                    onChange={handleCheckboxChange}
+                    className="w-full"
+                  >
+                    <div className="ml-3">
+                      <span className="block font-medium text-gray-800">I accept the Terms and Conditions</span>
+                      <span className="block text-sm text-gray-500 mt-1">
+                        By checking this box, you acknowledge that you have read, understood, and agree to be bound by all terms and conditions outlined above.
+                      </span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">2. Privacy Policy</h3>
-                  </div>
-                  {expandedSections.section2 ? (
-                    <UpOutlined className="text-gray-500" />
-                  ) : (
-                    <DownOutlined className="text-gray-500" />
-                  )}
-                </button>
-                {expandedSections.section2 && (
-                  <div className="p-4 pt-2 bg-white">
-                    <p className="text-gray-600 leading-relaxed">
-                      Our Privacy Policy outlines how we collect, use, and safeguard your personal data. By using our services,
-                      you consent to the collection and use of your data in accordance with our Privacy Policy.
-                      We implement appropriate security measures to protect against unauthorized access, alteration, disclosure,
-                      or destruction of your personal information.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Section 3 - Accordion */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => toggleSection('section3')}
-                  className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0 bg-blue-100 p-2 rounded-lg text-blue-600">
-                      <FileTextOutlined className="text-lg" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">3. Content Ownership</h3>
-                  </div>
-                  {expandedSections.section3 ? (
-                    <UpOutlined className="text-gray-500" />
-                  ) : (
-                    <DownOutlined className="text-gray-500" />
-                  )}
-                </button>
-                {expandedSections.section3 && (
-                  <div className="p-4 pt-2 bg-white">
-                    <p className="text-gray-600 leading-relaxed">
-                      All content, including text, graphics, logos, and software, remains the exclusive property of
-                      Hyerlancer and its licensors. You may not reproduce, distribute, or create derivative works
-                      without prior written consent. Any unauthorized use of the content may violate copyright laws,
-                      trademark laws, and other applicable regulations.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Agreement Checkbox */}
-              <div className="mt-8 p-5 bg-gray-50 rounded-lg border border-gray-200">
-                <Checkbox
-                  checked={agreed}
-                  onChange={handleCheckboxChange}
-                  className="w-full"
-                >
-                  <div className="ml-3">
-                    <span className="block font-medium text-gray-800">I accept the Terms and Conditions</span>
-                    <span className="block text-sm text-gray-500 mt-1">
-                      By checking this box, you acknowledge that you have read, understood, and agree to be bound by all terms and conditions outlined above.
-                    </span>
-                  </div>
-                </Checkbox>
-              </div>
+                  </Checkbox>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Footer Actions */}
-          <div className="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0 sm:space-x-4">
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={onBack}
-              className="flex items-center justify-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium bg-white hover:bg-gray-50"
-            >
-              Previous
-            </Button>
-            <Button
-              type="primary"
-              size="large"
-              disabled={!agreed || loading}
-              onClick={() => {
-                if (isRegistration && showCompletionModal) {
-                  showCompletionModal(
-                    "Registration Complete! 🎊",
-                    "Congratulations! Your profile setup is complete. Welcome to Hyerlancer!",
-                    "Go to Dashboard"
-                  );
-                }
-                handleAccept();
-              }}
-              loading={loading}
-              className={`px-6 py-3 rounded-lg font-medium ${agreed && !loading
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                }`}
-            >
-              {loading ? 'Processing...' : 'Accept & Continue'}
-            </Button>
-          </div>
+          {/* Footer Actions - Only show when data is loaded */}
+          {!dataLoading && (
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0 sm:space-x-4">
+              <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={onBack}
+                className="flex items-center justify-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium bg-white hover:bg-gray-50"
+              >
+                Previous
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                disabled={!agreed || loading}
+                onClick={() => {
+                  if (isRegistration && showCompletionModal) {
+                    showCompletionModal(
+                      "Registration Complete! 🎊",
+                      "Congratulations! Your profile setup is complete. Welcome to Hyerlancer!",
+                      "Go to Dashboard"
+                    );
+                  }
+                  handleAccept();
+                }}
+                loading={loading}
+                className={`px-6 py-3 rounded-lg font-medium ${agreed && !loading
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  }`}
+              >
+                {loading ? 'Processing...' : 'Accept & Continue'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </>

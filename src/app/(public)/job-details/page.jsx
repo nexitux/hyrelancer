@@ -26,8 +26,8 @@ import {
     ListDashes,
     User
 } from '@phosphor-icons/react';
-import Head from 'next/head';
 import Link from 'next/link';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 
 const JobListingsPage = () => {
     const [showFilterModal, setShowFilterModal] = useState(false);
@@ -42,6 +42,9 @@ const JobListingsPage = () => {
     });
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+
+    // SEO metadata automatically applied based on pathname
+    const seoComponent = usePageMetadata();
 
     // Primary color
     const primaryColor = '#3a599c';
@@ -175,11 +178,7 @@ const JobListingsPage = () => {
 
     return (
         <>
-            <Head>
-                <title>Job Listings | Hyrelancer</title>
-                <meta name="description" content="Browse job listings on Hyrelancer" />
-                <link rel="icon" href="/assets/images/fav.png" />
-            </Head>
+            {seoComponent}
 
 
 
