@@ -139,7 +139,7 @@ const JobListingsPage = () => {
             try {
                 setLoading(true);
                 // TODO: Replace with your actual API endpoint
-                // Example: const response = await fetch('https://backend.hyrelancer.in/api/jobs');
+                // Example: const response = await fetch('https://hyre.hyrelancer.com/api/jobs');
                 const response = await fetch('/api/jobs');
                 if (response.ok) {
                     const data = await response.json();

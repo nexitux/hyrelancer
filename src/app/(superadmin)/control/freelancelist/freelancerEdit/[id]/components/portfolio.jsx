@@ -95,7 +95,7 @@ const AdminContentForm = () => {
 
         // Convert to absolute URL if it's a relative path
         if (!cleanUrl.startsWith('http')) {
-          return `https://backend.hyrelancer.in/${cleanUrl.replace(/^\/+/, "")}`;
+          return `https://hyre.hyrelancer.com/${cleanUrl.replace(/^\/+/, "")}`;
         }
 
         return cleanUrl;

@@ -231,7 +231,7 @@ const JobDetailsModal = ({ isOpen = false, onClose = () => {}, jobData = null })
                 {jobData.get_job_data.cuj_img1 && (
                   <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                     <img 
-                      src={`https://backend.hyrelancer.in/${jobData.get_job_data.cuj_img1}`} 
+                      src={`https://hyre.hyrelancer.com/${jobData.get_job_data.cuj_img1}`} 
                       alt="Job Image 1"
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -243,7 +243,7 @@ const JobDetailsModal = ({ isOpen = false, onClose = () => {}, jobData = null })
                 {jobData.get_job_data.cuj_img2 && (
                   <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                     <img 
-                      src={`https://backend.hyrelancer.in/${jobData.get_job_data.cuj_img2}`} 
+                      src={`https://hyre.hyrelancer.com/${jobData.get_job_data.cuj_img2}`} 
                       alt="Job Image 2"
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -255,7 +255,7 @@ const JobDetailsModal = ({ isOpen = false, onClose = () => {}, jobData = null })
                 {jobData.get_job_data.cuj_img3 && (
                   <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                     <img 
-                      src={`https://backend.hyrelancer.in/${jobData.get_job_data.cuj_img3}`} 
+                      src={`https://hyre.hyrelancer.com/${jobData.get_job_data.cuj_img3}`} 
                       alt="Job Image 3"
                       className="w-full h-full object-cover"
                       onError={(e) => {

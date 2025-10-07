@@ -22,7 +22,7 @@ export default function BrowseCategory() {
             .map(item => ({
               id: item.sc_id,
               title: item.sc_name,
-              image: item.sc_img ? `https://backend.hyrelancer.in/${item.sc_img}` : '/images/placeholder.jpg',
+              image: item.sc_img ? `https://hyre.hyrelancer.com/${item.sc_img}` : '/images/placeholder.jpg',
               category: item.get_ca_data?.ca_name || 'freelancer'
             }));
           

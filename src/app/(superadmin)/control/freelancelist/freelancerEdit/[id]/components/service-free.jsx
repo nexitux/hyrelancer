@@ -82,8 +82,8 @@ export default function AdminServicePage() {
       setDropdownLoading(true);
 
       const [stateResponse, categoryResponse] = await Promise.all([
-        fetch('https://backend.hyrelancer.in/api/getStatelist'),
-        fetch('https://backend.hyrelancer.in/api/getCategorylist')
+        fetch('https://hyre.hyrelancer.com/api/getStatelist'),
+        fetch('https://hyre.hyrelancer.com/api/getCategorylist')
       ]);
 
       if (!stateResponse.ok || !categoryResponse.ok) {
@@ -259,11 +259,11 @@ export default function AdminServicePage() {
         let fileUrl;
 
         if (data.fe_idproof_data.fi_img.includes('--')) {
-          fileUrl = `https://backend.hyrelancer.in/${data.fe_idproof_data.fi_img.split('--')[0]}`;
+          fileUrl = `https://hyre.hyrelancer.com/${data.fe_idproof_data.fi_img.split('--')[0]}`;
         } else if (data.fe_idproof_data.fi_img.startsWith('uploads/')) {
-          fileUrl = `https://backend.hyrelancer.in/${data.fe_idproof_data.fi_img}`;
+          fileUrl = `https://hyre.hyrelancer.com/${data.fe_idproof_data.fi_img}`;
         } else {
-          fileUrl = `https://backend.hyrelancer.in/uploads/${data.fe_idproof_data.fi_img}`;
+          fileUrl = `https://hyre.hyrelancer.com/uploads/${data.fe_idproof_data.fi_img}`;
         }
 
         setFileList([{
@@ -593,7 +593,7 @@ export default function AdminServicePage() {
 
     // Convert to absolute URL if it's a relative path
     if (!cleanUrl.startsWith('http')) {
-      return `https://backend.hyrelancer.in/${cleanUrl.replace(/^\/+/, "")}`;
+      return `https://hyre.hyrelancer.com/${cleanUrl.replace(/^\/+/, "")}`;
     }
 
     return cleanUrl;

@@ -79,7 +79,7 @@ const JobDetailPage = () => {
     if (!token || !jobId) return;
 
     try {
-      const response = await fetch('https://backend.hyrelancer.in/api/getBookmark', {
+      const response = await fetch('https://hyre.hyrelancer.com/api/getBookmark', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -122,7 +122,7 @@ const JobDetailPage = () => {
 
     setBookmarkLoading(true);
     try {
-      const response = await fetch('https://backend.hyrelancer.in/api/storeBookmark', {
+      const response = await fetch('https://hyre.hyrelancer.com/api/storeBookmark', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ const JobDetailPage = () => {
         return;
       }
   
-      const deleteResponse = await fetch(`https://backend.hyrelancer.in/api/deleteBookmark/${jobIdToDelete}`, {
+      const deleteResponse = await fetch(`https://hyre.hyrelancer.com/api/deleteBookmark/${jobIdToDelete}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -229,7 +229,7 @@ const JobDetailPage = () => {
           return;
         }
 
-        const response = await fetch('https://backend.hyrelancer.in/api/getAllJobs', {
+        const response = await fetch('https://hyre.hyrelancer.com/api/getAllJobs', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -270,7 +270,7 @@ const JobDetailPage = () => {
                 email: foundJob.cuj_contact_email,
                 mobile: foundJob.cuj_contact_mobile
               },
-              image: foundJob.cuj_img1 ? `https://backend.hyrelancer.in/${foundJob.cuj_img1}` : "/images/jd.png",
+              image: foundJob.cuj_img1 ? `https://hyre.hyrelancer.com/${foundJob.cuj_img1}` : "/images/jd.png",
               employer: {
                 id: foundJob.id,
                 name: foundJob.name || 'Unknown Employer',
@@ -330,7 +330,7 @@ const JobDetailPage = () => {
     setApplying(true);
 
     try {
-      const response = await fetch(`https://backend.hyrelancer.in/api/sendRequestForJob/${btoa(jobId)}`, {
+      const response = await fetch(`https://hyre.hyrelancer.com/api/sendRequestForJob/${btoa(jobId)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

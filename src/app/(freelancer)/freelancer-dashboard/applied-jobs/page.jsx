@@ -112,7 +112,7 @@ const MyApplied = () => {
   const deleteJobApplication = async (jobId) => {
     try {
       // Implement delete API call here
-      const response = await fetch(`https://backend.hyrelancer.in/api/deleteAppliedJob/${jobId}`, {
+      const response = await fetch(`https://hyre.hyrelancer.com/api/deleteAppliedJob/${jobId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

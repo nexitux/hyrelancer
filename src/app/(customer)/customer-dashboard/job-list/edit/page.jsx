@@ -72,7 +72,7 @@ const EditJobPage = () => {
     if (url.startsWith('http')) {
       return url;
     }
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend.hyrelancer.in';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hyre.hyrelancer.com';
     return `${baseUrl}/${url}`;
   };
 

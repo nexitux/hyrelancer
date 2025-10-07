@@ -124,7 +124,7 @@ export default function AdminProfessionalPage() {
       setError(null);
       
       const token = TokenManager.getToken();
-      const response = await fetch(`https://backend.hyrelancer.in/api/admin/getFeUProfessional/${userIdBase64}`, {
+      const response = await fetch(`https://hyre.hyrelancer.com/api/admin/getFeUProfessional/${userIdBase64}`, {
         method: "GET",
         headers: {
           "Accept": "application/json",
@@ -250,7 +250,7 @@ export default function AdminProfessionalPage() {
         description: descriptions,
       };
 
-      const response = await fetch("https://backend.hyrelancer.in/api/admin/storeFeUProfessional", {
+      const response = await fetch("https://hyre.hyrelancer.com/api/admin/storeFeUProfessional", {
         method: "POST",
         headers: {
           "Accept": "application/json",
@@ -303,7 +303,7 @@ export default function AdminProfessionalPage() {
         fp_add_edu_profile: values.fp_add_edu_profile || false,
       };
 
-      const response = await fetch("https://backend.hyrelancer.in/api/admin/updateFeUProfessional", {
+      const response = await fetch("https://hyre.hyrelancer.com/api/admin/updateFeUProfessional", {
         method: "PUT",
         headers: {
           "Accept": "application/json",
@@ -366,7 +366,7 @@ export default function AdminProfessionalPage() {
           payload.fc_id = btoa(edu.fc_id.toString());
         }
 
-        const response = await fetch("https://backend.hyrelancer.in/api/admin/updateFeUEducation", {
+        const response = await fetch("https://hyre.hyrelancer.com/api/admin/updateFeUEducation", {
           method: "PUT",
           headers: {
             "Accept": "application/json",
@@ -426,7 +426,7 @@ export default function AdminProfessionalPage() {
           payload.fj_id = btoa(exp.fj_id.toString());
         }
 
-        const response = await fetch("https://backend.hyrelancer.in/api/admin/updateFeUExperience", {
+        const response = await fetch("https://hyre.hyrelancer.com/api/admin/updateFeUExperience", {
           method: "PUT",
           headers: {
             "Accept": "application/json",

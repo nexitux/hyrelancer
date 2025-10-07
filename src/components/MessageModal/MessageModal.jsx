@@ -121,7 +121,7 @@ const MessageModal = ({ isOpen, onClose, freelancerData }) => {
     
     try {
       setIsLoading(true);
-      const response = await fetch(`https://backend.hyrelancer.in/api/conversation/${freelancerData.fp_u_id}`, {
+      const response = await fetch(`https://hyre.hyrelancer.com/api/conversation/${freelancerData.fp_u_id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ const MessageModal = ({ isOpen, onClose, freelancerData }) => {
     setMessages(prev => [...prev, tempMessage]);
     
     try {
-      const response = await fetch('https://backend.hyrelancer.in/api/send', {
+      const response = await fetch('https://hyre.hyrelancer.com/api/send', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -335,12 +335,12 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = 'https://backend.hyrelancer.in/api/google/login';
+    window.location.href = 'https://hyre.hyrelancer.com/api/google/login';
   };
 
   const handleGoogleSignUp = () => {
     const frontendUrl = `${window.location.origin}/complete-signup`;
-    const googleSignupUrl = `https://backend.hyrelancer.in/api/google/signup?redirect_url=${encodeURIComponent(frontendUrl)}`;
+    const googleSignupUrl = `https://hyre.hyrelancer.com/api/google/signup?redirect_url=${encodeURIComponent(frontendUrl)}`;
     window.location.href = googleSignupUrl;
   };
 

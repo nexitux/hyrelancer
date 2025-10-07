@@ -607,7 +607,7 @@ const EditJobModal = ({ isOpen, onClose, jobData, onSave }) => {
                                             <img 
                                                 src={typeof formData[fieldName] === 'string' && formData[fieldName].startsWith('data:') 
                                                     ? formData[fieldName] 
-                                                    : `https://backend.hyrelancer.in/${formData[fieldName].split('--')[0]}`} 
+                                                    : `https://hyre.hyrelancer.com/${formData[fieldName].split('--')[0]}`} 
                                                 alt={`Preview ${index + 1}`} 
                                                 className="w-full h-full object-cover" 
                                             />

@@ -38,7 +38,7 @@ export default function ProfileDisplay() {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://backend.hyrelancer.in/api/admin/getFeUProfile/${userIdBase64}`;
+        const url = `https://hyre.hyrelancer.com/api/admin/getFeUProfile/${userIdBase64}`;
         const token = TokenManager.getToken();
 
         const res = await fetch(url, {
@@ -83,7 +83,7 @@ export default function ProfileDisplay() {
               
               // Ensure proper URL construction
               if (!imageUrl.startsWith('http')) {
-                imageUrl = `https://backend.hyrelancer.in/${imageUrl.replace(/^\/+/, "")}`;
+                imageUrl = `https://hyre.hyrelancer.com/${imageUrl.replace(/^\/+/, "")}`;
               }
               
               setImagePreviewUrl(imageUrl);

@@ -5,7 +5,7 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
   // Helper functions
   const getProfileImageUrl = (imagePath) => {
     if (!imagePath || imagePath === "0") return null;
-    return `https://backend.hyrelancer.in/${imagePath.split("--")[0]}`;
+    return `https://hyre.hyrelancer.com/${imagePath.split("--")[0]}`;
   };
 
   const parseLanguages = (langString, langList) => {

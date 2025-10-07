@@ -57,7 +57,7 @@ const Bookmarks = () => {
             setError(null);
             const token = getToken();
 
-            const response = await axios.get('https://backend.hyrelancer.in/api/getBookmark', {
+            const response = await axios.get('https://hyre.hyrelancer.com/api/getBookmark', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -98,7 +98,7 @@ const Bookmarks = () => {
 
         try {
             const encodedId = typeof window !== 'undefined' ? window.btoa(String(jobId)) : Buffer.from(String(jobId)).toString('base64');
-            const response = await fetch(`https://backend.hyrelancer.in/api/sendRequestForJob/${encodedId}`, {
+            const response = await fetch(`https://hyre.hyrelancer.com/api/sendRequestForJob/${encodedId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -326,7 +326,7 @@ const Bookmarks = () => {
 
         try {
             const token = getToken();
-            const response = await axios.get(`https://backend.hyrelancer.in/api/deleteBookmark/${jobId}`, {
+            const response = await axios.get(`https://hyre.hyrelancer.com/api/deleteBookmark/${jobId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

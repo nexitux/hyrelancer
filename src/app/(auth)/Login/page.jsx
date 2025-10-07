@@ -238,7 +238,7 @@ const AuthForm = () => {
         setIsLoading(true);
         dispatch(loginStart());
         try {
-          const backendUrl = 'https://backend.hyrelancer.in/api';
+          const backendUrl = 'https://hyre.hyrelancer.com/api';
           const response = await api.get(
             `${backendUrl}/getDatatByGoogleId?google_id=${googleId}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
@@ -554,13 +554,13 @@ const AuthForm = () => {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = 'https://backend.hyrelancer.in/api/google/login';
+    window.location.href = 'https://hyre.hyrelancer.com/api/google/login';
   };
 
   const handleGoogleSignUp = () => {
     // Redirect to Google signup with callback to complete-signup page
     const frontendUrl = `${window.location.origin}/complete-signup`;
-    const googleSignupUrl = `https://backend.hyrelancer.in/api/google/signup?redirect_url=${encodeURIComponent(frontendUrl)}`;
+    const googleSignupUrl = `https://hyre.hyrelancer.com/api/google/signup?redirect_url=${encodeURIComponent(frontendUrl)}`;
     window.location.href = googleSignupUrl;
   };
 

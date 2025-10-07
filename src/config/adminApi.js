@@ -4,7 +4,7 @@ import { store } from "../redux/store";
 import { logoutAdmin } from "../redux/slices/adminSlice"; // Import the specific admin logout action
 
 const ADMIN_API_BASE_URL =
-  process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://backend.hyrelancer.in/api/admin";
+  process.env.NEXT_PUBLIC_ADMIN_API_URL || "https://hyre.hyrelancer.com/api/admin";
 
 const adminApi = axios.create({
   baseURL: ADMIN_API_BASE_URL,

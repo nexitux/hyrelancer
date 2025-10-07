@@ -15,7 +15,7 @@ import {
 import { message } from 'antd'; // Import for toast notifications
 
 // API configuration
-const API_BASE_URL = 'https://backend.hyrelancer.in/api/admin';
+const API_BASE_URL = 'https://hyre.hyrelancer.com/api/admin';
 
 // Token management (local state)
 const TokenManager = {
@@ -459,7 +459,7 @@ const EditService = ({ params }) => {
                 <label className="block mb-1 text-sm font-medium text-gray-700">Service Icon</label>
                 {existingIconUrl && (
                   <div className="relative mb-2 w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={`https://backend.hyrelancer.in/${existingIconUrl}`} alt="Current Icon" className="w-full h-full object-cover" />
+                    <img src={`https://hyre.hyrelancer.com/${existingIconUrl}`} alt="Current Icon" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setExistingIconUrl(null)}
@@ -496,7 +496,7 @@ const EditService = ({ params }) => {
                 <label className="block mb-1 text-sm font-medium text-gray-700">Service Banner</label>
                 {existingBannerUrl && (
                   <div className="relative mb-2 h-24 w-full rounded-lg overflow-hidden border border-gray-200">
-                    <img src={`https://backend.hyrelancer.in/${existingBannerUrl}`} alt="Current Banner" className="w-full h-full object-cover" />
+                    <img src={`https://hyre.hyrelancer.com/${existingBannerUrl}`} alt="Current Banner" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setExistingBannerUrl(null)}

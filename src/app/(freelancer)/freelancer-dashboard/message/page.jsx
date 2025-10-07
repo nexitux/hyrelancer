@@ -140,7 +140,7 @@ export default function MessageBox() {
                 return;
             }
 
-            const response = await fetch('https://backend.hyrelancer.in/api/inbox', {
+            const response = await fetch('https://hyre.hyrelancer.com/api/inbox', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ export default function MessageBox() {
                 return;
             }
 
-            const response = await fetch(`https://backend.hyrelancer.in/api/conversation/${userId}`, {
+            const response = await fetch(`https://hyre.hyrelancer.com/api/conversation/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -299,7 +299,7 @@ export default function MessageBox() {
         }));
         
         try {
-            const response = await fetch('https://backend.hyrelancer.in/api/send', {
+            const response = await fetch('https://hyre.hyrelancer.com/api/send', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

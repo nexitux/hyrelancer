@@ -61,7 +61,7 @@ export default function AdminMessageViewer({ userId, userName, userType, onClose
             }
 
             console.log('Fetching inbox for userId:', userId);
-            const response = await fetch(`https://backend.hyrelancer.in/api/admin/UserChatInbox/${userId}`, {
+            const response = await fetch(`https://hyre.hyrelancer.com/api/admin/UserChatInbox/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ export default function AdminMessageViewer({ userId, userName, userType, onClose
                 return;
             }
 
-            const response = await fetch(`https://backend.hyrelancer.in/api/admin/UserChatConversation/${otherUserId}`, {
+            const response = await fetch(`https://hyre.hyrelancer.com/api/admin/UserChatConversation/${otherUserId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',

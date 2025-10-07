@@ -14,7 +14,7 @@ import {
 import { message } from 'antd'; // Import for toast notifications
 
 // API configuration
-const API_BASE_URL = 'https://backend.hyrelancer.in/api/admin';
+const API_BASE_URL = 'https://hyre.hyrelancer.com/api/admin';
 
 // Token management (local state)
 const TokenManager = {

@@ -76,7 +76,7 @@ const BadgesTable = () => {
 
       let imgUrl = badge.b_img;
       if (imgUrl && !imgUrl.startsWith('http')) {
-        imgUrl = `https://backend.hyrelancer.in${imgUrl.startsWith('/') ? '' : '/'}${imgUrl}`;
+        imgUrl = `https://hyre.hyrelancer.com${imgUrl.startsWith('/') ? '' : '/'}${imgUrl}`;
       }
       setImagePreview(imgUrl);
 
@@ -193,7 +193,7 @@ const BadgesTable = () => {
       render: (b_img) => {
         let imgUrl = b_img;
         if (imgUrl && !imgUrl.startsWith('http')) {
-          imgUrl = `https://backend.hyrelancer.in${imgUrl.startsWith('/') ? '' : '/'}${imgUrl}`;
+          imgUrl = `https://hyre.hyrelancer.com${imgUrl.startsWith('/') ? '' : '/'}${imgUrl}`;
         }
         return (
           <div className="flex justify-center items-center">

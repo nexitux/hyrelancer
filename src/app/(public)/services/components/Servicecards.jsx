@@ -63,7 +63,7 @@ export default function Servicecards({ params }) {
   // Helper function to get image URL
   const getImageUrl = (imagePath) => {
     if (!imagePath || imagePath === '0') return null;
-    return `https://backend.hyrelancer.in/${imagePath.split('--')[0]}`;
+    return `https://hyre.hyrelancer.com/${imagePath.split('--')[0]}`;
   };
 
   // Process portfolio data into services format

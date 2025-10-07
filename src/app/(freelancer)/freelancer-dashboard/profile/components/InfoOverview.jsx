@@ -197,7 +197,7 @@ export default function InfoOverview({
                 className="p-1 hover:bg-gray-100 rounded transition-colors duration-200"
                 onClick={() => {
                   if (proof.fi_img) {
-                    window.open(`https://backend.hyrelancer.in/${proof.fi_img.split('--')[0]}`, '_blank');
+                    window.open(`https://hyre.hyrelancer.com/${proof.fi_img.split('--')[0]}`, '_blank');
                   }
                 }}
                 disabled={!proof.fi_img}

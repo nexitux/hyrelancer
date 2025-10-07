@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import LoginModal from "@/components/LoginModal/LoginModal";
 
-const API_BASE = "https://backend.hyrelancer.in/api";
+const API_BASE = "https://hyre.hyrelancer.com/api";
 
 export default function InfoOverview({
   profileData,

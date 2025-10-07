@@ -225,9 +225,9 @@ const JobDetailPage = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {[job.cuj_img1, job.cuj_img2, job.cuj_img3].map((img, index) => (
                     img && (
-                      <a key={index} href={`https://backend.hyrelancer.in/${img.split('--')[0]}`} target="_blank" rel="noopener noreferrer">
+                      <a key={index} href={`https://hyre.hyrelancer.com/${img.split('--')[0]}`} target="_blank" rel="noopener noreferrer">
                         <img
-                          src={`https://backend.hyrelancer.in/${img.split('--')[0]}`}
+                          src={`https://hyre.hyrelancer.com/${img.split('--')[0]}`}
                           alt={`Job Attachment ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border-2 border-gray-100 transition-transform hover:scale-105"
                         />

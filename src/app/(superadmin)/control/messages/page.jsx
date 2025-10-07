@@ -65,7 +65,7 @@ export default function AdminMessagesPage() {
 
       // This would need to be a new admin API endpoint that returns all users with their recent message activity
       // For now, we'll simulate this with the existing inbox API
-      const response = await fetch('https://backend.hyrelancer.in/api/admin/UserChatInbox/all', {
+      const response = await fetch('https://hyre.hyrelancer.com/api/admin/UserChatInbox/all', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

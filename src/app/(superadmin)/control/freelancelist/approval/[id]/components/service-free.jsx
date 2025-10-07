@@ -80,7 +80,7 @@ export default function ServiceDisplayPage() {
     if (!url) return null;
     const cleanUrl = url.split("--")[0];
     if (!cleanUrl.startsWith('http')) {
-      return `https://backend.hyrelancer.in/${cleanUrl.replace(/^\/+/, "")}`;
+      return `https://hyre.hyrelancer.com/${cleanUrl.replace(/^\/+/, "")}`;
     }
     return cleanUrl;
   };
@@ -89,8 +89,8 @@ export default function ServiceDisplayPage() {
   const fetchDropdownData = async () => {
     try {
       const [stateResponse, categoryResponse] = await Promise.all([
-        fetch('https://backend.hyrelancer.in/api/getStatelist'),
-        fetch('https://backend.hyrelancer.in/api/getCategorylist')
+        fetch('https://hyre.hyrelancer.com/api/getStatelist'),
+        fetch('https://hyre.hyrelancer.com/api/getCategorylist')
       ]);
 
       if (!stateResponse.ok || !categoryResponse.ok) {
