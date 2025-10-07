@@ -8,7 +8,7 @@
 const ALLOWED_SPECIAL_CHARS = /[.,'"\-()\[\]{}:!?@#%*+=|\\\/<>~`\s]/g;
 
 // Characters that are completely forbidden
-const FORBIDDEN_CHARS = /[<>{}[\]\\|`~;$\^]/g;
+const FORBIDDEN_CHARS = /[<>{}[\]\\|`~;$\^&]/g;
 
 // Characters that are allowed but should be limited
 const LIMITED_CHARS = /[]/g;
@@ -73,7 +73,7 @@ export const validateInput = (input, options = {}) => {
   if (hasForbiddenChars) {
     return {
       isValid: false,
-      message: 'Input contains forbidden characters. Please remove < > { } [ ] \\ | ` ~ characters.'
+      message: 'Input contains forbidden characters. Please remove < > { } [ ] \\ | ` ~ & characters.'
     };
   }
   

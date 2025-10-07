@@ -34,18 +34,10 @@ const CharacterRestrictionIndicator = ({
       }
     } else {
       // For text inputs, check forbidden characters
-      const forbiddenPattern = /[<>{}[\]\\|`~;$\^]/g;
+      const forbiddenPattern = /[<>{}[\]\\|`~;$\^&]/g;
       const matches = value.match(forbiddenPattern);
       if (matches) {
         foundRestricted = [...new Set(matches)];
-      }
-      
-      // Check limited characters if not allowed
-      if (!validationConfig.allowLimitedChars) {
-        const limitedMatches = value.match(/[&]/g);
-        if (limitedMatches) {
-          foundRestricted = [...foundRestricted, ...new Set(limitedMatches)];
-        }
       }
     }
 
@@ -77,3 +69,4 @@ const CharacterRestrictionIndicator = ({
 };
 
 export default CharacterRestrictionIndicator;
+

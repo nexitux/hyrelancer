@@ -95,13 +95,8 @@ const ValidatedFormInput = ({
     }
     // For other text inputs, check against forbidden characters
     else if (type === 'text' || type === 'textarea') {
-      const forbiddenChars = /[<>{}[\]\\|`~]/;
+      const forbiddenChars = /[<>{}[\]\\|`~;$\^&]/;
       if (forbiddenChars.test(char)) {
-        isRestricted = true;
-      }
-      
-      // Check limited characters based on validation config
-      if (!validationConfig.allowLimitedChars && /[&]/.test(char)) {
         isRestricted = true;
       }
     }

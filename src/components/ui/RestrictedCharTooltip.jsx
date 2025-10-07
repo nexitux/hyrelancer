@@ -28,11 +28,11 @@ const RestrictedCharTooltip = ({
       } else if (validationType === 'name') {
         tooltipMessage = 'Name cannot contain special characters like < > { } [ ] \\ | ` ~ &';
       } else if (validationType === 'title') {
-        tooltipMessage = 'Title cannot contain < > { } [ ] \\ | ` ~ characters';
+        tooltipMessage = 'Title cannot contain < > { } [ ] \\ | ` ~ & characters';
       } else if (validationType === 'description') {
-        tooltipMessage = 'Description cannot contain < > { } [ ] \\ | ` ~ characters';
+        tooltipMessage = 'Description cannot contain < > { } [ ] \\ | ` ~ & characters';
       } else if (validationType === 'message') {
-        tooltipMessage = 'Message cannot contain < > { } [ ] \\ | ` ~ characters';
+        tooltipMessage = 'Message cannot contain < > { } [ ] \\ | ` ~ & characters';
       } else {
         tooltipMessage = `Character '${restrictedChar}' is not allowed in this field`;
       }
@@ -76,3 +76,4 @@ const RestrictedCharTooltip = ({
 };
 
 export default RestrictedCharTooltip;
+

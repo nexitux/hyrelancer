@@ -289,14 +289,6 @@ const JobModal = ({ isOpen, onClose, selectedJob }) => {
                   </div>
                 </div>
                 
-                {selectedJob.contactEmail && (
-                  <a 
-                    href={`mailto:${selectedJob.contactEmail}`}
-                    className="w-full bg-[#3d5999] text-white py-3 rounded-lg font-medium hover:bg-[#2d3f6f] transition-colors text-center block"
-                  >
-                    Contact Employer
-                  </a>
-                )}
               </div>
             </div>
           </div>

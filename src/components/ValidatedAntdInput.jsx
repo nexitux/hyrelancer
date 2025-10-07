@@ -72,13 +72,8 @@ const ValidatedAntdInput = ({
     }
     // For other text inputs, check against forbidden characters
     else if (['text', 'title', 'description', 'message', 'name'].includes(validationType)) {
-      const forbiddenChars = /[<>{}[\]\\|`~;$\^]/;
+      const forbiddenChars = /[<>{}[\]\\|`~;$\^&]/;
       if (forbiddenChars.test(char)) {
-        isRestricted = true;
-      }
-      
-      // Check limited characters based on validation config
-      if (!validationConfig.allowLimitedChars && /[&]/.test(char)) {
         isRestricted = true;
       }
     }
@@ -165,13 +160,8 @@ const ValidatedAntdTextArea = ({
     let isRestricted = false;
     
     // For textarea inputs, check against forbidden characters
-    const forbiddenChars = /[<>{}[\]\\|`~;$\^]/;
+    const forbiddenChars = /[<>{}[\]\\|`~;$\^&]/;
     if (forbiddenChars.test(char)) {
-      isRestricted = true;
-    }
-    
-    // Check limited characters based on validation config
-    if (!validationConfig.allowLimitedChars && /[&]/.test(char)) {
       isRestricted = true;
     }
     
