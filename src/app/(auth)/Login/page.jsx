@@ -491,6 +491,8 @@ const AuthForm = () => {
     window.location.href = googleSignupUrl;
   };
 
+
+
   // Phone OTP functions
   const isBackendSuccess = (data) => {
     if (!data) return false;

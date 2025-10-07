@@ -72,7 +72,8 @@ const HeroSection = () => {
     const trimmed = (searchKeyword || '').trim();
     if (trimmed.length >= 2) {
       try {
-        await fetch('http://localhost:8000/api/search/store', {
+    //    await fetch('http://localhost:8000/api/search/store', {
+          await fetch('https://backend.hyrelancer.in/api/search/store', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

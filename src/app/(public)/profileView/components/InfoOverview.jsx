@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import {
   FileText,
   Download,
@@ -10,7 +11,10 @@ import {
   Calendar,
   Globe,
   User,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
+import LoginModal from "@/components/LoginModal/LoginModal";
 
 const API_BASE = "https://backend.hyrelancer.in/api";
 
@@ -24,8 +28,20 @@ export default function InfoOverview({
   idProof,
   languages,
 }) {
+  const { user, isAuthenticated, userType } = useSelector(state => state.auth);
+  
+  // Debug logging
+  console.log('🔍 InfoOverview Debug:', {
+    isAuthenticated,
+    userType,
+    user: user?.name,
+    userTypeFromUser: user?.userType
+  });
   const [hoveredSocial, setHoveredSocial] = useState(null);
   const [working, setWorking] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
 
   // Helper functions
   const getLanguagesDisplay = () => {
@@ -157,6 +173,86 @@ export default function InfoOverview({
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // Check if user is a customer (case-insensitive) - check both Redux state and user object
+    const currentUserType = userType || user?.userType;
+    if (currentUserType?.toLowerCase() !== 'customer') {
+      alert('Only customers can send messages to freelancers.');
+      return;
+    }
+    
+    setMessageLoading(true);
+    try {
+      // Here you would implement the actual message sending logic
+      // For now, we'll just show a success message
+      alert('Message functionality will be implemented here. This would typically open a chat or message form.');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setMessageLoading(false);
+    }
+  };
+
+  const handleRequestContactDetails = async () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // Check if user is a customer (case-insensitive) - check both Redux state and user object
+    const currentUserType = userType || user?.userType;
+    if (currentUserType?.toLowerCase() !== 'customer') {
+      alert('Only customers can request contact details from freelancers.');
+      return;
+    }
+    
+    // Get freelancer ID from profile data
+    const freelancerId = profileData?.fp_u_id;
+    
+    if (!freelancerId) {
+      alert("Unable to identify the freelancer. Please try again.");
+      return;
+    }
+
+    setContactLoading(true);
+    
+    try {
+      const requestData = {
+        sc_message_id: 1, // Default message ID as per API spec
+        sc_request_receive_id: freelancerId, // Freelancer's user ID
+        sc_request_send_message: "Hi, Please share your contact details."
+      };
+
+      const response = await fetch(`${API_BASE}/share-contact/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        alert(data.message || "Contact request sent successfully!");
+      } else {
+        alert(data.message || "Failed to send contact request.");
+      }
+    } catch (error) {
+      console.error('Error requesting contact details:', error);
+      alert("Failed to send contact request. Please try again.");
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
   return (
     <div className="mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       {/* Header */}
@@ -244,6 +340,58 @@ export default function InfoOverview({
         )}
       </div>
 
+      {/* Message Button */}
+      <div className="px-6 py-4 bg-white border-t border-gray-100">
+        <button
+          onClick={handleSendMessage}
+          disabled={messageLoading || (isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer')}
+          className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-green-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <span className="flex items-center justify-center gap-2">
+            <MessageCircle size={16} />
+            {messageLoading ? "Sending..." : "Send Message"}
+          </span>
+        </button>
+        
+        {!isAuthenticated && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Login required to send messages
+          </p>
+        )}
+        
+        {isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer' && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Only customers can send messages
+          </p>
+        )}
+      </div>
+
+      {/* Contact Details Button */}
+      <div className="px-6 py-4 bg-white border-t border-gray-100">
+        <button
+          onClick={handleRequestContactDetails}
+          disabled={contactLoading || (isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer')}
+          className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Phone size={16} />
+            {contactLoading ? "Requesting..." : "Get Contact Details"}
+          </span>
+        </button>
+        
+        {!isAuthenticated && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Login required to request contact details
+          </p>
+        )}
+        
+        {isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer' && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Only customers can request contact details
+          </p>
+        )}
+      </div>
+
       {/* Download Button */}
       <div className="px-6 py-5 bg-white border-t border-gray-100">
         <button
@@ -260,6 +408,16 @@ export default function InfoOverview({
 
       {/* Decorative Bottom Element */}
       <div className="h-1 bg-[#3e5a9a]"></div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          // The parent component will handle refreshing data
+        }}
+      />
     </div>
   );
 }

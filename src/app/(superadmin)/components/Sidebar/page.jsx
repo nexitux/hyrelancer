@@ -10,7 +10,8 @@ import {
   MdMenu,
   MdClose,
   MdLightMode,
-  MdDarkMode
+  MdDarkMode,
+  MdMessage
 } from 'react-icons/md';
 import Image from "next/image";
 import { usePathname, useRouter } from 'next/navigation';
@@ -149,6 +150,7 @@ export default function Sidebar() {
       ]
     },
     { 
+<<<<<<< HEAD
       id: 'searchKeywords', 
       label: 'Search Keywords', 
       icon: MdMiscellaneousServices, 
@@ -156,6 +158,15 @@ export default function Sidebar() {
       subLinks: [
         { id: 'search-keywords-list', label: 'Keywords List', href: '/control/search-keywords' },
         
+=======
+      id: 'prefilledMessages', 
+      label: ' Messages', 
+      icon: MdMessage, 
+      href: '/control/prefilled-messages',
+      subLinks: [
+        { id: 'messages-list', label: 'Messages List', href: '/control/prefilled-messages' },
+        { id: 'messages-add', label: 'Add Message', href: '/control/prefilled-messages/add-message' }
+>>>>>>> 38c47a168c977ee2ee648756c552fce95f642446
       ]
     },
   ];

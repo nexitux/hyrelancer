@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Send, Paperclip, Smile, MoreVertical, Search, Phone, Video } from 'lucide-react';
+import { messageAPI } from '@/config/api';
 
 export default function MessageBox() {
     const [message, setMessage] = useState('');
@@ -10,8 +11,9 @@ export default function MessageBox() {
     const [users, setUsers] = useState([]);
     const [messages, setMessages] = useState({});
     const [loading, setLoading] = useState(false);
+    const [prefilledMessages, setPrefilledMessages] = useState([]);
+    const [loadingPrefilled, setLoadingPrefilled] = useState(false);
     const messagesEndRef = useRef(null);
-    const refreshIntervalRef = useRef(null);
     const lastMessageIds = useRef({});
 
     // Get authentication data from Redux store
@@ -19,52 +21,61 @@ export default function MessageBox() {
     const currentUserId = user?.id;
     const authToken = token;
 
-    // Prefilled message templates
-    const prefilledMessages = [
+    // Fetch prefilled messages from API
+    const fetchPrefilledMessages = async () => {
+        setLoadingPrefilled(true);
+        try {
+            const response = await messageAPI.getPrefilledMessages();
+            if (response.status === 'success' && response.messages) {
+                // Handle the actual API response structure
+                // The API returns messages with createdBy relationship
+                const messages = response.messages.map(msg => ({
+                    id: msg.id,
+                    text: msg.body || msg.message || msg.text || msg.content, // Handle different possible field names
+                    category: msg.created_by?.ad_name || 'General',
+                    createdBy: msg.created_by
+                }));
+                setPrefilledMessages(messages);
+            } else {
+                console.warn('Failed to fetch prefilled messages:', response);
+                // Fallback to default messages if API fails
+                setPrefilledMessages(getDefaultPrefilledMessages());
+            }
+        } catch (error) {
+            console.error('Error fetching prefilled messages:', error);
+            // Fallback to default messages if API fails
+            setPrefilledMessages(getDefaultPrefilledMessages());
+        } finally {
+            setLoadingPrefilled(false);
+        }
+    };
+
+    // Default prefilled messages as fallback
+    const getDefaultPrefilledMessages = () => [
         {
-            category: "Greetings",
-            messages: [
-                "Hello! How are you doing today?",
-                "Hi there! Hope you're having a great day!",
-                "Good morning! How can I help you?",
-                "Hello! Nice to meet you!"
-            ]
+            id: 1,
+            text: "Hello! How are you doing today?",
+            category: "Greetings"
         },
         {
-            category: "Project Related",
-            messages: [
-                "I'm interested in working on this project. Can we discuss the details?",
-                "I have experience with this type of work. Would you like to see my portfolio?",
-                "I can start working on this project immediately. What's the timeline?",
-                "I'd love to help with this project. Let me know your requirements."
-            ]
+            id: 2,
+            text: "I'm interested in working on this project. Can we discuss the details?",
+            category: "Project Related"
         },
         {
-            category: "Contact & Communication",
-            messages: [
-                "What's the best way to contact you for project updates?",
-                "I'm available for a call to discuss the project in detail.",
-                "Please let me know your preferred communication method.",
-                "I'm flexible with meeting times. When works best for you?"
-            ]
+            id: 3,
+            text: "What's the best way to contact you for project updates?",
+            category: "Contact & Communication"
         },
         {
-            category: "Availability",
-            messages: [
-                "I'm available to start working on this project right away.",
-                "I can dedicate 20-30 hours per week to this project.",
-                "I'm flexible with deadlines. What's your preferred timeline?",
-                "I'm available for both short-term and long-term projects."
-            ]
+            id: 4,
+            text: "I'm available to start working on this project right away.",
+            category: "Availability"
         },
         {
-            category: "Pricing & Budget",
-            messages: [
-                "What's your budget range for this project?",
-                "I can work within your budget. Let's discuss the scope.",
-                "I offer competitive rates. Would you like a detailed quote?",
-                "I'm open to negotiating the price based on project requirements."
-            ]
+            id: 5,
+            text: "What's your budget range for this project?",
+            category: "Pricing & Budget"
         }
     ];
 
@@ -198,7 +209,7 @@ export default function MessageBox() {
     };
 
     // Fetch conversation with a specific user
-    const fetchConversation = async (userId, showLoading = false) => {
+    const fetchConversation = async (userId, showLoading = false, isAutoRefresh = false) => {
         if (!userId) return;
         
         if (showLoading) setLoading(true);
@@ -221,7 +232,9 @@ export default function MessageBox() {
             }
             
             const data = await response.json();
-            console.log('Conversation API Response:', data); // Debug log
+            if (!isAutoRefresh) {
+                console.log('Conversation API Response:', data); // Only log for manual refreshes
+            }
             
             if (data.status && data.data && Array.isArray(data.data)) {
                 const currentUserId = getCurrentUserId();
@@ -431,23 +444,14 @@ export default function MessageBox() {
         e.target.style.height = e.target.scrollHeight + 'px';
     };
 
-    // Setup auto-refresh (every 15 seconds)
+    // Setup auto-refresh (only conversation, not inbox)
     useEffect(() => {
         // Initial load
         fetchInbox(true);
-
-        // Setup auto-refresh interval
-        refreshIntervalRef.current = setInterval(() => {
-            fetchInbox(false); // Don't show loading for auto-refresh
-            if (selectedUser) {
-                fetchConversation(selectedUser, false);
-            }
-        }, 15000); // 15 seconds
+        fetchPrefilledMessages(); // Fetch prefilled messages on component mount
 
         return () => {
-            if (refreshIntervalRef.current) {
-                clearInterval(refreshIntervalRef.current);
-            }
+            // Cleanup - no interval needed for inbox refresh
         };
     }, []);
 
@@ -458,14 +462,14 @@ export default function MessageBox() {
         }
     }, [selectedUser]);
 
-    // Refresh current conversation more frequently
+    // Refresh current conversation every 10 seconds (no page reload, no scroll)
     useEffect(() => {
         let conversationInterval;
         
         if (selectedUser) {
             conversationInterval = setInterval(() => {
-                fetchConversation(selectedUser, false);
-            }, 5000); // Check for new messages every 5 seconds for active conversation
+                fetchConversation(selectedUser, false, true); // Silent refresh, no loading indicator, auto-refresh mode
+            }, 10000); // Check for new messages every 10 seconds
         }
 
         return () => {
@@ -694,22 +698,31 @@ export default function MessageBox() {
                                         </div>
                                     )}
                                     {/* Quick Message Suggestions - Show only when no messages exist */}
-                                    {/* currentMessages.length === 30 && currentMessages.length < 20 && */}
-                                { (
-                                    <div className="flex-shrink-0 pt-16 sm:pt-20">
-                                        <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center px-2">
-                                            {quickMessages.map((msg, index) => (
-                                                <button
-                                                    key={index}
-                                                    onClick={() => handlePrefilledMessageSelect(msg)}
-                                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-purple-300 rounded-full text-xs sm:text-sm text-gray-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 shadow-sm touch-manipulation"
-                                                >
-                                                    {msg}
-                                                </button>
-                                            ))}
+                                    {currentMessages.length === 0 && (
+                                        <div className="flex-shrink-0 pt-16 sm:pt-20">
+                                            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center px-2">
+                                                {loadingPrefilled ? (
+                                                    <div className="flex items-center justify-center w-full py-4">
+                                                        <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
+                                                        <span className="ml-2 text-xs sm:text-sm text-gray-600">Loading messages...</span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {/* Show first few messages from API */}
+                                                        {prefilledMessages.slice(0, 3).map((msg, index) => (
+                                                            <button
+                                                                key={msg.id || index}
+                                                                onClick={() => handlePrefilledMessageSelect(msg.text)}
+                                                                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-purple-300 rounded-full text-xs sm:text-sm text-gray-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 shadow-sm touch-manipulation"
+                                                            >
+                                                                {msg.text}
+                                                            </button>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                                 </div>  
 
                                 

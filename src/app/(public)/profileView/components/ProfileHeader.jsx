@@ -1,11 +1,27 @@
 import React, { useState } from "react";
 import { MapPin, Star, MessageCircle, User, CheckCircle, Phone } from "lucide-react";
+import { useSelector } from "react-redux";
 import api from "@/config/api";
 import { showSuccessNotification, showErrorNotification } from "@/utils/notificationService";
+import LoginModal from "@/components/LoginModal/LoginModal";
+import MessageModal from "@/components/MessageModal/MessageModal";
 
 const ProfileHeader = ({ profileData, userData, skills, languages }) => {
   // State for loading and button states
   const [isRequestingContact, setIsRequestingContact] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  
+  // Get authentication state from Redux
+  const { user, isAuthenticated, userType } = useSelector((state) => state.auth);
+  
+  // Debug logging
+  console.log('🔍 ProfileHeader Debug:', {
+    isAuthenticated,
+    userType,
+    user: user?.name,
+    userTypeFromUser: user?.userType
+  });
 
   // Helper functions
   const getProfileImageUrl = (imagePath) => {
@@ -41,8 +57,46 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
     return 0; // No reviews available
   };
 
+  // Handle Send Message button click
+  const handleSendMessage = () => {
+    if (!isAuthenticated) {
+      // Show login modal if user is not authenticated
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // Check if user is a customer (case-insensitive) - check both Redux state and user object
+    const currentUserType = userType || user?.userType;
+    if (currentUserType?.toLowerCase() !== 'customer') {
+      alert('Only customers can send messages to freelancers.');
+      return;
+    }
+    
+    // Show message modal if user is authenticated and is a customer
+    setShowMessageModal(true);
+  };
+
+  // Handle successful login - close login modal and open message modal
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    setShowMessageModal(true);
+  };
+
   // API call to request contact details
   const handleRequestContactDetails = async () => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // Check if user is a customer (case-insensitive) - check both Redux state and user object
+    const currentUserType = userType || user?.userType;
+    if (currentUserType?.toLowerCase() !== 'customer') {
+      alert('Only customers can request contact details from freelancers.');
+      return;
+    }
+    
     // Get freelancer ID from profile data
     const freelancerId = profileData?.fp_u_id;
     
@@ -222,20 +276,49 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <button className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-white border-2 border-[#3e5a9a]/30 text-[#3e5a9a] rounded-xl font-semibold transition-all duration-200 hover:bg-[#3e5a9a]/5 hover:border-[#3e5a9a]/50 hover:shadow-sm">
+              <button 
+                onClick={handleSendMessage}
+                disabled={isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer'}
+                className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-white border-2 border-[#3e5a9a]/30 text-[#3e5a9a] rounded-xl font-semibold transition-all duration-200 hover:bg-[#3e5a9a]/5 hover:border-[#3e5a9a]/50 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
                 Send Message
               </button>
               
               <button 
                 onClick={handleRequestContactDetails}
-                disabled={isRequestingContact}
+                disabled={isRequestingContact || (isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer')}
                 className="group flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-[#3e5a9a] text-white rounded-xl font-semibold transition-all duration-200 hover:bg-[#2d4a7a] hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Phone className={`w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200 ${isRequestingContact ? 'animate-pulse' : ''}`} />
                 {isRequestingContact ? 'Requesting...' : 'Get Contact Details'}
               </button>
             </div>
+            
+            {/* Authentication Status Messages */}
+            {!isAuthenticated && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 text-center">
+                  🔐 Please log in to send messages and request contact details
+                </p>
+              </div>
+            )}
+            
+            {isAuthenticated && (userType || user?.userType)?.toLowerCase() !== 'customer' && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800 text-center">
+                  ⚠️ Only customers can message freelancers and request contact details
+                </p>
+              </div>
+            )}
+            
+            {isAuthenticated && (userType || user?.userType)?.toLowerCase() === 'customer' && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800 text-center">
+                  ✅ You can send messages and request contact details
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -300,6 +383,20 @@ const ProfileHeader = ({ profileData, userData, skills, languages }) => {
           )}
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Message Modal */}
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        freelancerData={profileData}
+      />
     </div>
   );
 };

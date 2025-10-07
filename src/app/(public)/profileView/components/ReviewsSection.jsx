@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, ThumbsUp, CheckCircle, MessageSquare, ChevronDown } from 'lucide-react';
+import { testimonialAPI } from '@/config/api';
 
-const ReviewsSection = ({ profileData }) => {
+const ReviewsSection = ({ profileData, refreshTrigger }) => {
   const [helpfulVotes, setHelpfulVotes] = useState({});
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const toggleHelpful = (reviewId) => {
     setHelpfulVotes(prev => ({
@@ -13,19 +17,68 @@ const ReviewsSection = ({ profileData }) => {
     }));
   };
 
-  // TODO: Replace with actual reviews data from API
-  const reviews = []; // No reviews available yet
+  // Fetch testimonials on component mount
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      if (!profileData?.fp_u_id) return;
+      
+      try {
+        setLoading(true);
+        const response = await testimonialAPI.getFreelancerTestimonials(profileData.fp_u_id);
+        setReviews(response.fe_testi || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching testimonials:', err);
+        setError('Failed to load testimonials');
+        setReviews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const ratingDistribution = [
-    { stars: 5, percentage: 0, count: 0 },
-    { stars: 4, percentage: 0, count: 0 },
-    { stars: 3, percentage: 0, count: 0 },
-    { stars: 2, percentage: 0, count: 0 },
-    { stars: 1, percentage: 0, count: 0 }
-  ];
+    fetchTestimonials();
+  }, [profileData?.fp_u_id, refreshTrigger]);
 
-  const totalRatings = 0;
-  const averageRating = 0;
+  // Calculate rating distribution and statistics
+  const calculateRatingStats = () => {
+    if (!reviews.length) {
+      return {
+        ratingDistribution: [
+          { stars: 5, percentage: 0, count: 0 },
+          { stars: 4, percentage: 0, count: 0 },
+          { stars: 3, percentage: 0, count: 0 },
+          { stars: 2, percentage: 0, count: 0 },
+          { stars: 1, percentage: 0, count: 0 }
+        ],
+        totalRatings: 0,
+        averageRating: 0
+      };
+    }
+
+    const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    let totalRating = 0;
+
+    reviews.forEach(review => {
+      const rating = parseInt(review.ft_rating) || 0;
+      if (rating >= 1 && rating <= 5) {
+        ratingCounts[rating]++;
+        totalRating += rating;
+      }
+    });
+
+    const totalRatings = reviews.length;
+    const averageRating = totalRatings > 0 ? (totalRating / totalRatings).toFixed(1) : 0;
+
+    const ratingDistribution = Object.keys(ratingCounts).map(stars => ({
+      stars: parseInt(stars),
+      count: ratingCounts[stars],
+      percentage: totalRatings > 0 ? Math.round((ratingCounts[stars] / totalRatings) * 100) : 0
+    })).reverse();
+
+    return { ratingDistribution, totalRatings, averageRating };
+  };
+
+  const { ratingDistribution, totalRatings, averageRating } = calculateRatingStats();
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, index) => (
@@ -128,73 +181,75 @@ const ReviewsSection = ({ profileData }) => {
         )}
 
         {/* Reviews List */}
-        <div className="space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start space-x-4">
-                  {/* Avatar */}
-                  <img
-                    src={review.avatar}
-                    alt={review.author}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
-                  />
-                  
-                  {/* Review Header */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h4 className="font-semibold text-gray-900">{review.author}</h4>
-                      {review.verified && (
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-600 mt-2">Loading testimonials...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {reviews.map((review) => (
+              <div key={review.id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start space-x-4">
+                    {/* Avatar */}
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-100">
+                      <span className="text-gray-600 font-semibold text-sm">
+                        {review.teUser?.name ? review.teUser.name.charAt(0).toUpperCase() : 'U'}
+                      </span>
+                    </div>
+                    
+                    {/* Review Header */}
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className="font-semibold text-gray-900">
+                          {review.teUser?.name || 'Anonymous User'}
+                        </h4>
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-500 mb-2">{review.date}</div>
-                    <div className="flex">
-                      {renderStars(review.rating)}
+                      </div>
+                      <div className="text-sm text-gray-500 mb-2">
+                        {new Date(review.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </div>
+                      <div className="flex">
+                        {renderStars(parseInt(review.ft_rating) || 0)}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Service Card */}
-                <div className="flex-shrink-0 ml-4">
-                  <div className="bg-gray-50 rounded-xl p-3 w-32">
-                    <img
-                      src={review.serviceImage}
-                      alt={review.serviceTitle}
-                      className="w-full h-20 object-cover rounded-lg mb-2"
-                    />
-                    <div className="text-xs font-semibold text-gray-900 mb-1">
-                      {review.serviceTitle}
-                    </div>
-                    <div className="text-xs text-gray-600">{review.servicePrice}</div>
-                  </div>
+                {/* Review Text */}
+                <p className="text-gray-700 leading-relaxed mb-4 ml-16">
+                  {review.ft_desc}
+                </p>
+
+                {/* Helpful Button */}
+                <div className="ml-16">
+                  <button
+                    onClick={() => toggleHelpful(review.id)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-all duration-200 ${
+                      helpfulVotes[review.id]
+                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <ThumbsUp className={`w-4 h-4 ${helpfulVotes[review.id] ? 'fill-current' : ''}`} />
+                    <span className="text-sm font-medium">
+                      Was This Helpful?
+                    </span>
+                  </button>
                 </div>
               </div>
-
-              {/* Review Text */}
-              <p className="text-gray-700 leading-relaxed mb-4 ml-16">
-                {review.text}
-              </p>
-
-              {/* Helpful Button */}
-              <div className="ml-16">
-                <button
-                  onClick={() => toggleHelpful(review.id)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-all duration-200 ${
-                    helpfulVotes[review.id]
-                      ? 'bg-blue-50 border-blue-200 text-blue-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <ThumbsUp className={`w-4 h-4 ${helpfulVotes[review.id] ? 'fill-current' : ''}`} />
-                  <span className="text-sm font-medium">
-                    Was This Helpful?
-                  </span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* See More Button - Only show if there are reviews */}
         {reviews.length > 0 && (

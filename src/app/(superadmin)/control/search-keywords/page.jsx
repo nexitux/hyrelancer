@@ -17,8 +17,8 @@ const SearchKeywordsPage = () => {
       try {
         setLoading(true);
         setError(null);
-    //     const response = await adminApi.get('search-keywords');
-    const response = await adminApi.get('http://localhost:8000/api/admin/search-keywords');
+        const response = await adminApi.get('search-keywords');
+   // const response = await adminApi.get('http://localhost:8000/api/admin/search-keywords');
         
         if (response.data && response.data.status === "success" && response.data.keywords) {
           setKeywords(response.data.keywords);

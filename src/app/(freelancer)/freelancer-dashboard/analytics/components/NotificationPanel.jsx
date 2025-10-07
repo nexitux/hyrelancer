@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Trophy, Target, Zap, Award, Star, Shield, Users, Clock, DollarSign, Crown, Mail, Phone, MessageSquare, CheckCircle, XCircle, UserCheck, Globe, Briefcase } from 'lucide-react';
+import { Trophy, Target, Zap, Award, Star, Shield, Users, Clock, DollarSign, Crown, Mail, Phone, MessageSquare, CheckCircle, XCircle, UserCheck, Globe, Briefcase, Lock } from 'lucide-react';
 import api from '@/config/api';
 import { freelancerDashboardService } from '@/services/freelancerDashboardService';
 
@@ -26,12 +26,12 @@ const AchievementsRoadmap = () => {
       description: 'Complete your account registration',
       icon: UserCheck,
       iconSrc: '/images/logo/icon-01.png', // replace with your exact file name
-      color: 'bg-purple-500',
-      iconColor: 'text-purple-500',
-      borderColor: 'border-purple-500',
+      color: 'bg-red-500',
+      iconColor: 'text-red-500',
+      borderColor: 'border-red-500',
       status: 'locked',
       date: 'Not started',
-      position: { top: '7%', left: '25%' },
+      position: { top: '7%', left: '15%' },
       verificationType: 'registration'
     },
     {
@@ -39,13 +39,13 @@ const AchievementsRoadmap = () => {
       title: 'Email Verified',
       description: 'Verify your email address',
       icon: Mail,
-      iconSrc: '/images/logo/icon.png', // replace with your exact file name
+      iconSrc: '/images/logo/icon-03.png', // replace with your exact file name
       color: 'bg-blue-500',
-      iconColor: 'text-blue-500',
-      borderColor: 'border-blue-500',
+      iconColor: 'text-green-500',
+      borderColor: 'border-green-500',
       status: 'locked',
       date: 'Not started',
-      position: { top: '25%', left: '60%' },
+      position: { top: '25%', left: '55%' },
       verificationType: 'email'
     },
     {
@@ -53,10 +53,10 @@ const AchievementsRoadmap = () => {
       title: 'Mobile Verified',
       description: 'Verify your mobile number',
       icon: Phone,
-      iconSrc: '/image/logo/mobile.png', // replace with your exact file name
-      color: 'bg-green-500',
-      iconColor: 'text-green-500',
-      borderColor: 'border-green-500',
+      iconSrc: '/images/logo/icon-04.png', // replace with your exact file name
+      color: 'bg-emerald-500',
+      iconColor: 'text-violet-500',
+      borderColor: 'border-violet-500',
       status: 'locked',
       date: 'Not started',
       position: { top: '60%', left: '70%' },
@@ -67,10 +67,10 @@ const AchievementsRoadmap = () => {
       title: 'ID Proof Verified',
       description: 'Verify your identity document',
       icon: Shield,
-      iconSrc: '/image/logo/id-proof.png', // replace with your exact file name
+      iconSrc: '/images/logo/icon-02.png', // replace with your exact file name
       color: 'bg-indigo-500',
-      iconColor: 'text-indigo-500',
-      borderColor: 'border-indigo-500',
+      iconColor: 'text-blue-500',
+      borderColor: 'border-blue-500',
       status: 'locked',
       date: 'Not started',
       position: { top: '80%', left: '33%' },
@@ -81,13 +81,13 @@ const AchievementsRoadmap = () => {
       title: 'Social Media Verified',
       description: 'Connect your social media accounts',
       icon: Globe,
-      iconSrc: '/image/logo/social.png', // replace with your exact file name
-      color: 'bg-pink-500',
-      iconColor: 'text-pink-500',
-      borderColor: 'border-pink-500',
+      iconSrc: '/images/logo/icon-07.png', // replace with your exact file name
+      color: 'bg-pink-600',
+      iconColor: 'text-yellow-600',
+      borderColor: 'border-yellow-600',
       status: 'locked',
       date: 'Not started',
-      position: { top: '95%', left: '80%' },
+      position: { top: '93%', left: '76%' },
       verificationType: 'socialMedia'
     }
   ];
@@ -243,7 +243,7 @@ const AchievementsRoadmap = () => {
           
           {/* Main path connecting all achievement nodes */}
           <path
-            d="M 98 10 
+            d="M 60 10 
                 C 240 150, 320 200, 320 250
                 C 320 300, 150 350, 140 380
                 C 80 420, 150 460, 320 490"
@@ -273,7 +273,7 @@ const AchievementsRoadmap = () => {
                 top: achievement.position.top, 
                 left: achievement.position.left,
                 transform: 'translate(-50%, -50%)',
-                zIndex: achievement.id === 1 ? 50 : 10 + index
+                zIndex: 10 + index
               }}
             >
                 {/* Achievement card */}
@@ -339,33 +339,47 @@ const AchievementsRoadmap = () => {
 
                   {/* Badge node */}
                 <div
-                  className={`relative w-16 h-16 rounded-full border-3 bg-white shadow-lg flex items-center justify-center transition-all duration-300 ${
+                  className={`relative w-16 h-16 flex items-center justify-center ${
                     achievement.status === 'completed' 
-                      ? `${achievement.borderColor} border-4` 
+                      ? 'bg-gray-50 rounded-full border-2 border-gray-100 shadow-md' 
                       : achievement.status === 'in-progress'
-                      ? `${achievement.borderColor} border-4 border-dashed`
-                      : 'border-4 border-gray-300'
+                      ? `bg-gray-50 rounded-full ${achievement.borderColor} border-4 border-dashed`
+                      : 'bg-gray-50 rounded-full border-4 border-gray-300'
                   }`}
                 >
-                  {achievement.iconSrc ? (
-                    <Image
-                      src={achievement.iconSrc}
-                      alt={achievement.title}
-                      width={28}
-                      height={28}
-                      className="object-contain"
-                    />
+                  {/* Blurred background for locked badges */}
+                  {achievement.status === 'locked' && (
+                    <div className="absolute inset-0 bg-gray-50 rounded-full blur-sm opacity-50"></div>
+                  )}
+                  
+                  {/* Icon or lock for locked badges */}
+                  {achievement.status === 'locked' ? (
+                    <div className="relative z-10 flex items-center justify-center">
+                      <Lock className="w-8 h-8 text-gray-500" />
+                    </div>
                   ) : (
-                    <Icon 
-                      className={`w-7 h-7 ${
-                        achievement.status === 'completed' 
-                          ? achievement.iconColor
-                          : achievement.status === 'in-progress'
-                          ? achievement.iconColor
-                          : 'text-gray-400'
-                      }`} 
-                      fill="currentColor"
-                    />
+                    <>
+                      {achievement.iconSrc ? (
+                        <Image
+                          src={achievement.iconSrc}
+                          alt={achievement.title}
+                          width={56}
+                          height={56}
+                          className="object-contain"
+                        />
+                      ) : (
+                        <Icon 
+                          className={`w-14 h-14 ${
+                            achievement.status === 'completed' 
+                              ? achievement.iconColor
+                              : achievement.status === 'in-progress'
+                              ? achievement.iconColor
+                              : 'text-gray-400'
+                          }`} 
+                          fill="currentColor"
+                        />
+                      )}
+                    </>
                   )}
                   
                   {/* Progress ring for in-progress */}
@@ -384,17 +398,6 @@ const AchievementsRoadmap = () => {
                     </svg>
                   )}
 
-                  {/* Status badge */}
-                  {achievement.status === 'completed' && (
-                    <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full ${achievement.color} flex items-center justify-center shadow-md`}>
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
-                  {achievement.status === 'locked' && (
-                    <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center shadow-md`}>
-                      <span className="text-white text-xs">🔒</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

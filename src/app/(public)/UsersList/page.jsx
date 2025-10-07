@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import {
   ArrowLeft,
   MapPin,
@@ -18,9 +19,12 @@ import {
   X,
   Minus,
   Phone,
+  MessageCircle,
 } from "lucide-react";
 import api from "@/config/api";
 import { showSuccessNotification, showErrorNotification } from "@/utils/notificationService";
+import LoginModal from "@/components/LoginModal/LoginModal";
+import MessageModal from "@/components/MessageModal/MessageModal";
 
 const UsersList = () => {
   const searchParams = useSearchParams();
@@ -31,6 +35,15 @@ const UsersList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchInfo, setSearchInfo] = useState({ keyword: "", category: "" });
+
+  // Authentication state
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  // Modal states
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showContactSuccessModal, setShowContactSuccessModal] = useState(false);
+  const [selectedFreelancer, setSelectedFreelancer] = useState(null);
 
   // New design states
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -163,10 +176,55 @@ const UsersList = () => {
     }
   };
 
+  // Handle Send Message button click
+  const handleSendMessage = (freelancer) => {
+    if (!isAuthenticated) {
+      // Show login modal if user is not authenticated
+      setSelectedFreelancer(freelancer);
+      setShowLoginModal(true);
+    } else {
+      // Show message modal if user is authenticated
+      setSelectedFreelancer(freelancer);
+      setShowMessageModal(true);
+    }
+  };
+
+  // Handle successful login - close login modal and open message modal
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    setShowMessageModal(true);
+  };
+
+  // Handle contact success modal close and redirect to dashboard messages
+  const handleContactSuccessClose = () => {
+    setShowContactSuccessModal(false);
+    // Redirect to dashboard messages section
+    if (isAuthenticated && user) {
+      if (user.user_type === 'freelancer') {
+        router.push('/freelancer-dashboard/message');
+      } else if (user.user_type === 'customer') {
+        router.push('/customer-dashboard/message');
+      } else {
+        // Default redirect to home if user type is not recognized
+        router.push('/');
+      }
+    } else {
+      router.push('/');
+    }
+  };
+
   // API call to request contact details
   const handleRequestContactDetails = async (freelancerId, freelancerName) => {
     if (!freelancerId) {
       showErrorNotification("Unable to identify the freelancer. Please try again.");
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Show login modal if user is not authenticated
+      setSelectedFreelancer({ id: freelancerId, name: freelancerName });
+      setShowLoginModal(true);
       return;
     }
 
@@ -183,7 +241,8 @@ const UsersList = () => {
       const response = await api.post('/share-contact/send', requestData);
       
       if (response.data.status === 'success') {
-        showSuccessNotification(response.data.message || "Contact request sent successfully!");
+        // Show success modal instead of notification
+        setShowContactSuccessModal(true);
       } else {
         showErrorNotification(response.data.message || "Failed to send contact request.");
       }
@@ -795,23 +854,33 @@ const UsersList = () => {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-3">
+                      <div className="flex flex-col gap-3">
                         <button
                           onClick={() => router.push(`/profileView/${encodeURIComponent(user.fp_slug || user.fp_id)}`)}
-                          className="flex-1 py-3 border-2 border-[#3e5a9a] text-[#3e5a9a] hover:bg-[#3e5a9a] hover:text-white transition-colors rounded-lg font-medium"
+                          className="w-full py-3 border-2 border-[#3e5a9a] text-[#3e5a9a] hover:bg-[#3e5a9a] hover:text-white transition-colors rounded-lg font-medium"
                           style={{ borderColor: primaryColor }}
                         >
                           View Profile
                         </button>
 
-                        <button
-                          onClick={() => handleRequestContactDetails(user.id, user.name)}
-                          disabled={requestingContact[user.id]}
-                          className="flex-1 py-3 text-center bg-[#3e5a9a] text-white rounded-lg hover:bg-[#2d477a] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                          <Phone className={`w-4 h-4 ${requestingContact[user.id] ? 'animate-pulse' : ''}`} />
-                          {requestingContact[user.id] ? 'Requesting...' : 'Get Contact Details'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSendMessage(user)}
+                            className="flex-1 py-3 text-center bg-white border-2 border-[#3e5a9a]/30 text-[#3e5a9a] rounded-lg hover:bg-[#3e5a9a]/5 hover:border-[#3e5a9a]/50 transition-colors font-medium flex items-center justify-center gap-2"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Send Message
+                          </button>
+
+                          <button
+                            onClick={() => handleRequestContactDetails(user.id, user.name)}
+                            disabled={requestingContact[user.id]}
+                            className="flex-1 py-3 text-center bg-[#3e5a9a] text-white rounded-lg hover:bg-[#2d477a] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            <Phone className={`w-4 h-4 ${requestingContact[user.id] ? 'animate-pulse' : ''}`} />
+                            {requestingContact[user.id] ? 'Requesting...' : 'Get Contact Details'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1069,6 +1138,47 @@ const UsersList = () => {
       >
         <ChevronUp size={24} />
       </button>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Message Modal */}
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        freelancerData={selectedFreelancer}
+      />
+
+      {/* Contact Success Modal */}
+      {showContactSuccessModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex flex-col items-center bg-transparent">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mt-4 mb-6">
+                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-2">Contact Request Sent!</h3>
+              <p className="text-gray-600 mb-8 px-8 text-center">
+                Your contact request has been sent successfully. The freelancer will receive your request and can share their contact details with you.
+              </p>
+              <div className="w-full border-t border-gray-100 mb-4"></div>
+              <button
+                onClick={handleContactSuccessClose}
+                className="w-full py-4 bg-[#3e5a9a] text-white font-medium hover:bg-[#2d4a7a] transition-colors rounded-2xl"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Go to Messages
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

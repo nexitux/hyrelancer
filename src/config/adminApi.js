@@ -107,4 +107,64 @@ export const adminDashboardApi = {
   }
 };
 
+/**
+ * Admin Messages API calls
+ */
+export const adminMessagesApi = {
+  // Get all messages
+  getMessages: async () => {
+    try {
+      const response = await adminApi.get('/messages');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      throw error;
+    }
+  },
+
+  // Get single message
+  getMessage: async (encodedId) => {
+    try {
+      const response = await adminApi.get(`/messages/${encodedId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching message:', error);
+      throw error;
+    }
+  },
+
+  // Create new message
+  createMessage: async (messageData) => {
+    try {
+      const response = await adminApi.post('/messages', messageData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating message:', error);
+      throw error;
+    }
+  },
+
+  // Update message
+  updateMessage: async (encodedId, messageData) => {
+    try {
+      const response = await adminApi.put(`/messages/${encodedId}`, messageData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating message:', error);
+      throw error;
+    }
+  },
+
+  // Toggle message status (delete/restore)
+  toggleMessageStatus: async (encodedId) => {
+    try {
+      const response = await adminApi.delete(`/messages/${encodedId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error toggling message status:', error);
+      throw error;
+    }
+  }
+};
+
 export default adminApi;
