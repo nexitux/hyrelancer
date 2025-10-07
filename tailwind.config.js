@@ -9,6 +9,14 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '400px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+      },
       backgroundImage: {
         'auth-bg': "url('/images/bgggg.jpg')",
       },
@@ -21,6 +29,9 @@ export default {
         "variable-collection-secondary-color": "var(--variable-collection-secondary-color)",
         "variable-collection-secondary-color-duplicate": "var(--variable-collection-secondary-color-duplicate)",
         "system-colors-colors-green": "var(--system-colors-colors-green)",
+        "brand-primary": "#3A599C",
+        "brand-secondary": "#000000",
+        "brand-neutral": "#F5F5F5",
       },
       fontFamily: {
         body: "var(--body-font-family)",

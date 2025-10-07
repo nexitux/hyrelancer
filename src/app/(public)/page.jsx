@@ -8,6 +8,7 @@ import ServicesHome from './Service/page';
 import Category from './Category/page';
 import WorkFlow from './workFlow/page';
 import FreelnacerList from './freelnacerList/page';
+import FeatureCard from './FeatureCard/page';
 
 export default function HomePage() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function HomePage() {
       <VideSection />
       <FreelnacerList />
       <FAQPage />
+      <FeatureCard />
     </main>
   );
 }

@@ -1,261 +1,188 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { FiArrowRight } from "react-icons/fi";
 
-const FAQPage = () => {
-  const [expandedItems, setExpandedItems] = useState({
-    1: true,
-    2: false,
-    3: false,
-    4: false,
-    5: false,
-    6: false,
-  });
-  const [visibleElements, setVisibleElements] = useState(new Set());
-  const [isInitialized, setIsInitialized] = useState(false);
-  const headerRef = useRef(null);
-  const faqRefs = useRef([]);
-  const bannerRef = useRef(null);
-  const bannerTextRef = useRef(null);
-  const bannerVideoRef = useRef(null);
+import { useState } from "react";
+import Image from "next/image";
 
-  const faqs = [
-    {
-      id: 1,
-      question: "How Do I Post A Job Or Find A Freelancer?",
-      answer:
-        "To post a job or find a freelancer, go to our website's 'Post a Job' section. Provide job details and requirements, set your budget, and wait for qualified freelancers to submit their proposals. You can also browse our freelancer profiles and directly contact professionals that match your needs.",
-    },
-    {
-      id: 2,
-      question: "Is There A Fee For Using Your Services?",
-      answer:
-        "Our platform offers various pricing models. Basic job posting and browsing are free for clients. We charge a small service fee only when you successfully hire a freelancer. Freelancers pay a percentage of their earnings to maintain their profiles and access premium features.",
-    },
-    {
-      id: 3,
-      question: "Can I Request Advice Or Support From Your Team?",
-      answer:
-        "Absolutely! Our customer support team is available 24/7 to help you with any questions or issues. You can reach us through live chat, email, or phone. We also provide extensive documentation, tutorials, and best practices guides to help you succeed on our platform.",
-    },
-    {
-      id: 4,
-      question: "How Do I Pay For The Freelancers Or Businesses I Hire?",
-      answer:
-        "We offer secure payment options including credit cards, PayPal, and bank transfers. All payments are processed through our secure escrow system, ensuring both parties are protected. Funds are released to freelancers only after you approve the completed work.",
-    },
-    {
-      id: 5,
-      question: "How Can I Ensure That I Receive Quality Services?",
-      answer:
-        "We have a comprehensive rating and review system. All freelancers are verified through our screening process. You can view their portfolios, read client reviews, and check their completion rates. We also offer milestone-based payments and dispute resolution services to ensure quality outcomes.",
-    },
-    {
-      id: 6,
-      question: "Do I Need To Log In To Access All The Features Of Your Website?",
-      answer:
-        "While you can browse freelancer profiles and services without logging in, you'll need to create an account to post jobs, communicate with freelancers, make payments, and access your project dashboard. Registration is free and takes just a few minutes.",
-    },
-  ];
+// Add CSS styles for rotating border animation
+const styles = `
+  @keyframes rotate {
+    100% {
+      transform: rotate(1turn);
+    }
+  }
 
-  const toggleItem = (id) => {
-    setExpandedItems((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+  .faq-item {
+    position: relative;
+    border-radius: 16px;
+    transition: all 0.5s ease;
+  }
+
+  .faq-item.open {
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      left: -50%;
+      top: -50%;
+      width: 200%;
+      height: 200%;
+      background-color: #3A599C;
+      background-repeat: no-repeat;
+      background-size: 50% 50%, 50% 50%;
+      background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+      background-image: linear-gradient(#3A599C, #3A599C), linear-gradient(white, white), linear-gradient(#3A599C, #3A599C), linear-gradient(white, white);
+      animation: rotate 4s linear infinite;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      left: 2px;
+      top: 2px;
+      width: calc(100% - 4px);
+      height: calc(100% - 4px);
+      background: white;
+      border-radius: 14px;
+    }
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.type = "text/css";
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
+}
+
+const faqData = [
+  {
+    question: "How Do I Post A Job Or Find A Freelancer?",
+    answer:
+      "To post a job or find a freelancer, go to our website's 'Post a Job' section. Provide job details and requirements, set your budget, and wait for qualified freelancers to submit their proposals. You can also browse our freelancer profiles and directly contact professionals that match your needs.",
+  },
+  {
+    question: "Is There A Fee For Using Your Services?",
+  },
+  {
+    question: "Can I Request Advice Or Support From Your Team?",
+  },
+  {
+    question: "How Do I Pay For The Freelancers Or Businesses I Hire?",
+  },
+  {
+    question: "How Can I Ensure That I Receive Quality Services?",
+  },
+  {
+    question: "Do I Need To Log In To Access All The Features Of Your Website?",
+  },
+];
+
+export default function FAQSection() {
+  const [openIndex, setOpenIndex] = useState(0);
+
+  const toggleFAQ = (index) => {
+    setOpenIndex(openIndex === index ? null : index);
   };
-
-  const handleKeyDown = (event, id) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      toggleItem(id);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialized(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleElements((prev) => new Set([...prev, entry.target.dataset.animateId]));
-          }
-        });
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '0px 0px -80px 0px',
-      }
-    );
-
-    if (headerRef.current) {
-      observer.observe(headerRef.current);
-    }
-
-    faqRefs.current.forEach((faq) => {
-      if (faq) {
-        observer.observe(faq);
-      }
-    });
-
-    if (bannerRef.current) {
-      observer.observe(bannerRef.current);
-    }
-
-    if (bannerTextRef.current) {
-      observer.observe(bannerTextRef.current);
-    }
-
-    if (bannerVideoRef.current) {
-      observer.observe(bannerVideoRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [isInitialized]);
 
   return (
-    <div className="mx-auto px-4 sm:px-6 lg:px-8  bg-white"style={{ maxWidth: "1850px" }}>
-      {/* Main FAQ Section */}
-      <section className="flex flex-wrap items-start justify-center gap-16 px-4 sm:px-8 lg:px-20 py-12">
-        {/* Left Column - FAQ */}
-        <div className="flex flex-col items-start gap-10 flex-1 max-w-2xl">
-          {/* Header */}
-          <header 
-            ref={headerRef}
-            data-animate-id="header"
-            className={`flex flex-col items-start gap-3 w-full transition-all duration-700 ease-out ${
-              visibleElements.has('header')
-                ? 'opacity-100 translate-y-0'
-                : 'opacity-0 translate-y-8'
-            }`}
-          >
-            <p className="text-blue-500 text-sm font-medium tracking-wide">
-              Boost Your Working Flow
-            </p>
-            <h1 className="text-4xl font-bold text-black leading-tight">
-              Frequently Asked Questions
-            </h1>
-          </header>
-
-          {/* FAQ Items */}
-          <div className="flex flex-col items-start gap-0 w-full">
-            {faqs.map((faq, index) => {
-              const isExpanded = expandedItems[faq.id];
-
-              return (
-                <article
-                  key={faq.id}
-                  ref={(el) => (faqRefs.current[index] = el)}
-                  data-animate-id={`faq-${index}`}
-                  className={`w-full transition-all duration-700 ease-out ${
-                    visibleElements.has(`faq-${index}`)
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-8'
-                  }`}
-                  style={{
-                    transitionDelay: `${index * 100}ms`
-                  }}
-                >
-                  {isExpanded ? (
-                    // Expanded FAQ Item with container
-                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-4">
-                      <button
-                        className="flex items-center justify-between w-full cursor-pointer border-none bg-transparent text-left"
-                        onClick={() => toggleItem(faq.id)}
-                        onKeyDown={(e) => handleKeyDown(e, faq.id)}
-                        aria-expanded={isExpanded}
-                        aria-controls={`faq-answer-${faq.id}`}
-                        type="button"
-                      >
-                        <h2 className="text-blue-600 font-semibold text-lg leading-relaxed flex-1 pr-4">
-                          {faq.question}
-                        </h2>
-
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <ChevronDown className="w-4 h-4 text-blue-600" />
-                          </div>
-                        </div>
-                      </button>
-
-                      {faq.answer && (
-                        <div
-                          id={`faq-answer-${faq.id}`}
-                          className="transition-all duration-300 ease-in-out pt-4"
-                        >
-                          <p className="text-black text-base leading-relaxed font-normal pl-0">
-                            {faq.answer}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    // Collapsed FAQ Item without container
-                    <button
-                      className="flex items-center justify-between w-full py-4 cursor-pointer border-none bg-transparent text-left"
-                      onClick={() => toggleItem(faq.id)}
-                      onKeyDown={(e) => handleKeyDown(e, faq.id)}
-                      aria-expanded={isExpanded}
-                      aria-controls={`faq-answer-${faq.id}`}
-                      type="button"
-                    >
-                      <h2 className="text-blue-600 font-normal text-lg leading-relaxed flex-1 pr-4">
-                        {faq.question}
-                      </h2>
-
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <ChevronUp className="w-4 h-4 text-blue-600" />
-                        </div>
-                      </div>
-                    </button>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Column - Customer Statistics */}
-        <aside className="relative flex-1 h-[550px] max-w-md min-w-[400px]">
-          <div className="relative w-full h-full">
-            {/* Main Image */}
-            <div className="absolute top-16 left-8 w-[320px] h-[350px] bg-gradient-to-br from-orange-100 to-amber-50 rounded-3xl overflow-hidden shadow-xl">
-              <img
-                className="w-full h-full object-cover"
-                alt="Happy customers working together"
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop"
-              />
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-3 sm:px-12 lg:px-20 py-12 lg:py-16">
+        <div className="flex flex-col lg:flex-row justify-center items-center lg:items-start gap-12">
+          {/* FAQ Section */}
+          <div className="flex flex-col gap-12 flex-1 w-full">
+            {/* Header */}
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-2">
+                <p className="text-brand-primary font-bold text-[#3A599C] leading-6">
+                  Boost Your Working Flow
+                </p>
+                <h1 className="text-brand-secondary font-bold text-4xl leading-9">
+                  Frequently Asked Questions
+                </h1>
+              </div>
             </div>
 
+            {/* FAQ List */}
+            <div className="flex flex-col gap-6">
+              {faqData.map((faq, index) => (
+                <div
+                  key={index}
+                  className={`faq-item ${
+                    openIndex === index
+                      ? "open p-4 sm:px-8 sm:py-4"
+                      : "px-8 py-0"
+                  }`}
+                >
+                  <button
+                    onClick={() => toggleFAQ(index)}
+                    className="flex justify-between items-center w-full gap-4 py-4"
+                  >
+                    <span
+                      className={`flex-1 text-left text-[#3A599C] text-base leading-6 ${openIndex === index
+                        ? "font-urbanist font-bold"
+                        : "font-bold"
+                        }`}
+                    >
+                      {faq.question}
+                    </span>
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#F4F4F4] flex-shrink-0 transition-transform ${openIndex === index ? "" : "-rotate-40"
+                        }`}
+                    >
+                      <FiArrowRight size={20} color="#3A599C" />
+                    </div>
+                  </button>
+                  {openIndex === index && faq.answer && (
+                    <div className="pb-4 pt-0">
+                      <p className="text-brand-secondary font-bold text-base leading-6">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Image Section */}
+          <div className="relative flex-1 w-full h-[500px] lg:h-[696px] hidden lg:block">
+            <Image
+              src="https://api.builder.io/api/v1/image/assets/TEMP/0b234fbb397431465df98949968090a5d02c929d?width=668"
+              alt="Happy customers working together"
+              width={334}
+              height={378}
+              className="absolute w-[434px] h-[378px] rounded-[23px] object-cover left-[111px] top-[236px]"
+            />
+
             {/* Top Right Badge */}
-            <div className="absolute top-8 right-0 bg-blue-400/90 backdrop-blur-sm rounded-3xl px-8 py-5 shadow-xl">
-              <div className="text-white text-center">
-                <div className="text-3xl font-bold">400+</div>
-                <div className="text-sm font-medium mt-1">Happy Customers</div>
+            <div className="absolute left-[407px] top-[202px] inline-flex px-6 py-6 justify-center items-center gap-1.5 rounded-[35px] border border-white/[0.01] bg-[#3A599C]/45 shadow-[0_2px_11.4px_0_rgba(58,89,156,0.20)] backdrop-blur-[5.8px]">
+              <div className="text-white text-center font-normal text-[35px] leading-[35px]">
+                400+
+              </div>
+              <div className="text-white font-bold text-[15px] leading-[22px]">
+                Happy Customers
               </div>
             </div>
 
             {/* Bottom Left Badge */}
-            <div className="absolute bottom-8 left-0 bg-blue-400/90 backdrop-blur-sm rounded-3xl px-8 py-5 shadow-xl">
-              <div className="text-white text-center">
-                <div className="text-3xl font-bold">400+</div>
-                <div className="text-sm font-medium mt-1">Happy Customers</div>
+            <div className="absolute left-0 top-[512px] flex w-[196px] h-[163px] px-6 py-6 flex-col justify-center items-center gap-1.5 rounded-[35px] border border-white/[0.01] bg-[#3A599C]/45 /44 shadow-[0_2px_11.4px_0_rgba(58,89,156,0.20)] backdrop-blur-[5.8px]">
+              <div className="text-white text-center font-normal text-[35px] leading-[35px]">
+                400+
+              </div>
+              <div className="text-white font-bold text-[15px] leading-[22px]">
+                Happy Customers
               </div>
             </div>
           </div>
-        </aside>
-      </section>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default FAQPage;
+}

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import Image from 'next/image'
 import {
   FaFacebookF,
   FaLinkedinIn,
@@ -10,12 +9,6 @@ import {
   FaYoutube,
 } from "react-icons/fa";
 import { FiArrowRight } from "react-icons/fi";
-import AppStore from '../../../../public/images/app_store.png';
-import GoogleStore from '../../../../public/images/gg_play.png'
-import Logo from '../../../../public/images/Hyrelancer2.png'
-import NexitLogo from '../../../../public/images/Nexit.png'
-import api from '../../../config/api';
-import { showSuccessNotification, showErrorNotification } from '../../../utils/notificationService';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -51,267 +44,262 @@ const Footer = () => {
     { label: "Terms of Service", href: "#terms-of-service" },
   ];
 
-  const handleSubscribe = async (e) => {
+  const handleSubscribe = (e) => {
     e.preventDefault();
-    
+
     if (!email) {
-      showErrorNotification('Please enter your email address');
+      alert('Please enter your email address');
       return;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      showErrorNotification('Please enter a valid email address');
+      alert('Please enter a valid email address');
       return;
     }
 
     setIsLoading(true);
 
-    try {
-      const response = await api.post('/subscribe', {
-        email: email
-      });
-
-      if (response.status === 200 || response.status === 201) {
-        showSuccessNotification('Thank you for subscribing! You will now receive our latest updates and exclusive offers.');
-        setEmail(''); // Clear the input field
-      }
-    } catch (error) {
-      console.error('Subscription error:', error);
-      
-      if (error.response?.status === 422) {
-        const message = error.response.data?.message || 'Invalid email address';
-        showErrorNotification(message);
-      } else if (error.response?.status === 409) {
-        showErrorNotification('This email is already subscribed to our newsletter');
-      } else {
-        showErrorNotification('Failed to subscribe. Please try again later.');
-      }
-    } finally {
+    setTimeout(() => {
+      alert('Thank you for subscribing!');
+      setEmail('');
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (
-    <footer className="relative w-full min-h-screen bg-gray-100">
-      {/* Background Image with People */}
-      <div className="absolute inset-0">
-        <div 
-          className="w-full h-full bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='1920' height='1080' viewBox='0 0 1920 1080' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1920' height='1080' fill='%23F5F5F5'/%3E%3Ccircle cx='300' cy='400' r='80' fill='%23E0E0E0'/%3E%3Ccircle cx='1200' cy='350' r='60' fill='%23E0E0E0'/%3E%3C/svg%3E")`,
-            filter: 'blur(2px) grayscale(0.8)'
-          }}
-        />
-        <div className="absolute inset-0 bg-black/20"></div>
-      </div>
+    <div className="w-full bg-white">
+      <footer className="relative rounded-[16px] sm:rounded-[24px] lg:rounded-[32px] overflow-hidden min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] mx-auto max-w-[1850px] my-2 sm:my-4 lg:my-8">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0 z-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: "url('/images/FOOTERBG.png')",
+              filter: 'grayscale(0.8)'
+            }}
+          />
+          <div className="absolute inset-0 bg-black/80"></div>
+        </div>
 
-      <div className="relative z-10 flex items-end justify-center w-full min-h-screen pb-8">
-        <div className="flex flex-col lg:flex-row items-end gap-8 w-full max-w-7xl px-4 lg:px-8">
-          {/* Main Footer Content */}
-          <div className="flex-1 bg-black/90 backdrop-blur-sm rounded-3xl p-6 lg:p-12 w-full">
-            {/* Logo */}
-            <div className="mb-8 lg:mb-12">
-              <Image 
-                src={Logo} 
-                alt="Hyrelancer logo" 
-                width={180} 
-                height={43}
-                className="w-auto h-auto"
-              />
-            </div>
-
-            {/* Navigation Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-16 mb-8 lg:mb-12">
-              {/* Our Company */}
-              <nav className="flex flex-col items-start gap-4">
-                <h3 className="text-xl font-semibold text-white leading-6 mb-2">
-                  Our Company
-                </h3>
-                {companyLinks.map((link, index) => (
-                  <a
-                    key={index}
-                    href={link.href}
-                    className="text-white hover:text-gray-300 transition-colors text-sm"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </nav>
-
-              {/* Locations */}
-              <nav className="flex flex-col items-start gap-4">
-                <h3 className="text-xl font-semibold text-white leading-6 mb-2">
-                  Locations
-                </h3>
-                {locations.map((location, index) => (
-                  <a
-                    key={index}
-                    href={location.href}
-                    className="text-white hover:text-gray-300 transition-colors text-sm"
-                  >
-                    {location.name}
-                  </a>
-                ))}
-              </nav>
-
-              {/* Featured Services */}
-              <nav className="flex flex-col items-start gap-4">
-                <h3 className="text-xl font-semibold text-white leading-6 mb-2">
-                  Featured Services
-                </h3>
-                {featuredServices.map((service, index) => (
-                  <a
-                    key={index}
-                    href={service.href}
-                    className="text-white hover:text-gray-300 transition-colors text-sm"
-                  >
-                    {service.name}
-                  </a>
-                ))}
-              </nav>
-
-              {/* Subscribe Section */}
-              <div className="flex flex-col items-start gap-6">
-                {/* Subscribe Form */}
-                <form onSubmit={handleSubscribe} className="flex flex-col items-start gap-3 w-full max-w-sm">
-                  <label className="text-white text-xl font-semibold">
-                    Subscribe
-                  </label>
-                  
-                  <div className="flex items-center w-full bg-blue-600 rounded-full p-1">
-                    <div className="flex items-center flex-1 bg-white rounded-full px-4 py-3">
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="enter your email"
-                        required
-                        disabled={isLoading}
-                        className="w-full text-black text-sm border-0 outline-none bg-transparent placeholder-gray-500"
-                      />
-                    </div>
-                    
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="flex items-center justify-center w-10 h-10 bg-transparent border-0 cursor-pointer"
-                    >
-                      {isLoading ? (
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <FiArrowRight size={20} className="text-white" />
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                {/* Contact Information */}
-                <div className="flex flex-col gap-4">
-                  <address className="text-white not-italic">
-                    <span className="text-gray-400 text-sm">
-                      Toll Free Customer Care
-                    </span>
-                    <br />
-                    <a
-                      href="tel:+11234560000"
-                      className="text-white hover:underline text-sm"
-                    >
-                      +(1) 123 456 0000
-                    </a>
-                  </address>
-
-                  <address className="text-white not-italic">
-                    <span className="text-gray-400 text-sm">
-                      Need live support?
-                    </span>
-                    <br />
-                    <a
-                      href="mailto:info@hyrelancer.com"
-                      className="text-white hover:underline text-sm"
-                    >
-                      info@hyrelancer.com
-                    </a>
-                  </address>
-                </div>
-
-                {/* Social Media */}
-                <div className="flex items-center gap-4">
-                  <span className="text-white text-sm">Follow Us</span>
-                  <div className="flex gap-3">
-                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
-                      <FaFacebookF size={14} />
-                    </a>
-                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
-                      <FaLinkedinIn size={14} />
-                    </a>
-                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
-                      <FaTwitter size={14} />
-                    </a>
-                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
-                      <FaInstagram size={14} />
-                    </a>
-                    <a href="#" className="w-8 h-8 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors">
-                      <FaYoutube size={14} />
-                    </a>
-                  </div>
-                </div>
+        {/* Main Content */}
+        <div className="relative z-10">
+          {/* Top Section - Main Footer Content */}
+          <div className="px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 pt-4 sm:pt-6 lg:pt-8">
+            <div className="max-w-7xl mx-auto">
+              {/* Logo */}
+              <div className="flex justify-center items-center mb-4 sm:mb-6 lg:mb-0">
+                <img
+                  src="/images/hyrelancerWhite.png"
+                  alt="Hyrelancer Logo"
+                  className="h-12 w-20 xs:h-16 xs:w-28 sm:h-20 sm:w-32 md:h-24 md:w-36 lg:h-30 lg:w-40"
+                />
               </div>
-            </div>
 
-            {/* Footer Bottom */}
-            <div className="border-t border-gray-600 pt-6">
-              <div className="flex flex-col lg:flex-row items-center justify-between bg-gray-800/50 rounded-full px-4 lg:px-6 py-4 gap-4 lg:gap-0">
-                <p className="text-gray-400 text-sm text-center lg:text-left">
-                  Copyright © All Rights Reserved.2025
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-xs">
-                    Powered by
-                  </span>
-                  <Image
-                    src={NexitLogo}
-                    alt="Powered by NEXIT"
-                    width={58}
-                    height={25}
-                    className="object-cover"
-                  />
-                </div>
-
-                <nav className="flex items-center gap-2 lg:gap-4 flex-wrap justify-center">
-                  {footerLinks.map((link, index) => (
+              {/* Navigation Grid - Mobile First Approach */}
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12 mb-6 sm:mb-8 lg:mb-10">
+                {/* Our Company */}
+                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3">
+                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2">
+                    Our Company
+                  </h3>
+                  {companyLinks.map((link, index) => (
                     <a
                       key={index}
                       href={link.href}
-                      className="text-gray-400 hover:underline transition-colors text-sm"
+                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight"
                     >
                       {link.label}
                     </a>
                   ))}
                 </nav>
+
+                {/* Locations */}
+                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3">
+                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2">
+                    Locations
+                  </h3>
+                  {locations.map((location, index) => (
+                    <a
+                      key={index}
+                      href={location.href}
+                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight"
+                    >
+                      {location.name}
+                    </a>
+                  ))}
+                </nav>
+
+                {/* Featured Services */}
+                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 xs:col-span-2 sm:col-span-1 md:col-span-1">
+                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2">
+                    Featured Services
+                  </h3>
+                  {featuredServices.map((service, index) => (
+                    <a
+                      key={index}
+                      href={service.href}
+                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight"
+                    >
+                      {service.name}
+                    </a>
+                  ))}
+                </nav>
+
+                {/* Subscribe Section - Full width on mobile, then responsive */}
+                <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 lg:gap-7 w-full xs:col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1">
+                  {/* Subscribe Input */}
+                  <div className="flex flex-col gap-1 sm:gap-2 lg:gap-3 w-full">
+                    <label className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-semibold mb-0">
+                      Subscribe
+                    </label>
+                    <div className="flex items-center bg-[#375a9f] rounded-full px-1 py-1 w-full">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        disabled={isLoading}
+                        className="flex-1 bg-white rounded-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-black text-xs sm:text-sm md:text-md outline-none placeholder-gray-500 border-none"
+                      />
+                      <button
+                        onClick={handleSubscribe}
+                        disabled={isLoading}
+                        className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 ml-1 sm:ml-2 cursor-pointer"
+                      >
+                        {isLoading ? (
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <FiArrowRight size={14} className="text-white sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full mt-1 mb-1 gap-1 sm:gap-2 md:gap-0">
+                    <div className="flex flex-col items-start gap-0">
+                      <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-[12px] font-medium">Toll Free Customer Care</span>
+                      <a
+                        href="tel:+11234560000"
+                        className="text-white font-semibold text-[10px] sm:text-[12px] md:text-[14px] leading-tight hover:underline"
+                      >
+                        +(1) 123 456 0000
+                      </a>
+                    </div>
+                    <div className="flex flex-col items-start gap-0">
+                      <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-[12px] font-medium">Need live support?</span>
+                      <a
+                        href="mailto:info@hyrelancer.com"
+                        className="text-white font-semibold text-[10px] sm:text-[12px] md:text-[14px] leading-tight hover:underline break-all"
+                      >
+                        info@hyrelancer.com
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Social Media */}
+                  <div className="flex flex-row items-center w-full justify-start gap-1 sm:gap-2">
+                    <span className="text-white text-[8px] sm:text-[10px] md:text-xs whitespace-nowrap">Follow Us</span>
+                    <a href="#" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-gray-800 transition-colors ml-1 sm:ml-2">
+                      <FaFacebookF size={12} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                    </a>
+                    <a href="#" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-gray-800 transition-colors">
+                      <FaInstagram size={12} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                    </a>
+                    <a href="#" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-gray-800 transition-colors">
+                      <FaTwitter size={12} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                    </a>
+                    <a href="#" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-gray-800 transition-colors">
+                      <FaLinkedinIn size={12} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                    </a>
+                    <a href="#" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-gray-800 transition-colors">
+                      <FaYoutube size={12} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* App Download Section */}
-          <div className="bg-white rounded-3xl p-6 lg:p-8 flex flex-col items-center gap-4 w-full lg:min-w-[280px] lg:w-auto">
-            <span className="text-black font-medium text-lg">
-              Download App!
-            </span>
-            <div className="flex flex-col gap-3">
-              <a href="#" className="block">
-                <Image src={GoogleStore} alt="Google Play Store" className="w-36 h-auto" />
+          {/* Bottom Section - Responsive positioning */}
+          <div className="flex justify-center lg:justify-start px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 relative sm:absolute sm:top-110">
+            <div className="w-full max-w-4xl lg:mx-80 mb-12 sm:mb-16 lg:mb-20">
+              {/* Divider on top */}
+              <div className="w-full h-px bg-gray-400 opacity-40 mb-12 sm:mb-15"></div>
+              <div className="bg-[#3636368F]/90 rounded-full px-2 sm:px-3 md:px-4 lg:px-12 xl:px-20 py-2 sm:py-3 md:py-4 lg:py-6 flex flex-col sm:flex-row items-center justify-between w-full shadow-lg gap-1 sm:gap-2 md:gap-3 lg:gap-0">
+                {/* Copyright and Powered By */}
+                <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 md:gap-3">
+                  <span className="text-white text-[8px] sm:text-[10px] md:text-xs lg:text-sm whitespace-nowrap text-center sm:text-left">
+                    Copyright © All Rights Reserved.2025
+                  </span>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs whitespace-nowrap">Powered by</span>
+                    <img
+                      src="/images/Nexit.png"
+                      alt="NEXIT"
+                      className="h-3 w-6 sm:h-4 sm:w-8 md:h-5 md:w-10 lg:h-6 lg:w-13 rounded-full object-fill"
+                    />
+                  </div>
+                </div>
+                {/* Legal Links */}
+                <nav className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-wrap justify-center sm:justify-end">
+                  {footerLinks.map((link, index) => (
+                    <React.Fragment key={index}>
+                      <a
+                        href={link.href}
+                        className="text-white hover:text-gray-300 transition-colors text-[8px] sm:text-[10px] md:text-xs lg:text-sm whitespace-nowrap"
+                      >
+                        {link.label}
+                      </a>
+                      {index < footerLinks.length - 1 && <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs mx-1 sm:mx-2"></span>}
+                    </React.Fragment>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Download App Section - Fully responsive positioning */}
+        <div className="absolute bottom-0 right-0 bg-white rounded-tl-[12px] sm:rounded-tl-[16px] md:rounded-tl-[20px] lg:rounded-tl-[30px] w-48 xs:w-56 sm:w-64 md:w-80 lg:w-96 xl:w-110 h-20 xs:h-24 sm:h-28 md:h-32 lg:h-40 flex flex-col items-center justify-center px-2 sm:px-3 md:px-4 lg:px-8 py-2 sm:py-3 md:py-4 lg:py-6 z-20">
+          {/* SVG curve - Left side */}
+          <div className="absolute -left-2 sm:-left-3 md:-left-4 bottom-0">
+            <svg width="8" height="8" className="w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4" viewBox="0 0 20 20" fill="white" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 20V0C20 12 12 20 0 20H20Z" />
+            </svg>
+          </div>
+
+          {/* SVG curve - Top side - Hidden on mobile */}
+          <div className="absolute bottom-30 left-90 -translate-y-[40px] hidden md:block">
+            <svg
+              width="80"
+              height="56"
+              className="w-20 h-14"
+              viewBox="0 0 80 56"
+              fill="white"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M80 56V0C80 42 48 56 0 56H80Z" />
+            </svg>
+          </div>
+
+          <span className="text-gray-800 font-semibold text-[10px] sm:text-xs md:text-sm lg:text-lg mb-1 sm:mb-2 lg:mb-4 text-center">
+            Download App!
+          </span>
+          <div className="flex flex-col gap-1 sm:gap-2 lg:gap-3">
+            <div className="flex gap-1 sm:gap-2 lg:gap-3">
+              <a href="#" className="flex items-center gap-1 bg-black text-white px-1 sm:px-2 md:px-3 lg:px-4 py-1 sm:py-2 lg:py-3 rounded-lg hover:opacity-80 transition-opacity">
+                <img src="/images/google-play.png" alt="Google Play" className="h-3 w-auto sm:h-4 md:h-5 lg:h-7" />
               </a>
-              <a href="#" className="block">
-                <Image src={AppStore} alt="App Store" className="w-36 h-auto" />
+              <a href="#" className="flex items-center gap-1 bg-black text-white px-1 sm:px-2 md:px-3 lg:px-4 py-1 sm:py-2 lg:py-3 rounded-lg hover:opacity-80 transition-opacity">
+                <img src="/images/app_store.png" alt="App Store" className="h-3 w-auto sm:h-4 md:h-5 lg:h-7" />
               </a>
             </div>
           </div>
         </div>
-      </div>
-    </footer>
+      </footer>
+    </div>
   );
 };
 

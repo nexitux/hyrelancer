@@ -50,41 +50,43 @@ export default function WorkFlow() {
   const steps = activeTab === "provider" ? providerSteps : seekerSteps;
 
   return (
-    <section className="flex flex-col w-full max-w-full mx-auto items-start gap-12 px-4 py-12 relative bg-[#F4F4F4]">
-      <header className="flex flex-col items-center gap-8 relative self-stretch w-full">
+    <section className="flex flex-col w-full max-w-full mx-auto items-start gap-6 sm:gap-8 lg:gap-12 px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 relative bg-[#F4F4F4]">
+      <header className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8 relative self-stretch w-full">
         <div className="flex flex-col items-start gap-2 relative self-stretch w-full">
-          <p className="relative self-stretch mt-[-1.00px] font-body font-[number:var(--body-font-weight)] text-[#3A599C] text-[length:var(--body-font-size)] text-center tracking-[var(--body-letter-spacing)] leading-[var(--body-line-height)] [font-style:var(--body-font-style)]">
+          <p className="relative self-stretch mt-[-1.00px] font-body font-[number:var(--body-font-weight)] text-[#3A599C] text-sm sm:text-base lg:text-[length:var(--body-font-size)] text-center tracking-[var(--body-letter-spacing)] leading-[var(--body-line-height)] [font-style:var(--body-font-style)]">
             Boost Your Working Flow
           </p>
 
-          <h1 className="relative self-stretch font-head-2 font-[number:var(--head-2-font-weight)] text-gray-800 text-[length:var(--head-2-font-size)] text-center tracking-[var(--head-2-letter-spacing)] leading-[var(--head-2-line-height)] [font-style:var(--head-2-font-style)]">
+          <h1 className="relative self-stretch font-head-2 font-[number:var(--head-2-font-weight)] text-gray-800 text-xl sm:text-2xl md:text-3xl lg:text-[length:var(--head-2-font-size)] text-center tracking-[var(--head-2-letter-spacing)] leading-[var(--head-2-line-height)] [font-style:var(--head-2-font-style)]">
             How Hyrelancer Works for
           </h1>
         </div>
 
         <div
-          className="relative w-[326px] h-[54px] bg-white rounded-[32px] overflow-hidden border-[0.5px] border-solid border-gray-300"
+          className="relative w-[320px] sm:w-[380px] md:w-[420px] lg:w-[450px] h-[48px] sm:h-[54px] bg-white rounded-[32px] overflow-hidden border-[0.5px] border-solid border-gray-300"
           role="tablist"
         >
           <div
-            className="absolute top-[3px] left-[3px] w-[167px] h-12 bg-[#3A599C] rounded-[32px] shadow-[1.8px_1.8px_1.8px_1.8px_#3a599c] transition-transform duration-300 ease-in-out"
+            className="absolute top-[3px] left-[3px] w-[calc(50%-3px)] h-[42px] sm:h-12 bg-[#3A599C] rounded-[32px] shadow-[1.8px_1.8px_1.8px_1.8px_#3a599c] transition-transform duration-300 ease-in-out"
             style={{
               transform:
-                activeTab === "seeker" ? "translateX(156px)" : "translateX(0)",
+                activeTab === "seeker" 
+                  ? "translateX(calc(100% + 6px))" 
+                  : "translateX(0)",
             }}
             aria-hidden="true"
           />
 
-          <div className="inline-flex items-center absolute top-[3px] left-0">
+          <div className="flex items-center absolute top-[3px] left-0 w-full h-[42px] sm:h-12">
             <button
-              className="inline-flex items-center justify-center gap-2.5 px-6 py-4 relative flex-[0_0_auto] rounded-3xl transition-colors duration-300"
+              className="flex-1 h-full flex items-center justify-center gap-1 sm:gap-2.5 px-2 sm:px-6 py-3 sm:py-4 relative rounded-3xl transition-colors duration-300 z-10"
               onClick={() => setActiveTab("provider")}
               role="tab"
               aria-selected={activeTab === "provider"}
               aria-controls="provider-panel"
             >
               <span
-                className="relative w-fit mt-[-0.50px] font-body font-[number:var(--body-font-weight)] text-[length:var(--body-font-size)] tracking-[var(--body-letter-spacing)] leading-[var(--body-line-height)] whitespace-nowrap [font-style:var(--body-font-style)] transition-colors duration-300"
+                className="relative w-fit mt-[-0.50px] font-body font-[number:var(--body-font-weight)] text-xs sm:text-sm lg:text-[length:var(--body-font-size)] tracking-[var(--body-letter-spacing)] leading-[var(--body-line-height)] whitespace-nowrap [font-style:var(--body-font-style)] transition-colors duration-300"
                 style={{
                   color:
                     activeTab === "provider"
@@ -97,14 +99,14 @@ export default function WorkFlow() {
             </button>
 
             <button
-              className="inline-flex h-12 items-center justify-center gap-2.5 px-6 py-4 relative flex-[0_0_auto] rounded-3xl transition-colors duration-300"
+              className="flex-1 h-full flex items-center justify-center gap-1 sm:gap-2.5 px-2 sm:px-6 py-3 sm:py-4 relative rounded-3xl transition-colors duration-300 z-10"
               onClick={() => setActiveTab("seeker")}
               role="tab"
               aria-selected={activeTab === "seeker"}
               aria-controls="seeker-panel"
             >
               <span
-                className="relative w-fit font-body font-[number:var(--body-font-weight)] text-[length:var(--body-font-size)] tracking-[var(--body-letter-spacing)] leading-[var(--body-line-height)] whitespace-nowrap [font-style:var(--body-font-style)] transition-colors duration-300"
+                className="relative w-fit font-body font-[number:var(--body-font-weight)] text-xs sm:text-sm lg:text-[length:var(--body-font-size)] tracking-[var(--body-letter-spacing)] leading-[var(--body-line-height)] whitespace-nowrap [font-style:var(--body-font-style)] transition-colors duration-300"
                 style={{
                   color:
                     activeTab === "seeker"
@@ -118,7 +120,7 @@ export default function WorkFlow() {
           </div>
         </div>
 
-        <p className="relative w-full max-w-[616px] font-body-bold font-[number:var(--body-regular-font-weight)] text-[#000] text-[length:var(--body-regular-font-size)] text-center tracking-[var(--body-regular-letter-spacing)] leading-[var(--body-regular-line-height)] [font-style:var(--body-regular-font-style)]">
+        <p className="relative w-full max-w-[616px] font-body-bold font-[number:var(--body-regular-font-weight)] text-[#000] text-sm sm:text-base lg:text-[length:var(--body-regular-font-size)] text-center tracking-[var(--body-regular-letter-spacing)] leading-[var(--body-regular-line-height)] [font-style:var(--body-regular-font-style)] px-4">
           {activeTab === "provider" 
             ? "Finding the right projects has never been easier. Our simple process ensures you connect with the right opportunities quickly and securely."
             : "Finding the right freelancer has never been easier. Our simple process ensures you connect with the right talent quickly and securely."
@@ -127,12 +129,78 @@ export default function WorkFlow() {
       </header>
 
       <div
-        className="flex items-start justify-center w-full px-4 lg:px-8 py-0"
+        className="flex items-start justify-center w-full px-2 sm:px-4 lg:px-8 py-0"
         role="tabpanel"
         id={`${activeTab}-panel`}
       >
-        <div className="relative w-full "style={{ maxWidth: "1500px" }}>
-          <div className="flex items-center justify-between gap-8 lg:gap-12 xl:gap-16">
+        <div className="relative w-full" style={{ maxWidth: "1500px" }}>
+          {/* Mobile Layout - Stacked */}
+          <div className="flex flex-col items-center gap-8 lg:hidden">
+            {steps.map((step, index) => (
+              <React.Fragment key={`${activeTab}-${step.number}`}>
+                <article
+                  className="flex flex-col items-center gap-6 transition-all duration-500 ease-in-out animate-fade-up w-full max-w-[280px] sm:max-w-[320px]"
+                  style={{
+                    animationDelay: `${index * 0.2}s`,
+                  }}
+                >
+                  <div
+                    className="relative w-full h-[140px] sm:h-[170px] rounded-2xl shadow-[0px_4px_20px_#3a599c26] bg-white border border-gray-300 transition-transform duration-300 hover:scale-105 overflow-hidden"
+                    role="img"
+                    aria-label={`${step.title} illustration`}
+                  >
+                    <img
+                      src={step.image}
+                      alt={`${step.title} illustration`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="flex flex-col items-center relative">
+                    <div
+                      className="relative h-[60px] sm:h-[72px] [font-family:'Roboto-Medium',Helvetica] font-medium text-gray-200 text-[100px] sm:text-[136.7px] text-left tracking-[0] leading-[100px] sm:leading-[136.7px] whitespace-nowrap transition-opacity duration-300"
+                      style={{ left: "80px" }}
+                      aria-hidden="true"
+                    >
+                      {step.number}
+                    </div>
+
+                    <div className="flex flex-col items-center gap-3 sm:gap-4 relative -mt-12 sm:-mt-16">
+                      <h2 className="relative font-body font-[number:var(--body-font-weight)] text-gray-800 text-base sm:text-lg lg:text-[length:var(--body-font-size)] text-center tracking-[var(--body-letter-spacing)] leading-[var(--body-line-height)] [font-style:var(--body-font-style)]">
+                        {step.title}
+                      </h2>
+
+                      <p className="relative font-body-regular font-[number:var(--body-regular-font-weight)] text-gray-800 text-sm sm:text-base lg:text-[length:var(--body-regular-font-size)] text-center tracking-[var(--body-regular-letter-spacing)] leading-[var(--body-regular-line-height)] [font-style:var(--body-regular-font-style)]">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                {index < steps.length - 1 && (
+                  <div
+                    className="flex items-center justify-center w-[2px] h-[40px] sm:h-[60px] flex-shrink-0 transition-opacity duration-500"
+                    style={{ 
+                      opacity: activeTab === "provider" ? 1 : 0.7,
+                    }}
+                    aria-hidden="true"
+                  >
+                    <div className="flex flex-col items-center h-full w-full relative">
+                      {/* Top dot */}
+                      <div className="w-2 h-2 bg-gray-400 rounded-full absolute top-0"></div>
+                      {/* Line */}
+                      <div className="flex-1 w-[2px] bg-gray-400 my-2"></div>
+                      {/* Bottom dot */}
+                      <div className="w-2 h-2 bg-gray-400 rounded-full absolute bottom-0"></div>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Desktop Layout - Horizontal */}
+          <div className="hidden lg:flex items-center justify-between gap-8 lg:gap-12 xl:gap-16">
             {steps.map((step, index) => (
               <React.Fragment key={`${activeTab}-${step.number}`}>
                 <article

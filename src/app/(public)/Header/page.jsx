@@ -369,60 +369,66 @@ const Header = ({ params }) => {
   const userMenuItems = getUserMenuItems();
 
   return (
-    <header className="flex w-full h-20 md:h-24 items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 2xl:px-36 py-4 md:py-6 sticky top-0 z-50 bg-[#ffffff80] border border-solid border-[#ffffff1a]">
+    <header className="flex w-full h-20 md:h-24 items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 2xl:px-36 py-4 md:py-6 sticky top-0 z-50 bg-[#ffffff80] backdrop-blur-xl border border-solid border-[#ffffff1a]">
       <div className="flex justify-between items-center w-full max-w-[1440px] mx-auto">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-700"
-          aria-label="Toggle menu"
-        >
-          <MenuIcon className="w-6 h-6" />
-        </button>
-
-        {/* Logo */}
-        <a 
-          href="/" 
-          aria-label="Hyrelancer Home"
-          onClick={(e) => {
-            e.preventDefault();
-            router.push("/");
-          }}
-          className="cursor-pointer"
-        >
-          <Image
-            src={Logo}
-            alt="Hyrelancer Logo"
-            className="relative w-32 sm:w-36 md:w-40 lg:w-44 h-auto"
-            priority
-          />
-        </a>
-
-        {/* Navigation */}
-        <nav
-          className="hidden lg:flex items-center gap-6 xl:gap-8"
-          aria-label="Main navigation"
-        >
+        {/* Left side - Mobile menu button and Logo */}
+        <div className="flex items-center gap-4">
+          {/* Mobile Menu Button */}
           <button
-            className="inline-flex h-12 items-center gap-2 px-4 xl:px-6 bg-[#3a599c2e] rounded-[32px] cursor-pointer hover:bg-[#3a599c40] transition-colors"
-            aria-label="Categories menu"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-700"
+            aria-label="Toggle menu"
           >
-            <span className="font-semibold text-[#3a599c] text-sm whitespace-nowrap">
-              Categories
-            </span>
+            <MenuIcon className="w-6 h-6" />
           </button>
 
-          {navigationItems.map((item, index) => (
-            <a
-              key={index}
-              href={item.href || "#"}
-              className="font-normal text-black text-sm whitespace-nowrap hover:text-[#3a599c] transition-colors px-2"
-            >
-              {item.name}
-            </a>
-          ))}
-        </nav>
+          {/* Logo */}
+          <a 
+            href="/" 
+            aria-label="Hyrelancer Home"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/");
+            }}
+            className="cursor-pointer"
+          >
+            <Image
+              src={Logo}
+              alt="Hyrelancer Logo"
+              className="relative w-32 sm:w-36 md:w-40 lg:w-44 h-auto"
+              priority
+            />
+          </a>
+        </div>
 
+        {/* Center - Navigation - Only show when NOT authenticated */}
+        {!isAuthenticated && (
+          <nav
+            className="hidden lg:flex items-center gap-6 xl:gap-8"
+            aria-label="Main navigation"
+          >
+            <button
+              className="inline-flex h-12 items-center gap-2 px-4 xl:px-6 bg-[#3a599c2e] rounded-[32px] cursor-pointer hover:bg-[#3a599c40] transition-colors"
+              aria-label="Categories menu"
+            >
+              <span className="font-semibold text-[#3a599c] text-sm whitespace-nowrap">
+                Categories
+              </span>
+            </button>
+
+            {navigationItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.href || "#"}
+                className="font-normal text-black text-sm whitespace-nowrap hover:text-[#3a599c] transition-colors px-2"
+              >
+                {item.name}
+              </a>
+            ))}
+          </nav>
+        )}
+
+        {/* Right side - User actions */}
         <div className="hidden lg:flex items-center gap-3 xl:gap-4">
           {/* User Dropdown and Verification Button - Only show if authenticated and not on login/register pages */}
           {shouldShowUserDropdown && (
@@ -595,19 +601,21 @@ const Header = ({ params }) => {
             </a>
           )}
 
-          {/* Become A Service Provider Button */}
-          <a
-            href="/become-provider"
-            onClick={(e) => {
-              e.preventDefault();
-              router.push("/select-user-type");
-            }}
-            className="inline-flex h-12 items-center justify-center px-4 xl:px-6 bg-[#3a599c] rounded-3xl hover:bg-[#2f4a7f] transition-colors"
-          >
-            <span className="font-normal text-white text-sm whitespace-nowrap">
-              Become A Service Provider
-            </span>
-          </a>
+          {/* Become A Service Provider Button - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <a
+              href="/become-provider"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/select-user-type");
+              }}
+              className="inline-flex h-12 items-center justify-center px-4 xl:px-6 bg-[#3a599c] rounded-3xl hover:bg-[#2f4a7f] transition-colors"
+            >
+              <span className="font-normal text-white text-sm whitespace-nowrap">
+                Become A Service Provider
+              </span>
+            </a>
+          )}
         </div>
       </div>
 
@@ -624,87 +632,93 @@ const Header = ({ params }) => {
         }}
       >
         <div className="px-4 sm:px-6 py-6 space-y-4">
-          {/* Mobile Categories */}
-          <div className="border-b border-gray-200 pb-4">
-            <h3 className="font-bold text-lg mb-4 text-gray-900">Categories</h3>
-            {!loading &&
-              categories.map((category) => (
-                <div key={category.id} className="mb-2">
-                  <button
-                    onClick={() => toggleMobileCategory(category.id)}
-                    className="w-full flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div>{category.icon}</div>
-                      <span className="font-medium">{category.name}</span>
-                    </div>
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${mobileCategoryOpen === category.id ? "rotate-180" : ""
-                        }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
+          {/* Mobile Categories - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="font-bold text-lg mb-4 text-gray-900">Categories</h3>
+              {!loading &&
+                categories.map((category) => (
+                  <div key={category.id} className="mb-2">
+                    <button
+                      onClick={() => toggleMobileCategory(category.id)}
+                      className="w-full flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
+                      <div className="flex items-center gap-3">
+                        <div>{category.icon}</div>
+                        <span className="font-medium">{category.name}</span>
+                      </div>
+                      <svg
+                        className={`w-4 h-4 transition-transform duration-200 ${mobileCategoryOpen === category.id ? "rotate-180" : ""
+                          }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
 
-                  {mobileCategoryOpen === category.id && (
-                    <div className="pl-12 mt-2 space-y-2">
-                      {category.subcategories.map((sub) => (
-                        <div key={sub.title} className="mb-3">
-                          <h4 className="font-medium mb-2 text-gray-900">{sub.title}</h4>
-                          <ul className="space-y-1 pl-2">
-                            {sub.items.map((item) => (
-                              <li key={item}>
-                                <a
-                                  href="#"
-                                  className="block py-2 px-2 text-sm text-gray-700 hover:text-[#3a599c] hover:bg-gray-50 rounded transition-colors"
-                                >
-                                  {item}
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    {mobileCategoryOpen === category.id && (
+                      <div className="pl-12 mt-2 space-y-2">
+                        {category.subcategories.map((sub) => (
+                          <div key={sub.title} className="mb-3">
+                            <h4 className="font-medium mb-2 text-gray-900">{sub.title}</h4>
+                            <ul className="space-y-1 pl-2">
+                              {sub.items.map((item) => (
+                                <li key={item}>
+                                  <a
+                                    href="#"
+                                    className="block py-2 px-2 text-sm text-gray-700 hover:text-[#3a599c] hover:bg-gray-50 rounded transition-colors"
+                                  >
+                                    {item}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* Mobile Navigation Items - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <div className="space-y-2">
+              {navigationItems.map((item) => (
+                <a
+                  key={item.name}
+                  href="#"
+                  className="block px-4 py-3 rounded-lg font-medium hover:bg-gray-100 text-gray-700 transition-colors"
+                >
+                  {item.name}
+                </a>
               ))}
-          </div>
+            </div>
+          )}
 
-          {/* Mobile Navigation Items */}
-          <div className="space-y-2">
-            {navigationItems.map((item) => (
-              <a
-                key={item.name}
-                href="#"
-                className="block px-4 py-3 rounded-lg font-medium hover:bg-gray-100 text-gray-700 transition-colors"
+          {/* Mobile Buttons - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  router.push("/select-user-type");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full px-6 py-4 rounded-lg font-bold bg-[#3a599c] text-white hover:bg-[#2f4a7f] transition-colors"
               >
-                {item.name}
-              </a>
-            ))}
-          </div>
-
-          {/* Mobile Buttons */}
-          <div className="pt-4 border-t border-gray-200">
-            <button
-              onClick={() => {
-                router.push("/select-user-type");
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full px-6 py-4 rounded-lg font-bold bg-[#3a599c] text-white hover:bg-[#2f4a7f] transition-colors"
-            >
-              Become A Service Provider
-            </button>
-          </div>
+                Become A Service Provider
+              </button>
+            </div>
+          )}
 
           {/* Mobile Action Buttons - Only show if authenticated */}
           {shouldShowUserDropdown && (
