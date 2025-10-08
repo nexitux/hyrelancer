@@ -185,21 +185,14 @@ export default function FreelancerApprovalListPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        freelancer.is_regi_complete === '1' 
+                        freelancer.is_status === 'old' 
                           ? 'bg-green-100 text-green-800' 
-                          : freelancer.is_regi_complete === '2'
-                          ? 'bg-blue-100 text-blue-800'
                           : 'bg-orange-100 text-orange-800'
                       }`}>
-                        {freelancer.is_regi_complete === '1' 
+                        {freelancer.is_status === 'old' 
                           ? <>
                               <MdCheckCircle size={12} />
-                              Complete
-                            </>
-                          : freelancer.is_regi_complete === '2'
-                          ? <>
-                              <MdPending size={12} />
-                              Under Review
+                              Completed
                             </>
                           : <>
                               <MdPending size={12} />

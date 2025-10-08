@@ -103,8 +103,14 @@ const TextValidation = ({ isValid, hasValue, field }) => {
   );
 };
 
-// Validation Checklist Component
-const ValidationChecklist = ({ validation }) => {
+const PasswordValidationTooltip = ({ 
+  validation, 
+  isVisible, 
+  onToggle,
+  position = 'below',
+  showStrengthIndicator = true,
+  theme = 'light'
+}) => {
   const rules = [
     { key: 'minLength', text: 'At least 8 characters' },
     { key: 'hasUppercase', text: 'One uppercase letter' },
@@ -113,23 +119,106 @@ const ValidationChecklist = ({ validation }) => {
     { key: 'hasSpecialChar', text: 'One special character' }
   ];
 
+  const validCount = rules.filter(rule => validation[rule.key]).length;
+  const totalRules = rules.length;
+  const strengthPercentage = (validCount / totalRules) * 100;
+
+  const getStrengthLabel = () => {
+    if (strengthPercentage < 40) return { label: 'Weak', color: 'text-red-500' };
+    if (strengthPercentage < 80) return { label: 'Medium', color: 'text-yellow-500' };
+    return { label: 'Strong', color: 'text-green-500' };
+  };
+
+  const strength = getStrengthLabel();
+
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? 'bg-gray-800' : 'bg-white';
+  const borderColor = isDark ? 'border-gray-700' : 'border-gray-200';
+  const textColor = isDark ? 'text-white' : 'text-gray-900';
+  const subtextColor = isDark ? 'text-gray-300' : 'text-gray-600';
+  const dividerColor = isDark ? 'border-gray-600' : 'border-gray-200';
+
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-700">Password requirements:</p>
-      <ul className="space-y-1">
-        {rules.map(({ key, text }) => (
-          <li key={key} className="flex items-center text-sm">
-            {validation[key] ? (
-              <Check size={16} className="text-green-500 mr-2" />
-            ) : (
-              <X size={16} className="text-gray-400 mr-2" />
-            )}
-            <span className={validation[key] ? 'text-green-700' : 'text-gray-600'}>
-              {text}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div className="relative">
+      {/* Question Mark Icon Button */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        aria-label="Show password requirements"
+        aria-expanded={isVisible}
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      </button>
+
+      {/* Tooltip Content */}
+      {isVisible && (
+        <div 
+          className={`absolute z-50 w-80 ${position === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 transform -translate-x-1/2 transition-all duration-200 ease-in-out`}
+          role="tooltip"
+          aria-live="polite"
+          aria-label="Password requirements"
+        >
+          <div className={`${bgColor} border ${borderColor} rounded-lg shadow-lg`}>
+            {/* Arrow pointing to icon */}
+            <div className={`absolute ${position === 'above' ? 'top-full left-1/2 transform -translate-x-1/2' : 'bottom-full left-1/2 transform -translate-x-1/2'} w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent ${position === 'above' ? `border-t-4 border-t-${isDark ? 'gray-800' : 'white'}` : `border-b-4 border-b-${isDark ? 'gray-800' : 'white'}`}`}></div>
+            
+            <div className="p-4">
+              <div className="space-y-3">
+                {/* Strength Indicator */}
+                {showStrengthIndicator && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-600">Password Strength</span>
+                      <span className={`text-sm font-medium ${strength.color}`}>{strength.label}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          strengthPercentage < 40 ? 'bg-red-500' : 
+                          strengthPercentage < 80 ? 'bg-yellow-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${strengthPercentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Requirements List */}
+                <div>
+                  <p className={`text-sm font-medium ${textColor} mb-2`}>Password requirements:</p>
+                  <ul className="space-y-2" role="list">
+                    {rules.map(({ key, text }) => {
+                      const isValid = validation[key];
+                      return (
+                        <li key={key} className="flex items-center text-sm" role="listitem">
+                          {isValid ? (
+                            <Check size={14} className="text-green-500 mr-3 flex-shrink-0" aria-label="Requirement met" />
+                          ) : (
+                            <X size={14} className="text-gray-400 mr-3 flex-shrink-0" aria-label="Requirement not met" />
+                          )}
+                          <span className={`${isValid ? 'text-green-700' : subtextColor}`}>
+                            {text}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                {/* Progress Summary */}
+                <div className={`pt-2 border-t ${dividerColor}`}>
+                  <p className={`text-xs ${subtextColor}`}>
+                    {validCount}/{totalRules} requirements met
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -184,10 +273,39 @@ const AuthForm = () => {
     password: false,
     confirmPassword: false
   });
+  const [isPasswordTooltipVisible, setIsPasswordTooltipVisible] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState('below');
 
   const toggleShowPassword = (fieldKey) => {
     setShowPasswordFields(prev => ({ ...prev, [fieldKey]: !prev[fieldKey] }));
   };
+
+  // Toggle password tooltip visibility
+  const togglePasswordTooltip = () => {
+    setIsPasswordTooltipVisible(!isPasswordTooltipVisible);
+  };
+
+  // Handle tooltip positioning based on viewport
+  const updateTooltipPosition = () => {
+    const viewportHeight = window.innerHeight;
+    const tooltipHeight = 200; // Approximate tooltip height
+    const scrollY = window.scrollY;
+    const currentY = window.innerHeight + scrollY;
+    
+    // Check if there's enough space below
+    if (currentY + tooltipHeight < viewportHeight + scrollY) {
+      setTooltipPosition('below');
+    } else {
+      setTooltipPosition('above');
+    }
+  };
+
+  // Update position when tooltip becomes visible
+  useEffect(() => {
+    if (isPasswordTooltipVisible) {
+      updateTooltipPosition();
+    }
+  }, [isPasswordTooltipVisible]);
 
   const slides = [
     {
@@ -307,6 +425,7 @@ const AuthForm = () => {
   }, [countdown]);
 
   // Clean up email fields to remove spaces
+
   useEffect(() => {
     const cleanedFormData = { ...formData };
     let hasChanges = false;
@@ -1245,10 +1364,17 @@ const AuthForm = () => {
                           )}
                         </div>
 
-                        {/* Conditionally render the checklist for the password field */}
-                        {field === 'password' && formData.password && (
-                          <div className="mt-2">
-                            <ValidationChecklist validation={passwordValidation} />
+                        {/* Password validation tooltip with question mark icon */}
+                        {field === 'password' && (
+                          <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                            <PasswordValidationTooltip 
+                              validation={passwordValidation}
+                              isVisible={isPasswordTooltipVisible}
+                              onToggle={togglePasswordTooltip}
+                              position={tooltipPosition}
+                              showStrengthIndicator={true}
+                              theme="light"
+                            />
                           </div>
                         )}
                         {/* Text validation for confirm password */}
@@ -1622,10 +1748,17 @@ const AuthForm = () => {
                           )}
                         </div>
 
-                        {/* Conditionally render the checklist for the password field */}
-                        {field === 'password' && formData.password && (
-                          <div className="mt-2">
-                            <ValidationChecklist validation={passwordValidation} />
+                        {/* Password validation tooltip with question mark icon */}
+                        {field === 'password' && (
+                          <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                            <PasswordValidationTooltip 
+                              validation={passwordValidation}
+                              isVisible={isPasswordTooltipVisible}
+                              onToggle={togglePasswordTooltip}
+                              position={tooltipPosition}
+                              showStrengthIndicator={true}
+                              theme="light"
+                            />
                           </div>
                         )}
                         {/* Text validation for confirm password */}

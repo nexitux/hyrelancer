@@ -13,24 +13,8 @@ import {
   Loader2, Trash2
 } from 'lucide-react';
 import { message } from 'antd'; // Import for toast notifications
+import adminApi from '@/config/adminApi';
 
-// API configuration
-const API_BASE_URL = 'https://hyre.hyrelancer.com/api/admin';
-
-// Token management (local state)
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  },
-  removeToken: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken');
-    }
-  }
-};
 
 // Helper function to convert technical field names to user-friendly names
 const getFieldDisplayName = (fieldName) => {
@@ -126,21 +110,13 @@ const EditService = ({ params }) => {
     setLoading(true);
     setError(null);
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
       // Fetch both service and categories concurrently
       const [serviceResponse, categoryResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/services/${encodedId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_BASE_URL}/category`, { headers: { 'Authorization': `Bearer ${token}` } })
+        adminApi.get(`/services/${encodedId}`),
+        adminApi.get('/category')
       ]);
       
       if (serviceResponse.status === 401 || categoryResponse.status === 401) {
-        TokenManager.removeToken();
         router.push('/gateway');
         return;
       }
@@ -148,8 +124,8 @@ const EditService = ({ params }) => {
       if (!serviceResponse.ok) throw new Error('Failed to fetch service data.');
       if (!categoryResponse.ok) throw new Error('Failed to fetch categories.');
       
-      const serviceData = await serviceResponse.json();
-      const categoryData = await categoryResponse.json();
+      const serviceData = serviceResponse.data;
+      const categoryData = categoryResponse.data;
       
       // Populate form fields
       setServiceName(serviceData.se_name || '');
@@ -312,26 +288,15 @@ const EditService = ({ params }) => {
     }
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/updateServices/${encodedId}`, {
-        method: 'POST',
+      const response = await adminApi.post(`/updateServices/${encodedId}`, formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (response.status === 401) {
-        TokenManager.removeToken();
         router.push('/gateway');
         return;
       }

@@ -15,17 +15,7 @@ import {
   MdVisibility
 } from 'react-icons/md';
 import { Base64 } from 'js-base64';
-
-// API configuration and Token Manager
-const API_BASE_URL = 'https://hyre.hyrelancer.com/api/admin';
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
-};
+import adminApi from '@/config/adminApi';
 
 // Helper function to decode Base64 ID
 const decodeId = (encodedId) => {
@@ -68,29 +58,16 @@ export default function ServiceDetailsPage({ params }) {
     setLoading(true);
     setError(null);
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/services/${encodedId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await adminApi.get(`/services/${encodedId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Service not found.');
         }
-        const errorData = await response.json();
-        throw new Error(errorData?.message || 'Failed to fetch service details.');
+        throw new Error(response.data?.message || 'Failed to fetch service details.');
       }
 
-      const result = await response.json();
+      const result = response.data;
       setServiceData(result);
       
     } catch (err) {

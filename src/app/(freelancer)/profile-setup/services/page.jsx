@@ -875,11 +875,6 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
       key: 'serviceTypeName',
     },
     {
-      title: 'Service',
-      dataIndex: 'serviceName',
-      key: 'serviceName',
-    },
-    {
       title: 'Service Suggestion',
       dataIndex: 'suggestion',
       key: 'suggestion',

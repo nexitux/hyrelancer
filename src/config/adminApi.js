@@ -167,4 +167,20 @@ export const adminMessagesApi = {
   }
 };
 
+/**
+ * Admin Notifications API calls
+ */
+export const adminNotificationsApi = {
+  // Get all notifications
+  getNotifications: async () => {
+    try {
+      const response = await adminApi.get('/AdminNotifications');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      throw error;
+    }
+  }
+};
+
 export default adminApi;

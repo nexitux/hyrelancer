@@ -4,7 +4,6 @@ import { useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import {
   MdSearch,
-  MdNotifications,
   MdSettings,
   MdAccountCircle,
   MdKeyboardArrowDown,
@@ -15,13 +14,13 @@ import {
   MdMenu
 } from 'react-icons/md';
 import { logoutAdmin } from '@/redux/slices/adminSlice';
+import NotificationDropdown from '@/components/NotificationDropdown';
 
 export default function Header() {
   const dispatch = useDispatch();
   const router = useRouter();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -33,19 +32,11 @@ export default function Header() {
     console.log('➡️ dispatched logoutAdmin, localStorage token:', localStorage.getItem('adminToken'));
     // close any open menus and navigate to gateway
     setShowProfileMenu(false);
-    setShowNotifications(false);
     setShowMobileMenu(false);
     // use replace so back button doesn't return to protected page
     router.replace('/gateway');
   };
 
-  const notifications = [
-    { id: 1, message: "New user registration", time: "2 min ago", unread: true },
-    { id: 2, message: "Service request approved", time: "5 min ago", unread: true },
-    { id: 3, message: "Payment received", time: "10 min ago", unread: false },
-  ];
-
-  const unreadCount = notifications.filter(n => n.unread).length;
 
   return (
     <header className="flex relative z-50 justify-between items-center px-4 py-3 bg-white border-b shadow-sm md:px-6 border-slate-200">
@@ -80,61 +71,15 @@ export default function Header() {
       {/* Right Section */}
       <div className="flex items-center space-x-2 md:space-x-3">
         {/* Theme Toggle */}
-        <button
+        {/* <button
           onClick={() => setIsDarkMode(!isDarkMode)}
           className="p-2 rounded-lg transition-colors hover:bg-slate-100 text-slate-600 hover:text-slate-800"
         >
           {isDarkMode ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
-        </button>
+        </button> */}
 
         {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-lg transition-colors hover:bg-slate-100 text-slate-600 hover:text-slate-800"
-          >
-            <MdNotifications size={20} />
-            {unreadCount > 0 && (
-              <span className="flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs text-white bg-red-500 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-
-          {/* Notifications Dropdown */}
-          {showNotifications && (
-            <div className="overflow-hidden absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border shadow-lg md:w-80 border-slate-200">
-              <div className="p-4 border-b border-slate-100">
-                <h3 className="font-semibold text-slate-800">Notifications</h3>
-                <p className="text-sm text-slate-500">{unreadCount} unread messages</p>
-              </div>
-              <div className="overflow-y-auto max-h-64">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${notification.unread ? 'bg-blue-50/50' : ''
-                      }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-sm text-slate-800">{notification.message}</p>
-                        <p className="mt-1 text-xs text-slate-500">{notification.time}</p>
-                      </div>
-                      {notification.unread && (
-                        <div className="mt-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="p-3 border-t border-slate-100">
-                <button className="w-full text-sm font-medium text-center text-blue-600 hover:text-blue-700">
-                  View All Notifications
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <NotificationDropdown />
 
         {/* Profile Dropdown */}
         <div className="hidden relative sm:block">
@@ -165,12 +110,12 @@ export default function Header() {
                   </div>
                   <div>
                     <p className="font-medium text-slate-800">Admin User</p>
-                    <p className="text-sm text-slate-500">admin@databerry.com</p>
+                    {/* <p className="text-sm text-slate-500">admin@databerry.com</p> */}
                   </div>
                 </div>
               </div>
 
-              <div className="py-2">
+              {/* <div className="py-2">
                 <button className="w-full flex items-center space-x-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors text-slate-700">
                   <MdPerson size={18} />
                   <span className="text-sm">View Profile</span>
@@ -179,7 +124,7 @@ export default function Header() {
                   <MdSettings size={18} />
                   <span className="text-sm">Account Settings</span>
                 </button>
-              </div>
+              </div> */}
 
               <div className="border-t border-slate-100">
                 <button
@@ -197,12 +142,11 @@ export default function Header() {
       </div>
 
       {/* Click outside handlers */}
-      {(showProfileMenu || showNotifications) && (
+      {showProfileMenu && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => {
             setShowProfileMenu(false);
-            setShowNotifications(false);
           }}
         />
       )}

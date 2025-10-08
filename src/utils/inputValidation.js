@@ -232,6 +232,13 @@ export const validationConfigs = {
     allowLimitedChars: true,
     strict: false,
     maxLength: 100
+  },
+  
+  // Professional headline
+  professionalHeadline: {
+    allowLimitedChars: true,
+    strict: false,
+    maxLength: 150
   }
 };
 

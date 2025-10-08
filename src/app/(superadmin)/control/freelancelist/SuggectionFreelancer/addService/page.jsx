@@ -12,24 +12,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { message } from 'antd'; // Import for toast notifications
-
-// API configuration
-const API_BASE_URL = 'https://hyre.hyrelancer.com/api/admin';
-
-// Token management (local state)
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  },
-  removeToken: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken');
-    }
-  }
-};
+import adminApi from '@/config/adminApi';
+import api from '@/config/api';
 
 // Reusable Toolbar Button component
 const ToolbarButton = ({ onClick, isActive, children }) => (
@@ -85,29 +69,18 @@ const AddService = ({ record, suggestionDetails }) => {
     setFetchingCategories(true);
     setError(null);
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/category`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get('/category');
       
       if (response.status === 401) {
-        TokenManager.removeToken();
         router.push('/gateway');
         return;
       }
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.message || 'Failed to fetch categories.');
+        throw new Error(response.data?.message || 'Failed to fetch categories.');
       }
       
-      const result = await response.json();
+      const result = response.data;
       setCategories(result.data.data);
       
     } catch (err) {
@@ -159,26 +132,15 @@ const AddService = ({ record, suggestionDetails }) => {
     }
 
     try {
-      const token = TokenManager.getToken();
-      if (!token) {
-        TokenManager.removeToken();
-        router.push('/gateway');
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/storeServices`, {
-        method: 'POST',
+      const response = await adminApi.post('/storeServices', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (response.status === 401) {
-        TokenManager.removeToken();
         router.push('/gateway');
         return;
       }

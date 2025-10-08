@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { User, Edit, ArrowLeft } from "lucide-react";
+import adminApi from "@/config/adminApi";
 
 const TokenManager = {
   getToken: () => {
@@ -38,35 +39,8 @@ export default function ProfileDisplay() {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://hyre.hyrelancer.com/api/admin/getFeUProfile/${userIdBase64}`;
-        const token = TokenManager.getToken();
-
-        const res = await fetch(url, {
-          method: "GET",
-          headers: { 
-            "Accept": "application/json", 
-            ...(token ? { Authorization: `Bearer ${token}` } : {}) 
-          },
-        });
-
-        const text = await res.text();
-        let data;
-        try { 
-          data = text ? JSON.parse(text) : null; 
-        } catch (e) { 
-          data = text; 
-        }
-
-        if (!res.ok) {
-          console.warn("Profile fetch failed", res.status, data);
-          if (res.status === 401) {
-            TokenManager.clearToken();
-            setError("Unauthorized. Redirecting to login...");
-            router.push("/admin/login");
-            return;
-          }
-          throw new Error(`HTTP ${res.status}`);
-        }
+        const response = await adminApi.get(`/getFeUProfile/${userIdBase64}`);
+        const data = response.data;
 
         if (!cancelled) {
           if (data && data.u_profile) {
@@ -93,7 +67,16 @@ export default function ProfileDisplay() {
           }
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || "Failed to fetch profile");
+        if (!cancelled) {
+          // Handle 401 errors specifically
+          if (err.response && err.response.status === 401) {
+            TokenManager.clearToken();
+            setError("Unauthorized. Redirecting to login...");
+            router.push("/admin/login");
+            return;
+          }
+          setError(err.message || "Failed to fetch profile");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
