@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect,useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FacebookFilled, GoogleOutlined, MailOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import { useRouter } from "next/navigation";
@@ -41,7 +41,6 @@ const usePasswordValidation = (password) => {
 // Validation functions
 const validateEmail = (email) => {
   if (!email) return false;
-  // First check if there are any whitespace characters - if so, it's invalid
   if (/\s/.test(email)) {
     return false;
   }
@@ -49,11 +48,8 @@ const validateEmail = (email) => {
   return emailRegex.test(email);
 };
 
-// Email input validation - only allow @ and . characters, no spaces
 const validateEmailInput = (value) => {
   if (!value) return '';
-  // Remove any characters that are not alphanumeric, @, or .
-  // Also remove all whitespace characters (spaces, tabs, newlines, etc.)
   return value.replace(/\s/g, '').replace(/[^a-zA-Z0-9@.]/g, '');
 };
 
@@ -151,7 +147,7 @@ const Modal = ({ title, open, onOk, onCancel, children, footer }) => {
 };
 
 const AuthForm = () => {
-  const [isSignUpMode, setIsSignUpMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("signup");
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({});
@@ -167,18 +163,19 @@ const AuthForm = () => {
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotModalMode, setForgotModalMode] = useState('forgot-password');
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
   const otpRefs = useRef([]);
 
   const { validation: passwordValidation, isValid: isPasswordValid } = usePasswordValidation(formData.password || '');
 
   // Phone OTP states
-  const [showMobileSignIn, setShowMobileSignIn] = useState(false); // New state to toggle mobile sign in
-  const [phoneAuthStep, setPhoneAuthStep] = useState('phone'); // 'phone' or 'otp'
+  const [showMobileSignIn, setShowMobileSignIn] = useState(false);
+  const [phoneAuthStep, setPhoneAuthStep] = useState('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']); // Changed to 6 digits
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isPhoneLoading, setIsPhoneLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [otpSuccessMessage, setOtpSuccessMessage] = useState(''); // New state for success message
+  const [otpSuccessMessage, setOtpSuccessMessage] = useState('');
   const [showPasswordFields, setShowPasswordFields] = useState({
     'signin-password': false,
     password: false,
@@ -189,46 +186,24 @@ const AuthForm = () => {
     setShowPasswordFields(prev => ({ ...prev, [fieldKey]: !prev[fieldKey] }));
   };
 
-  const slides = [
+  const carouselTexts = [
     {
-      image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-      title: 'Create your own courses',
+      title: "Diverse Opportunities\nAcross various industries",
+      description: "We empower freelancers by providing a platform to showcase their skills and connect with clients. Hyrelancer is more than a job board - it is a community fostering growth and success."
     },
     {
-      image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-      title: 'Work Near Home – Freelance in your community',
+      title: "Connect with Top Clients\nWorldwide",
+      description: "Build meaningful relationships with clients from around the globe. Our platform makes it easy to find projects that match your expertise and grow your freelance career."
     },
     {
-      image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-      title: 'Diverse Opportunities – Across various industries',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-      title: 'Earn on Your Terms – Set your own schedule',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-      title: 'Hyrelancer: Your Talent Marketplace',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-      title: 'Empowering Freelancers, Driving Growth',
-    },
+      title: "Secure Payments\nGuaranteed",
+      description: "Focus on your work while we handle the rest. Our secure payment system ensures you get paid on time, every time, with full protection and transparency."
+    }
   ];
 
-  const captions = [
-    'Discover freelance opportunities right in your community.',
-    'Choose from a variety of projects across different industries.',
-    'Set your own rates and create a flexible schedule.',
-    'Hyrelancer connects businesses with top-tier freelancers across a wide range of industries, helping companies quickly find and collaborate with the right talent.',
-    'We empower freelancers by providing a platform to showcase their skills and connect with clients. Hyrelancer is more than a job board - it is a community fostering growth and success.',
-    'Join thousands of professionals who have found their perfect freelance opportunities through our platform.',
-  ];
-
-  // --- START of Google Login Integration ---
+  // Google Login Integration
   useEffect(() => {
     const handleGoogleLoginRedirect = async () => {
-      // Use window.location.search instead of location.search
       const queryParams = new URLSearchParams(window.location.search);
       const token = queryParams.get('token');
       const googleId = queryParams.get('user_googleid');
@@ -254,11 +229,9 @@ const AuthForm = () => {
             u_avail: data.u_avail || 'Offline'
           }));
 
-          // For Google signup, automatically redirect to select-user-type if no user_type
           if (!data.user.user_type) {
             router.push('/select-user-type');
           }
-          // If user has user_type, let AuthWrapper handle the redirect
 
         } catch (apiError) {
           const errorMessage = apiError.response?.data?.error || 'Failed to complete Google login.';
@@ -272,7 +245,6 @@ const AuthForm = () => {
       } else if (urlError) {
         let errorMessage = decodeURIComponent(urlError);
         
-        // Handle specific error types from backend
         if (urlError === 'user_exists') {
           errorMessage = 'This email is already registered. Please try logging in instead.';
         } else if (urlError === 'email_already_registered') {
@@ -288,15 +260,15 @@ const AuthForm = () => {
 
     handleGoogleLoginRedirect();
   }, [dispatch]);
-  // --- END of Google Login Integration ---
 
+  // Auto-change carousel text every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev >= slides.length - 1 ? 0 : prev + 1));
-    }, 3000);
+      setCurrentSlide((prev) => (prev + 1) % carouselTexts.length);
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [slides.length]);
+  }, [carouselTexts.length]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -344,9 +316,7 @@ const AuthForm = () => {
         email: formData['signin-username'],
         password: formData['signin-password']
       });
-      console.log("Login API Response:", response);
 
-      // Handle successful login with verified email
       if (response.data && response.data.access_token) {
         localStorage.setItem('suppressAutoRedirect', '1');
 
@@ -359,12 +329,8 @@ const AuthForm = () => {
           u_avail: response.data.u_avail || 'Offline'
         }));
 
-        console.log("Login API Response:", response);
-        console.log("Slug from response:", response.data.fp_slug);
-
         localStorage.setItem('token', response.data.access_token);
 
-        // Show success modal without automatic redirect
         setModalContent({
           type: 'success',
           title: 'Login Successful!',
@@ -379,14 +345,11 @@ const AuthForm = () => {
       if (error.response?.data) {
         const errorData = error.response.data;
 
-        // Handle email not verified case with resend option
         if (errorData.error && errorData.error.toLowerCase().includes('email not verified')) {
           if (errorData.resend_available && errorData.email) {
-            // Show resend email modal
             setRegisteredEmail(errorData.email);
             setShowEmailModal(true);
           } else {
-            // Show generic email verification error
             setErrorModalContent('Please verify your email before logging in. Check your inbox for the verification link.');
             setShowErrorModal(true);
           }
@@ -419,7 +382,6 @@ const AuthForm = () => {
     setIsLoading(true);
     setErrors({});
 
-    // Perform password validation checks
     let newErrors = {};
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = ['Passwords do not match'];
@@ -441,7 +403,7 @@ const AuthForm = () => {
         mobile: formData.mobile,
         password: formData.password,
         'confirm-password': formData.confirmPassword,
-        send_email: true // Add this flag to trigger email sending
+        send_email: true
       });
 
       if (response.data && response.data.message) {
@@ -450,10 +412,9 @@ const AuthForm = () => {
 
         showSuccessNotification('Registration successful! Please check your email for verification.');
 
-        // Reset form and switch to login after modal
         setTimeout(() => {
           setShowEmailModal(false);
-          setIsSignUpMode(false);
+          setActiveTab("login");
           setFormData({});
         }, 5000);
       }
@@ -463,7 +424,6 @@ const AuthForm = () => {
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
 
-        // Handle specific validation errors
         const errors = error.response.data.errors;
         if (errors.email && errors.email[0].toLowerCase().includes('already')) {
           setErrorModalContent('This email is already registered. Please use a different email or try logging in.');
@@ -484,20 +444,14 @@ const AuthForm = () => {
 
   const handleModalOk = () => {
     setIsModalOpen(false);
-    // if (modalContent.redirectPath) {
-    //   router.push(modalContent.redirectPath);
-    // }
   };
 
   const handleInputChange = (field, value) => {
-    // Apply validation based on field type
     let sanitizedValue = value;
     
     if (field === 'email' || field === 'signin-username') {
-      // For email, only allow alphanumeric, @, and .
       sanitizedValue = value.replace(/[^a-zA-Z0-9@.]/g, '');
     } else if (field === 'mobile') {
-      // For phone, only allow digits and +
       sanitizedValue = value.replace(/[^0-9+]/g, '');
     } else if (field === 'name') {
       sanitizedValue = sanitizeInput(value, validationConfigs.name);
@@ -508,7 +462,6 @@ const AuthForm = () => {
     }
     
     setFormData({ ...formData, [field]: sanitizedValue });
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
     }
@@ -517,7 +470,6 @@ const AuthForm = () => {
   const handleFocus = (field) => {
     setFocusedField(field);
     
-    // Clean up email fields when focused to remove any spaces
     if (field === 'email' || field === 'signin-username') {
       const currentValue = formData[field] || '';
       const cleanedValue = validateEmailInput(currentValue);
@@ -531,7 +483,6 @@ const AuthForm = () => {
     setFocusedField('');
   };
 
-  // Handle key down events to prevent spaces in email fields
   const handleKeyDown = (e, field) => {
     if ((field === 'email' || field === 'signin-username') && e.key === ' ') {
       e.preventDefault();
@@ -558,13 +509,10 @@ const AuthForm = () => {
   };
 
   const handleGoogleSignUp = () => {
-    // Redirect to Google signup with callback to complete-signup page
     const frontendUrl = `${window.location.origin}/complete-signup`;
     const googleSignupUrl = `https://hyre.hyrelancer.com/api/google/signup?redirect_url=${encodeURIComponent(frontendUrl)}`;
     window.location.href = googleSignupUrl;
   };
-
-
 
   // Phone OTP functions
   const isBackendSuccess = (data) => {
@@ -595,26 +543,22 @@ const AuthForm = () => {
     setOtpSuccessMessage('');
     try {
       const response = await api.post('/send-otp', { mobile: phoneNumber });
-      console.log('Send OTP API Response data:', response.data);
 
       if (isBackendSuccess(response.data)) {
-        // success path
         setPhoneAuthStep('otp');
         setCountdown(30);
         setOtpSuccessMessage(response.data.message || 'OTP has been sent successfully.');
-        setShowErrorModal(false);       // ensure any open error modal is closed
-        // focus first otp input after small delay so DOM updates
+        setShowErrorModal(false);
         setTimeout(() => {
           const el = document.getElementById('otp-0');
           if (el) el.focus();
         }, 50);
       } else {
-        // server returned a non-standard "success" text or something else - treat as error
         setErrorModalContent(response.data.remark || response.data.message || 'Failed to send OTP. Please try again.');
         setShowErrorModal(true);
       }
     } catch (error) {
-      console.error('Send OTP error:', error, error?.response?.data);
+      console.error('Send OTP error:', error);
       const errorMessage = error.response?.data?.message || 'Failed to send OTP. Please try again.';
       setErrorModalContent(errorMessage);
       setShowErrorModal(true);
@@ -624,17 +568,13 @@ const AuthForm = () => {
   };
 
   const handleOtpChange = (index, value) => {
-    // allow only digits
     if (!/^\d*$/.test(value)) return;
 
-    // keep a single digit per box
     const newOtp = [...otp];
     newOtp[index] = value.slice(0, 1);
     setOtp(newOtp);
 
-    // move focus to next input (use refs for reliability)
     if (value && index < otpRefs.current.length - 1) {
-      // small timeout helps on some mobile keyboards
       setTimeout(() => {
         const next = otpRefs.current[index + 1];
         if (next) next.focus();
@@ -647,14 +587,12 @@ const AuthForm = () => {
       e.preventDefault();
       const newOtp = [...otp];
 
-      // if current box has a digit, clear it
       if (newOtp[index]) {
         newOtp[index] = '';
         setOtp(newOtp);
         return;
       }
 
-      // otherwise move focus to previous box
       if (index > 0) {
         const prev = otpRefs.current[index - 1];
         if (prev) prev.focus();
@@ -682,7 +620,6 @@ const AuthForm = () => {
         mobile: phoneNumber,
         otp: otpValue
       });
-      console.log('Verify OTP API Response data:', response.data);
 
       if (isBackendSuccess(response.data) || (response.data.status && response.data.status.toString().toLowerCase() === 'success')) {
         const { user, token, fp_slug } = response.data;
@@ -696,13 +633,11 @@ const AuthForm = () => {
         }));
 
         localStorage.setItem('token', token);
-        // const redirectPath = getRedirectPath(user);
 
         setModalContent({
           type: 'success',
           title: 'Login Successful!',
           message: 'Welcome back to Hyrelancer',
-          // redirectPath
         });
         setIsModalOpen(true);
         setShowErrorModal(false);
@@ -711,7 +646,7 @@ const AuthForm = () => {
         setShowErrorModal(true);
       }
     } catch (error) {
-      console.error('Verify OTP error:', error, error?.response?.data);
+      console.error('Verify OTP error:', error);
       const errorMessage = error.response?.data?.message || 'Invalid OTP. Please try again.';
       setErrorModalContent(errorMessage);
       setShowErrorModal(true);
@@ -727,7 +662,6 @@ const AuthForm = () => {
     setOtpSuccessMessage('');
     try {
       const response = await api.post('/reset-otp', { mobile: phoneNumber });
-      console.log('Resend OTP API Response data:', response.data);
 
       if (isBackendSuccess(response.data)) {
         setOtp(['', '', '', '', '', '']);
@@ -743,7 +677,7 @@ const AuthForm = () => {
         setShowErrorModal(true);
       }
     } catch (error) {
-      console.error('Resend OTP error:', error, error?.response?.data);
+      console.error('Resend OTP error:', error);
       const errorMessage = error.response?.data?.message || 'Failed to resend OTP. Please try again.';
       setErrorModalContent(errorMessage);
       setShowErrorModal(true);
@@ -821,11 +755,9 @@ const AuthForm = () => {
     </div>
   );
 
- 
   const renderOtpInput = () => (
     <div className="space-y-4">
       <div className="text-center">
-        {/* Render success message here */}
         {otpSuccessMessage && (
           <div className="text-sm font-medium text-green-600 mb-2">
             {otpSuccessMessage}
@@ -889,16 +821,361 @@ const AuthForm = () => {
   );
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-2 sm:p-4 lg:p-8 bg-gradient-to-br from-slate-100 via-gray-50 to-blue-50 relative">
-      <Image
-        src="/images/login-bg.jpg"
-        alt="Background"
-        fill
-        style={{ objectFit: 'cover', objectPosition: 'center' }}
-        priority
-        quality={80}
-        className="z-0"
-      />
+    <div className="h-screen w-full flex flex-col lg:flex-row relative overflow-hidden">
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
+      {/* Full-screen Video Background */}
+      <div className="absolute inset-0 w-full h-full">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src="/images/LoginBg.mp4" type="video/mp4" />
+          {/* Fallback image if video doesn't load */}
+          <div/>
+        </video>
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/50"></div>
+      </div>
+
+      {/* Left Side - Hero Content */}
+      <div className="hidden lg:flex lg:flex-1 relative z-10">
+        {/* Top Row: Logo and Back to Website */}
+        <div className="absolute top-[-60px] left-40 w-full flex items-center justify-between px-12 mb-20 z-20">
+          <img
+            src="/images/hyrelancerWhite.png"
+            alt="hyrelancer logo"
+            className="h-66 object-contain"
+            style={{ minWidth: 90, marginTop: 0 }}
+          />
+          <button className="flex items-center gap-2 text-[#F4F4F4] font-bold text-sm hover:opacity-80 transition-opacity mt-0">
+            <svg 
+              className="w-4 h-4 rotate-360" 
+              viewBox="0 0 16 13" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M7.13862 0.190622C7.20061 0.250986 7.24978 0.32267 7.28333 0.401574C7.31687 0.480477 7.33414 0.565052 7.33414 0.650467C7.33414 0.735881 7.31687 0.820459 7.28333 0.899363C7.24978 0.978266 7.20061 1.04995 7.13862 1.11031L2.27628 5.85012L15.3334 5.85012C15.5102 5.85012 15.6797 5.9186 15.8047 6.04049C15.9298 6.16238 16 6.3277 16 6.50008C16 6.67245 15.9298 6.83777 15.8047 6.95966C15.6797 7.08155 15.5102 7.15003 15.3334 7.15003L2.27628 7.15003L7.13862 11.8898C7.26371 12.0118 7.33399 12.1772 7.33399 12.3497C7.33399 12.5222 7.26371 12.6876 7.13862 12.8095C7.01354 12.9315 6.84388 13 6.66697 13C6.49007 13 6.32041 12.9315 6.19532 12.8095L0.195518 6.95992C0.133536 6.89956 0.0843648 6.82787 0.0508164 6.74897C0.0172679 6.67007 7.64923e-08 6.58549 7.75108e-08 6.50007C7.85294e-08 6.41466 0.017268 6.33008 0.0508164 6.25118C0.0843648 6.17228 0.133536 6.10059 0.195518 6.04023L6.19532 0.190622C6.25723 0.130192 6.33076 0.0822516 6.41169 0.0495435C6.49262 0.0168343 6.57937 7.84582e-08 6.66697 7.95029e-08C6.75458 8.05476e-08 6.84133 0.0168343 6.92226 0.0495435C7.00319 0.0822516 7.07671 0.130192 7.13862 0.190622Z" fill="currentColor"/>
+            </svg>
+            <span className="whitespace-nowrap">Back to Website</span>
+          </button>
+        </div>
+
+        {/* Hero Content */}
+        <div className="absolute bottom-[140px] left-36 max-w-[800px] animate-fade-in">
+          <h1 className="text-white text-[56px] font-normal leading-[56px] mb-8">
+            {carouselTexts[currentSlide].title.split('\n').map((line, index) => (
+              <span key={index}>
+                {line}
+                {index < carouselTexts[currentSlide].title.split('\n').length - 1 && <br />}
+              </span>
+            ))}
+          </h1>
+          <p className="text-[#F4F4F4] text-base font-bold leading-6 mb-8">
+            {carouselTexts[currentSlide].description}
+          </p>
+          <div className="flex items-center gap-1">
+            {carouselTexts.map((_, index) => (
+              <div 
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  currentSlide === index ? 'w-[22px] bg-[#3A599C]' : 'bg-[#B0B0B0]'
+                }`}
+              ></div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Auth Form */}
+      <div className="flex-1 flex items-center justify-center p-2 sm:p-4 lg:p-6 relative z-10 h-full">
+        <div className="w-full max-w-[662px] bg-white rounded-[16px] sm:rounded-[24px] lg:rounded-[32px] p-4 sm:p-6 lg:p-8 xl:p-12 animate-fade-in shadow-2xl lg:shadow-2xl max-h-[95vh] overflow-y-auto">
+          <div className="w-full max-w-[382px] mx-auto flex flex-col gap-4 sm:gap-6 lg:gap-8 min-h-[500px] sm:min-h-[600px]">
+            {/* Header */}
+            <div className="flex flex-col items-center gap-2 sm:gap-4">
+              <h2 className="text-[#3A599C] text-2xl sm:text-3xl lg:text-4xl font-normal text-center">
+                {activeTab === "signup" ? "Get Started" : "Welcome Back"}
+              </h2>
+              <p className="text-black text-sm sm:text-base font-bold text-center">
+                {activeTab === "signup" 
+                  ? "Create your account to begin" 
+                  : "Sign in to continue your journey"}
+              </p>
+            </div>
+
+            {/* Toggle Switch */}
+            <div className="relative w-full h-[44px] sm:h-[48px] lg:h-[54px] rounded-[22px] sm:rounded-[24px] lg:rounded-[32px] border border-[#888888] bg-white">
+              <div 
+                className={`absolute top-[2px] sm:top-[2px] lg:top-[3px] h-10 sm:h-11 lg:h-12 w-[calc(50%-2px)] rounded-[20px] sm:rounded-[22px] lg:rounded-[32px] bg-[#3A599C] shadow-[0_0_1.8px_1px_#3A599C] transition-all duration-300 ${
+                  activeTab === "login" ? "left-[2px]" : "left-[calc(50%+2px)]"
+                }`}
+              ></div>
+              <div className="absolute inset-0 flex justify-between items-center px-2 sm:px-3 lg:px-4">
+                <button
+                  onClick={() => setActiveTab("login")}
+                  className={`flex-1 py-2 sm:py-3 lg:py-4 rounded-3xl font-bold text-xs sm:text-sm lg:text-base transition-colors ${
+                    activeTab === "login" ? "text-white" : "text-[#3A599C]"
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setActiveTab("signup")}
+                  className={`flex-1 py-2 sm:py-3 lg:py-4 rounded-3xl font-bold text-xs sm:text-sm lg:text-base transition-colors ${
+                    activeTab === "signup" ? "text-white" : "text-[#3A599C]"
+                  }`}
+                >
+                  Sign up
+                </button>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={activeTab === "signup" ? handleSignUpSubmit : handleSignInSubmit} className="flex flex-col gap-4 sm:gap-6 lg:gap-8 flex-1">
+              <div className="flex flex-col  sm:gap-4 ">
+                {activeTab === "signup" && (
+                  <div className="animate-fade-in">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={formData.name || ''}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 rounded-2xl sm:rounded-3xl border border-[#888888] bg-white text-sm sm:text-base text-[#888888] placeholder:text-[#888888] focus:outline-none focus:border-[#3A599C] transition-colors"
+                    />
+                  </div>
+                )}
+
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={activeTab === "signup" ? (formData.email || '') : (formData['signin-username'] || '')}
+                  onChange={(e) => handleInputChange(activeTab === "signup" ? 'email' : 'signin-username', e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, activeTab === "signup" ? 'email' : 'signin-username')}
+                  className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 rounded-2xl sm:rounded-3xl border border-[#888888] bg-white text-sm sm:text-base text-[#888888] placeholder:text-[#888888] focus:outline-none focus:border-[#3A599C] transition-colors"
+                />
+
+                {activeTab === "signup" && (
+                  <div className="animate-fade-in">
+                    <input
+                      type="tel"
+                      placeholder="Mobile Number"
+                      value={formData.mobile || ''}
+                      onChange={(e) => handleInputChange('mobile', e.target.value)}
+                      maxLength={10}
+                      className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 rounded-2xl sm:rounded-3xl border border-[#888888] bg-white text-sm sm:text-base text-[#888888] placeholder:text-[#888888] focus:outline-none focus:border-[#3A599C] transition-colors"
+                    />
+                  </div>
+                )}
+
+                <div className="relative">
+                  <input
+                    type={showPasswordFields[activeTab === "signup" ? 'password' : 'signin-password'] ? "text" : "password"}
+                    placeholder="Password"
+                    value={activeTab === "signup" ? (formData.password || '') : (formData['signin-password'] || '')}
+                    onChange={(e) => handleInputChange(activeTab === "signup" ? 'password' : 'signin-password', e.target.value)}
+                    onFocus={() => {
+                      if (activeTab === "signup") {
+                        setShowPasswordValidation(true);
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setShowPasswordValidation(false), 200)}
+                    className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 pr-10 sm:pr-11 lg:pr-12 rounded-2xl sm:rounded-3xl border border-[#888888] bg-white text-sm sm:text-base text-[#888888] placeholder:text-[#888888] focus:outline-none focus:border-[#3A599C] transition-colors"
+                  />
+                    <button
+                      type="button"
+                      onClick={() => toggleShowPassword(activeTab === "signup" ? 'password' : 'signin-password')}
+                      className="absolute right-3 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 text-[#6D6D6D] hover:text-[#3A599C] transition-colors"
+                    >
+                      {showPasswordFields[activeTab === "signup" ? 'password' : 'signin-password'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+
+                  {/* Password Validation Popup */}
+                  {activeTab === "signup" && showPasswordValidation && (
+                    <div className="absolute left-0 sm:left-[123px] top-[50px] sm:top-[60px] w-[280px] sm:w-[259px] bg-white rounded-[10px] shadow-[0_3px_12.4px_0_rgba(0,0,0,0.24)] p-3 sm:p-4 z-10 animate-fade-in">
+                      <p className="text-[#343434] text-xs sm:text-sm mb-3 sm:mb-4">Your password must have:</p>
+                      <div className="flex flex-col gap-1 sm:gap-2">
+                        {[
+                          { text: "At least 8 Characters", met: (formData.password || '').length >= 8 },
+                          { 
+                            text: "Upper and lowercase characters", 
+                            met: /[a-z]/.test(formData.password || '') && /[A-Z]/.test(formData.password || '') 
+                          },
+                          { text: "At least one number", met: /\d/.test(formData.password || '') },
+                        ].map((req, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <svg 
+                              className="w-[12px] sm:w-[13.355px] h-[12px] sm:h-[13.355px] flex-shrink-0" 
+                              viewBox="0 0 14 14" 
+                              fill="none"
+                            >
+                              <path 
+                                fillRule="evenodd" 
+                                clipRule="evenodd" 
+                                d="M0 6.67742C0 4.90646 0.703512 3.20803 1.95577 1.95577C3.20803 0.703512 4.90646 0 6.67742 0C8.44838 0 10.1468 0.703512 11.3991 1.95577C12.6513 3.20803 13.3548 4.90646 13.3548 6.67742C13.3548 8.44838 12.6513 10.1468 11.3991 11.3991C10.1468 12.6513 8.44838 13.3548 6.67742 13.3548C4.90646 13.3548 3.20803 12.6513 1.95577 11.3991C0.703512 10.1468 0 8.44838 0 6.67742ZM6.29636 9.53535L10.1408 4.72939L9.44632 4.17383L6.16815 8.27021L3.84619 6.33554L3.27639 7.0193L6.29636 9.53535Z" 
+                                fill={req.met ? "#43A047" : "#D9D9D9"}
+                              />
+                            </svg>
+                            <span className="text-[#888888] text-xs sm:text-sm">{req.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {activeTab === "signup" && (
+                  <div className="relative animate-fade-in">
+                    <input
+                      type={showPasswordFields['confirmPassword'] ? "text" : "password"}
+                      placeholder="Confirm Password"
+                      value={formData.confirmPassword || ''}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 pr-10 sm:pr-11 lg:pr-12 rounded-2xl sm:rounded-3xl border border-[#888888] bg-white text-sm sm:text-base text-[#888888] placeholder:text-[#888888] focus:outline-none focus:border-[#3A599C] transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleShowPassword('confirmPassword')}
+                      className="absolute right-3 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 text-[#6D6D6D] hover:text-[#3A599C] transition-colors"
+                    >
+                      {showPasswordFields['confirmPassword'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    <TextValidation 
+                      isValid={validateConfirmPassword(formData.password || '', formData.confirmPassword || '')} 
+                      hasValue={(formData.confirmPassword || '').length > 0}
+                      field="confirmPassword"
+                    />
+                  </div>
+                )}
+
+                {activeTab === "login" && (
+                  <div className="flex justify-between items-center animate-fade-in">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <div className="w-4 h-4 rounded border border-black flex items-center justify-center">
+                        {formData.rememberMe && (
+                          <div className="w-2 h-2 bg-[#3A599C] rounded-sm"></div>
+                        )}
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={formData.rememberMe || false}
+                        onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                        className="sr-only"
+                      />
+                      <span className="text-[#343434] text-sm">Remember me</span>
+                    </label>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setForgotModalMode('forgot-password');
+                        setIsForgotModalOpen(true);
+                      }}
+                      className="text-[#3A599C] font-bold text-base hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                )}
+
+                {activeTab === "signup" && (
+                  <label className="flex items-center gap-2 cursor-pointer animate-fade-in">
+                    <div className="w-4 h-4 rounded border border-[#343434] flex items-center justify-center">
+                      {formData.agreedToTerms && (
+                        <div className="w-2 h-2 bg-[#3A599C] rounded-sm"></div>
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.agreedToTerms || false}
+                      onChange={(e) => setFormData({ ...formData, agreedToTerms: e.target.checked })}
+                      className="sr-only"
+                    />
+                    <span className="text-[#343434] text-sm">
+                      I Agree With{" "}
+                      <a href="#" className="text-[#3A599C] underline">
+                        Terms & Privacy
+                      </a>
+                    </span>
+                  </label>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 rounded-2xl sm:rounded-3xl bg-[#3A599C] text-white font-bold text-sm sm:text-base hover:bg-[#2d4577] transition-colors disabled:opacity-50"
+              >
+                {isLoading ? (activeTab === "signup" ? 'Creating Account...' : 'Signing In...') : (activeTab === "signup" ? "Create Account" : "Login")}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-[0.5px] bg-[#888888]"></div>
+                <span className="text-[#888888] text-sm sm:text-base">or</span>
+                <div className="flex-1 h-[0.5px] bg-[#888888]"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={activeTab === "signup" ? handleGoogleSignUp : handleGoogleSignIn}
+                className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 rounded-2xl sm:rounded-3xl border border-[#343434] bg-white flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+              >
+                <svg width="20" height="20" className="sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none">
+                  <path opacity="0.987" fillRule="evenodd" clipRule="evenodd" d="M10.6437 0.104187C11.8778 -0.0347289 12.608 -0.0347289 13.934 0.104187C16.2812 0.454211 18.457 1.54734 20.1469 3.2255C19.005 4.31305 17.878 5.41648 16.7664 6.53547C14.6376 4.71756 12.2613 4.29795 9.63773 5.27665C7.71314 6.16846 6.37297 7.61364 5.6172 9.61219C4.38218 8.6858 3.16324 7.73782 1.96095 6.76871C1.87739 6.7244 1.78196 6.70817 1.6886 6.7224C3.59843 3.01227 6.5829 0.805625 10.642 0.102472" fill="#F44336"/>
+                  <path opacity="0.997" fillRule="evenodd" clipRule="evenodd" d="M1.68514 6.72239C1.78159 6.70752 1.87294 6.72296 1.95919 6.76869C3.16148 7.73781 4.38042 8.68578 5.61545 9.61218C5.4211 10.3909 5.29859 11.186 5.24948 11.9875C5.29147 12.7626 5.41346 13.5235 5.61545 14.2701L1.77706 17.3486C0.105526 13.8294 0.0748869 10.2873 1.68514 6.72239Z" fill="#FFC107"/>
+                  <path opacity="0.999" fillRule="evenodd" clipRule="evenodd" d="M19.9648 21.077C18.7696 20.0151 17.5184 19.0189 16.2166 18.0929C17.5216 17.1645 18.3136 15.8908 18.5928 14.2719H12.1978V9.79742C15.8858 9.76655 19.5721 9.79799 23.2567 9.89175C23.9558 13.7162 23.1484 17.1645 20.8346 20.2367C20.5594 20.5314 20.268 20.8118 19.9648 21.077Z" fill="#448AFF"/>
+                  <path opacity="0.993" fillRule="evenodd" clipRule="evenodd" d="M5.61549 14.2719C7.01127 17.767 9.5702 19.3986 13.2923 19.1665C14.3371 19.0446 15.3389 18.6769 16.2166 18.0929C17.5193 19.0213 18.7687 20.016 19.9648 21.077C18.0697 22.7928 15.6534 23.8108 13.1101 23.9651C12.5323 24.0116 11.9517 24.0116 11.3739 23.9651C7.04134 23.4506 3.8424 21.2451 1.7771 17.3486L5.61549 14.2719Z" fill="#43A047"/>
+                </svg>
+                <span className="text-[#343434] font-bold text-sm sm:text-base">Continue with Google</span>
+              </button>
+
+              {activeTab === "login" && (
+                <button
+                  type="button"
+                  onClick={() => setShowMobileSignIn(true)}
+                  className="w-full h-10 sm:h-11 lg:h-12 px-4 sm:px-5 lg:px-6 rounded-2xl sm:rounded-3xl border border-[#343434] bg-white flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                >
+                  <svg width="20" height="15" className="sm:w-6 sm:h-[18px]" viewBox="0 0 25 19" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M22.925 2.526L13.4555 10.368C13.1864 10.5909 12.8479 10.7129 12.4985 10.7129C12.1491 10.7129 11.8106 10.5909 11.5415 10.368L2.0765 2.526C2.02571 2.67887 1.99988 2.83892 2 3V15C2 15.3978 2.15804 15.7794 2.43934 16.0607C2.72064 16.342 3.10218 16.5 3.5 16.5H21.5C21.8978 16.5 22.2794 16.342 22.5607 16.0607C22.842 15.7794 23 15.3978 23 15V3C23.0006 2.839 22.9753 2.67895 22.925 2.526ZM3.5 0H21.5C22.2956 0 23.0587 0.31607 23.6213 0.87868C24.1839 1.44129 24.5 2.20435 24.5 3V15C24.5 15.7956 24.1839 16.5587 23.6213 17.1213C23.0587 17.6839 22.2956 18 21.5 18H3.5C2.70435 18 1.94129 17.6839 1.37868 17.1213C0.816071 16.5587 0.5 15.7956 0.5 15V3C0.5 2.20435 0.816071 1.44129 1.37868 0.87868C1.94129 0.31607 2.70435 0 3.5 0ZM3.185 1.5L11.549 8.4045C11.8169 8.62576 12.1533 8.74716 12.5007 8.74798C12.8481 8.7488 13.1851 8.62899 13.454 8.409L21.902 1.5H3.185Z" fill="black"/>
+                  </svg>
+                  <span className="text-[#343434] text-sm sm:text-base">Continue with phone</span>
+                </button>
+              )}
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Logo and Back Button */}
+      <div className="lg:hidden absolute top-4 left-4 z-20">
+        <div className="text-white text-xl font-bold">hyrelancer</div>
+      </div>
+      
+      <button className="lg:hidden absolute top-4 right-4 flex items-center gap-2 text-white font-bold text-sm hover:opacity-80 transition-opacity z-20">
+        <svg 
+          className="w-4 h-4 rotate-180" 
+          viewBox="0 0 16 13" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M7.13862 0.190622C7.20061 0.250986 7.24978 0.32267 7.28333 0.401574C7.31687 0.480477 7.33414 0.565052 7.33414 0.650467C7.33414 0.735881 7.31687 0.820459 7.28333 0.899363C7.24978 0.978266 7.20061 1.04995 7.13862 1.11031L2.27628 5.85012L15.3334 5.85012C15.5102 5.85012 15.6797 5.9186 15.8047 6.04049C15.9298 6.16238 16 6.3277 16 6.50008C16 6.67245 15.9298 6.83777 15.8047 6.95966C15.6797 7.08155 15.5102 7.15003 15.3334 7.15003L2.27628 7.15003L7.13862 11.8898C7.26371 12.0118 7.33399 12.1772 7.33399 12.3497C7.33399 12.5222 7.26371 12.6876 7.13862 12.8095C7.01354 12.9315 6.84388 13 6.66697 13C6.49007 13 6.32041 12.9315 6.19532 12.8095L0.195518 6.95992C0.133536 6.89956 0.0843648 6.82787 0.0508164 6.74897C0.0172679 6.67007 7.64923e-08 6.58549 7.75108e-08 6.50007C7.85294e-08 6.41466 0.017268 6.33008 0.0508164 6.25118C0.0843648 6.17228 0.133536 6.10059 0.195518 6.04023L6.19532 0.190622C6.25723 0.130192 6.33076 0.0822516 6.41169 0.0495435C6.49262 0.0168343 6.57937 7.84582e-08 6.66697 7.95029e-08C6.75458 8.05476e-08 6.84133 0.0168343 6.92226 0.0495435C7.00319 0.0822516 7.07671 0.130192 7.13862 0.190622Z" fill="currentColor"/>
+        </svg>
+        <span>Back</span>
+      </button>
 
       {/* Modal */}
       <Modal
@@ -914,897 +1191,7 @@ const AuthForm = () => {
         {renderModalContent()}
       </Modal>
 
-      <div className="w-full max-w-7xl min-h-[600px] h-auto lg:h-[900px] rounded-xl sm:rounded-2xl lg:rounded-[3.3rem] bg-white bg-opacity-90 backdrop-blur-md shadow-xl border border-white border-opacity-35 relative overflow-hidden">
-        {/* Mobile Layout */}
-        <div className="block lg:hidden">
-          <div className="p-4 sm:p-6">
-            {/* Mobile Carousel */}
-            <div className="mb-6">
-              <div className="h-48 sm:h-56 rounded-xl overflow-hidden relative group">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent z-10" />
-                {slides.map((slide, index) => (
-                  <img
-                    key={index}
-                    src={slide.image}
-                    alt={`Slide ${index + 1}`}
-                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${currentSlide === index ? 'opacity-100' : 'opacity-0'
-                      }`}
-                  />
-                ))}
-
-                {/* Mobile Navigation Arrows */}
-                <button
-                  onClick={() => setCurrentSlide(prev => (prev === 0 ? slides.length - 1 : prev - 1))}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-md hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-                >
-                  <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setCurrentSlide(prev => (prev === slides.length - 1 ? 0 : prev + 1))}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-md hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-                >
-                  <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Mobile Content */}
-              <div className="text-center mt-4 mb-6">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-                  {slides[currentSlide].title}
-                </h2>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {captions[currentSlide]}
-                </p>
-
-                {/* Mobile Dot Indicators */}
-                <div className="flex justify-center gap-1.5 mt-4">
-                  {slides.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentSlide(index)}
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${currentSlide === index
-                        ? 'w-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg'
-                        : 'bg-gray-300/60 hover:bg-gray-400/60'
-                        }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Forms */}
-            {!isSignUpMode ? (
-              // Mobile Sign In Form
-              <div className="max-w-md mx-auto">
-                <div className="text-center mb-6">
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#3a599c] mb-2">Welcome Back</h2>
-                  <p className="text-gray-600">Sign in to continue your journey</p>
-                </div>
-
-                <form onSubmit={handleSignInSubmit} className="space-y-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      className={`w-full h-12 sm:h-14 bg-gray-50/80 border-2 rounded-xl px-4 sm:px-6 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.email ? 'border-red-300 bg-red-50' : 'border-transparent'
-                        }`}
-                      required
-                      autoComplete="new-password"
-                      onFocus={() => handleFocus('signin-username')}
-                      onBlur={handleBlur}
-                      onKeyDown={(e) => handleKeyDown(e, 'signin-username')}
-                      onChange={(e) => handleInputChange('signin-username', e.target.value)}
-                      placeholder=""
-                    />
-                    <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${
-                      focusedField === 'signin-username' || (formData && formData['signin-username'])
-                        ? 'top-0 text-xs text-gray-500 font-medium'
-                        : 'top-1/2 -translate-y-1/2 text-gray-400'
-                    }`}>
-                      Username or Email
-                    </label>
-                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email[0]}</p>}
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type={showPasswordFields['signin-password'] ? 'text' : 'password'}
-                      className={`w-full h-12 sm:h-14 bg-gray-50/80 border-2 rounded-xl px-4 sm:px-6 pr-12 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
-                        }`}
-                      required
-                      autoComplete="new-password"
-                      onFocus={() => handleFocus('signin-password')}
-                      onBlur={handleBlur}
-                      onChange={(e) => handleInputChange('signin-password', e.target.value)}
-                      placeholder=""
-                    />
-
-                    {/* eye toggle */}
-                    <button
-                      type="button"
-                      aria-label={showPasswordFields['signin-password'] ? 'Hide password' : 'Show password'}
-                      onClick={() => toggleShowPassword('signin-password')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
-                    >
-                      {showPasswordFields['signin-password'] ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-
-                    <label className={`absolute left-4 sm:left-6 transition-all duration-300 pointer-events-none ${
-                      focusedField === 'signin-password' || (formData && formData['signin-password'])
-                        ? 'top-0 text-xs text-gray-500 font-medium'
-                        : 'top-1/2 -translate-y-1/2 text-gray-400'
-                    }`}>
-                      Password
-                    </label>
-                    {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password[0]}</p>}
-                  </div>
-
-
-                  <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setForgotModalMode('forgot-password'); // ensure correct mode
-                        setIsForgotModalOpen(true);
-                      }}
-                      className="text-sm text-[#3a599c] hover:text-blue-800 font-medium hover:underline"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-12 sm:h-14 bg-[#3d5999] text-white rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: '#3d5999' }}
-                  >
-                    {isLoading ? 'Signing In...' : 'Sign In'}
-                  </button>
-
-                  <div className="text-center">
-                    <p className="text-gray-600 text-sm">
-                      Don't have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => setIsSignUpMode(true)}
-                        className="text-gray-900 font-bold hover:underline transition-colors"
-                      >
-                        Sign up
-                      </button>
-                    </p>
-                  </div>
-
-                  {/* Mobile Social Login */}
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-4 bg-white text-gray-500 font-medium">Or continue with</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {/* Google Sign In Button (same size as Sign In button) */}
-                    <button
-                      type="button"
-                      onClick={handleGoogleSignIn}
-                      aria-label="Sign in with Google"
-                      className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm"
-                    >
-                      <GoogleOutlined className="w-4 h-4 mr-3" />
-                      Sign in with Google
-                    </button>
-
-                    {/* Phone Authentication Logic */}
-                    {!showMobileSignIn ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowMobileSignIn(true)}
-                        className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm"
-                      >
-                        <MailOutlined className="w-4 h-4 mr-3 text-white" />
-                        Sign in with Mobile
-                      </button>
-                    ) : (
-                      <>
-                        {phoneAuthStep === 'phone' ? renderPhoneInput() : renderOtpInput()}
-                      </>
-                    )}
-                  </div>
-                </form>
-              </div>
-            ) : (
-              // Mobile Sign Up Form
-              <div className="max-w-md mx-auto">
-                <div className="flex flex-col items-center justify-center mb-6">
-                  {/* <div className="rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <img
-                      src="/images/logo.jpg"
-                      alt="Hyrelancer Logo"
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div> */}
-                  <h2 className="text-xl sm:text-2xl font-semibold text-[#3a599c] mb-2">Get Started</h2>
-                  <p className="text-gray-600 text-sm">Create your account to begin</p>
-                </div>
-
-                <form onSubmit={handleSignUpSubmit} className="space-y-3">
-                  {[
-                    { field: 'name', label: 'Full Name', type: 'text' },
-                    { field: 'email', label: 'Email Address', type: 'email' },
-                    { field: 'mobile', label: 'Mobile Number', type: 'tel' },
-                    { field: 'password', label: 'Password', type: 'password' },
-                    { field: 'confirmPassword', label: 'Confirm Password', type: 'password' }
-                  ].map(({ field, label, type }) => {
-                    // Get validation state for each field
-                    const getValidationState = () => {
-                      const value = formData[field] || '';
-                      const hasValue = value.length > 0;
-                      
-                      switch (field) {
-                        case 'email':
-                          return { isValid: validateEmail(value), hasValue };
-                        case 'mobile':
-                          return { isValid: validatePhoneNumber(value), hasValue };
-                        case 'confirmPassword':
-                          return { 
-                            isValid: validateConfirmPassword(formData.password || '', value), 
-                            hasValue 
-                          };
-                        default:
-                          return { isValid: false, hasValue: false };
-                      }
-                    };
-
-                    const validationState = getValidationState();
-
-                    return (
-                      <div key={field}>
-                        <div className="relative">
-                          {(field === 'password' || field === 'confirmPassword') ? (
-                            <>
-                              <input
-                                type={showPasswordFields[field] ? 'text' : 'password'}
-                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                                  }`}
-                                required
-                                autoComplete="new-password"
-                                onFocus={() => handleFocus(field)}
-                                onBlur={handleBlur}
-                                onKeyDown={(e) => handleKeyDown(e, field)}
-                                onChange={(e) => {
-                                  if (field === 'mobile') {
-                                    // Only allow digits and limit to 10 characters
-                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                    handleInputChange(field, value);
-                                  } else {
-                                    handleInputChange(field, e.target.value);
-                                  }
-                                }}
-                                value={formData[field] || ''}
-                                placeholder=""
-                              />
-
-                              <button
-                                type="button"
-                                aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
-                                onClick={() => toggleShowPassword(field)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
-                              >
-                                {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
-                              </button>
-
-                            </>
-                          ) : (
-                            <>
-                              <input
-                                type={type}
-                                maxLength={field === 'mobile' ? 10 : undefined}
-                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                                  }`}
-                                required
-                                autoComplete="new-password"
-                                onFocus={() => handleFocus(field)}
-                                onBlur={handleBlur}
-                                onKeyDown={(e) => handleKeyDown(e, field)}
-                                onChange={(e) => {
-                                  if (field === 'mobile') {
-                                    // Only allow digits and limit to 10 characters
-                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                    handleInputChange(field, value);
-                                  } else {
-                                    handleInputChange(field, e.target.value);
-                                  }
-                                }}
-                                value={formData[field] || ''}
-                                placeholder=""
-                              />
-
-                              {/* Validation icon for email and mobile */}
-                              {(field === 'email' || field === 'mobile') && (
-                                <ValidationIcon 
-                                  isValid={validationState.isValid} 
-                                  hasValue={validationState.hasValue} 
-                                />
-                              )}
-                            </>
-                          )}
-
-                          {!(formData[field] && formData[field].length > 0) && (
-                            <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
-                              ? 'top-1.5 text-xs text-gray-500'
-                              : 'top-1/2 -translate-y-1/2 text-gray-400'
-                              }`}>
-                              {label}
-                            </label>
-                          )}
-                        </div>
-
-                        {/* Conditionally render the checklist for the password field */}
-                        {field === 'password' && formData.password && (
-                          <div className="mt-2">
-                            <ValidationChecklist validation={passwordValidation} />
-                          </div>
-                        )}
-                        {/* Text validation for confirm password */}
-                        {field === 'confirmPassword' && (
-                          <TextValidation 
-                            isValid={validationState.isValid} 
-                            hasValue={validationState.hasValue}
-                            field={field}
-                          />
-                        )}
-                        {/* Conditionally render the confirm password error */}
-                        {field === 'confirmPassword' && errors.confirmPassword && (
-                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.confirmPassword) ? errors.confirmPassword[0] : errors.confirmPassword}</p>
-                        )}
-                        {/* Conditionally render the password error */}
-                        {field === 'password' && errors.password && (
-                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>
-                        )}
-                        {/* Render other field errors */}
-                        {field !== 'password' && field !== 'confirmPassword' && errors[field] && (
-                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors[field]) ? errors[field][0] : errors[field]}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-11 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
-                  </button>
-
-                  {/* Social Signup Options */}
-                  <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-4 bg-white text-gray-500 font-medium">Or sign up with</span>
-                    </div>
-                  </div>
-
-                  {/* Google Sign Up Button */}
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignUp}
-                    aria-label="Sign up with Google"
-                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm"
-                  >
-                    <GoogleOutlined className="w-4 h-4 mr-3" />
-                    Sign up with Google
-                  </button>
-
-                  {/* Sign up with Mobile -> open shared modal in signup mode */}
-                  {/* <button
-                    type="button"
-                    onClick={() => {
-                      setForgotModalMode('signup');           // open modal in signup mode
-                      setIsForgotModalOpen(true);             // show modal
-                      // optionally prefill modal mobile input if user typed it in form
-                      if (formData.mobile) {
-                        // if your modal accepts initialMobile prop this will prefill it
-                        // (we pass initialMobile when rendering the modal below)
-                      }
-                    }}
-                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm mt-3"
-                  >
-                    <MailOutlined className="w-4 h-4 mr-3 text-gray-500" />
-                    Sign up with Mobile
-                  </button> */}
-
-                  <p className="text-center text-gray-600 text-sm mt-3">
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => setIsSignUpMode(false)}
-                      className="text-[#3a599c] font-semibold hover:underline"
-                    >
-                      Sign in
-                    </button>
-                  </p>
-
-                </form>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden absolute inset-5 lg:flex">
-          {/* Forms Section */}
-          <div className={`relative h-full w-[45%] transition-transform duration-500 ease-in-out ${isSignUpMode ? 'translate-x-[122%]' : ''
-            }`}>
-            {/* Sign In Form */}
-            <div className={`absolute w-full h-full transition-opacity duration-300 ${!isSignUpMode ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}>
-              <div className="h-full flex flex-col justify-center">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl lg:text-3xl font-bold text-[#3a599c] mb-3">Welcome Back</h2>
-                  <p className="text-gray-600 text-lg">Sign in to continue your journey</p>
-                </div>
-
-                <form onSubmit={handleSignInSubmit} className="space-y-6 max-w-sm mx-auto w-full">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      className={`w-full h-14 bg-gray-50/80 border-2 rounded-2xl px-6 text-gray-900 text-lg focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm ${errors.email ? 'border-red-300 bg-red-50' : 'border-transparent'
-                        }`}
-                      required
-                      autoComplete="new-password"
-                      onFocus={() => handleFocus('signin-username')}
-                      onBlur={handleBlur}
-                      onKeyDown={(e) => handleKeyDown(e, 'signin-username')}
-                      onChange={(e) => handleInputChange('signin-username', e.target.value)}
-                      placeholder=""
-                    />
-                    <label className={`absolute left-6 transition-all duration-300 pointer-events-none ${
-                      focusedField === 'signin-username' || (formData && formData['signin-username'])
-                        ? 'top-0 text-sm text-gray-500 font-medium'
-                        : 'top-1/2 -translate-y-1/2 text-gray-400 text-lg'
-                    }`}>
-                      Username or Email
-                    </label>
-                    {errors.email && <p className="text-red-500 text-sm mt-1">{Array.isArray(errors.email) ? errors.email[0] : errors.email}</p>}
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type={showPasswordFields['signin-password'] ? 'text' : 'password'}
-                      className={`w-full h-14 bg-gray-50/80 border-2 rounded-2xl px-6 text-gray-900 text-lg focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-300 shadow-sm pr-12 ${errors.password ? 'border-red-300 bg-red-50' : 'border-transparent'
-                        }`}
-                      required
-                      autoComplete="new-password"
-                      onFocus={() => handleFocus('signin-password')}
-                      onBlur={handleBlur}
-                      onChange={(e) => handleInputChange('signin-password', e.target.value)}
-                      placeholder=""
-                    />
-
-                    <button
-                      type="button"
-                      aria-label={showPasswordFields['signin-password'] ? 'Hide password' : 'Show password'}
-                      onClick={() => toggleShowPassword('signin-password')}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1"
-                    >
-                      {showPasswordFields['signin-password'] ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-
-                    <label className={`absolute left-6 transition-all duration-300 pointer-events-none ${
-                      focusedField === 'signin-password' || (formData && formData['signin-password'])
-                        ? 'top-0 text-sm text-gray-500 font-medium'
-                        : 'top-1/2 -translate-y-1/2 text-gray-400 text-lg'
-                    }`}>
-                      Password
-                    </label>
-                    {errors.password && <p className="text-red-500 text-sm mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>}
-                  </div>
-
-
-                  <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setForgotModalMode('forgot-password'); // ensure correct mode
-                        setIsForgotModalOpen(true);
-                      }}
-                      className="text-sm text-[#3a599c] hover:text-blue-800 font-medium hover:underline"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-14 bg-gray-900 text-white rounded-2xl font-bold text-lg hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Signing In...' : 'Sign In'}
-                  </button>
-
-                  <div className="text-center">
-                    <p className="text-gray-600">
-                      Don't have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => setIsSignUpMode(true)}
-                        className="text-gray-900 font-bold hover:underline transition-colors"
-                      >
-                        Sign up
-                      </button>
-                    </p>
-                  </div>
-
-                  {/* Social Login Options */}
-                  <div className="relative my-8">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-4 bg-white text-gray-500 font-medium">Or continue with</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {/* Google Sign In Button (matches sign-in size) */}
-                    <button
-                      type="button"
-                      onClick={handleGoogleSignIn}
-                      aria-label="Sign in with Google"
-                      className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <GoogleOutlined className="w-4 h-4 mr-3" />
-                      Sign in with Google
-                    </button>
-
-
-
-
-
-
-
-
-                    {/* Phone Authentication Logic */}
-                    {!showMobileSignIn ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowMobileSignIn(true)}
-                        className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <MailOutlined className="w-4 h-4 mr-3 text-white" />
-                        Sign in with Mobile
-                      </button>
-                    ) : (
-                      <>
-                        {phoneAuthStep === 'phone' ? renderPhoneInput() : renderOtpInput()}
-                      </>
-                    )}
-                  </div>
-                </form>
-              </div>
-            </div>
-
-            {/* Sign Up Form */}
-            <div className={`absolute w-full h-full transition-opacity duration-300 ${isSignUpMode ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}>
-              <div className="h-full flex flex-col justify-center">
-                <div className="flex flex-col items-center justify-center mb-8">
-                  {/* <div className=" to-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <img
-                      src="/images/logo.jpg"
-                      alt="Hyrelancer Logo"
-                      className="w-14 h-14 object-contain"
-                    />
-                  </div> */}
-                  <h2 className="text-2xl font-semibold text-[#3a599c] mb-2">Get Started</h2>
-                  <p className="text-gray-600">Create your account to begin</p>
-                </div>
-
-                <form onSubmit={handleSignUpSubmit} className="space-y-4 max-w-sm mx-auto w-full">
-                  {[
-                    { field: 'name', label: 'Full Name', type: 'text' },
-                    { field: 'email', label: 'Email Address', type: 'email' },
-                    { field: 'mobile', label: 'Mobile Number', type: 'tel' },
-                    { field: 'password', label: 'Password', type: 'password' },
-                    { field: 'confirmPassword', label: 'Confirm Password', type: 'password' }
-                  ].map(({ field, label, type }) => {
-                    // Get validation state for each field
-                    const getValidationState = () => {
-                      const value = formData[field] || '';
-                      const hasValue = value.length > 0;
-                      
-                      switch (field) {
-                        case 'email':
-                          return { isValid: validateEmail(value), hasValue };
-                        case 'mobile':
-                          return { isValid: validatePhoneNumber(value), hasValue };
-                        case 'confirmPassword':
-                          return { 
-                            isValid: validateConfirmPassword(formData.password || '', value), 
-                            hasValue 
-                          };
-                        default:
-                          return { isValid: false, hasValue: false };
-                      }
-                    };
-
-                    const validationState = getValidationState();
-
-                    return (
-                      <div key={field}>
-                        <div className="relative">
-                          {(field === 'password' || field === 'confirmPassword') ? (
-                            <>
-                              <input
-                                type={showPasswordFields[field] ? 'text' : 'password'}
-                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 pr-12 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                                  }`}
-                                required
-                                autoComplete="new-password"
-                                onFocus={() => handleFocus(field)}
-                                onBlur={handleBlur}
-                                onKeyDown={(e) => handleKeyDown(e, field)}
-                                onChange={(e) => {
-                                  if (field === 'mobile') {
-                                    // Only allow digits and limit to 10 characters
-                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                    handleInputChange(field, value);
-                                  } else {
-                                    handleInputChange(field, e.target.value);
-                                  }
-                                }}
-                                value={formData[field] || ''}
-                                placeholder=""
-                              />
-
-                              <button
-                                type="button"
-                                aria-label={showPasswordFields[field] ? 'Hide password' : 'Show password'}
-                                onClick={() => toggleShowPassword(field)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
-                              >
-                                {showPasswordFields[field] ? <EyeOff size={16} /> : <Eye size={16} />}
-                              </button>
-
-                            </>
-                          ) : (
-                            <>
-                              <input
-                                type={type}
-                                maxLength={field === 'mobile' ? 10 : undefined}
-                                className={`w-full h-12 bg-gray-50 border-2 rounded-lg px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200 ${errors[field] ? 'border-red-300 bg-red-50' : 'border-transparent'
-                                  }`}
-                                required
-                                autoComplete="new-password"
-                                onFocus={() => handleFocus(field)}
-                                onBlur={handleBlur}
-                                onKeyDown={(e) => handleKeyDown(e, field)}
-                                onChange={(e) => {
-                                  if (field === 'mobile') {
-                                    // Only allow digits and limit to 10 characters
-                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                    handleInputChange(field, value);
-                                  } else {
-                                    handleInputChange(field, e.target.value);
-                                  }
-                                }}
-                                value={formData[field] || ''}
-                                placeholder=""
-                              />
-
-                              {/* Validation icon for email and mobile */}
-                              {(field === 'email' || field === 'mobile') && (
-                                <ValidationIcon 
-                                  isValid={validationState.isValid} 
-                                  hasValue={validationState.hasValue} 
-                                />
-                              )}
-                            </>
-                          )}
-
-                          {!(formData[field] && formData[field].length > 0) && (
-                            <label className={`absolute left-4 transition-all duration-200 pointer-events-none text-sm ${isFieldActive(field)
-                              ? 'top-1.5 text-xs text-gray-500'
-                              : 'top-1/2 -translate-y-1/2 text-gray-400'
-                              }`}>
-                              {label}
-                            </label>
-                          )}
-                        </div>
-
-                        {/* Conditionally render the checklist for the password field */}
-                        {field === 'password' && formData.password && (
-                          <div className="mt-2">
-                            <ValidationChecklist validation={passwordValidation} />
-                          </div>
-                        )}
-                        {/* Text validation for confirm password */}
-                        {field === 'confirmPassword' && (
-                          <TextValidation 
-                            isValid={validationState.isValid} 
-                            hasValue={validationState.hasValue}
-                            field={field}
-                          />
-                        )}
-                        {/* Conditionally render the confirm password error */}
-                        {field === 'confirmPassword' && errors.confirmPassword && (
-                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.confirmPassword) ? errors.confirmPassword[0] : errors.confirmPassword}</p>
-                        )}
-                        {/* Conditionally render the password error */}
-                        {field === 'password' && errors.password && (
-                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors.password) ? errors.password[0] : errors.password}</p>
-                        )}
-                        {/* Render other field errors */}
-                        {field !== 'password' && field !== 'confirmPassword' && errors[field] && (
-                          <p className="text-red-500 text-xs mt-1">{Array.isArray(errors[field]) ? errors[field][0] : errors[field]}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-12 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
-                  </button>
-
-                  {/* Social Signup Options */}
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-4 bg-white text-gray-500 font-medium">Or sign up with</span>
-                    </div>
-                  </div>
-
-                  {/* Google Sign Up Button */}
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignUp}
-                    aria-label="Sign up with Google"
-                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <GoogleOutlined className="w-4 h-4 mr-3" />
-                    Sign up with Google
-                  </button>
-
-                  {/* Sign up with Mobile -> open shared modal in signup mode */}
-                  {/* <button
-                    type="button"
-                    onClick={() => {
-                      setForgotModalMode('signup');
-                      setIsForgotModalOpen(true);
-                    }}
-                    className="flex items-center justify-center h-12 sm:h-14 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm mt-4"
-                  >
-                    <MailOutlined className="w-4 h-4 mr-3 text-gray-500" />
-                    Sign up with Mobile
-                  </button> */}
-
-
-                  <p className="text-center text-gray-600 text-sm mt-3">
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => setIsSignUpMode(false)}
-                      className="text-gray-900 font-semibold hover:underline"
-                    >
-                      Sign in
-                    </button>
-                  </p>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          {/* Carousel Section */}
-          <div
-            className={`relative h-full w-[55%] backdrop-blur-sm border border-white/20 rounded-3xl shadow-xl overflow-hidden flex flex-col justify-between p-8 transition-all duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] ${isSignUpMode ? 'translate-x-[-81.8%]' : ''
-              }`}
-          >
-            <Image
-              src="/images/login2-bg.jpg"
-              alt="Background"
-              fill
-              style={{ objectFit: 'cover', objectPosition: 'center' }}
-              priority
-              quality={80}
-              className="z-0"
-            />
-            {/* Modern Image Slider with Gradient Overlay */}
-            <div className="h-[400px] rounded-2xl overflow-hidden relative group">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent z-10" />
-              {slides.map((slide, index) => (
-                <img
-                  key={index}
-                  src={slide.image}
-                  alt={`Slide ${index + 1}`}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${currentSlide === index ? 'opacity-100' : 'opacity-0'
-                    }`}
-                />
-              ))}
-
-              {/* Slide Navigation Arrows */}
-              <button
-                onClick={() => setCurrentSlide(prev => (prev === 0 ? slides.length - 1 : prev - 1))}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-md hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-              >
-                <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setCurrentSlide(prev => (prev === slides.length - 1 ? 0 : prev + 1))}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-md hover:bg-white transition-all opacity-0 group-hover:opacity-100"
-              >
-                <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modern Content Area */}
-            <div className="text-center space-y-6 px-4">
-              <div className="h-10 overflow-hidden relative">
-                <div
-                  className="transition-transform duration-700 ease-[cubic-bezier(0.33,1,0.68,1)]"
-                  style={{ transform: `translateY(-${currentSlide * 2.5}rem)` }}
-                >
-                  {slides.map((slide, index) => (
-                    <h2
-                      key={index}
-                      className="text-3xl font-bold text-gray-900 mb-2"
-                    >
-                      {slide.title}
-                    </h2>
-                  ))}
-                </div>
-              </div>
-
-              <div className="h-16 overflow-hidden relative">
-                <div
-                  className="transition-transform duration-700 ease-[cubic-bezier(0.33,1,0.68,1)]"
-                  style={{ transform: `translateY(-${currentSlide * 4}rem)` }}
-                >
-                  {captions.map((caption, index) => (
-                    <p key={index} className="text-gray-600 mb-4 leading-relaxed">
-                      {caption}
-                    </p>
-                  ))}
-                </div>
-              </div>
-
-              {/* Modern Dot Indicators */}
-              <div className="flex justify-center gap-2">
-                {slides.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${currentSlide === index
-                      ? 'w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg'
-                      : 'bg-gray-300/60 hover:bg-gray-400/60'
-                      }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      < ErrorModal
+      <ErrorModal
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         error={errorModalContent}
@@ -1819,19 +1206,41 @@ const AuthForm = () => {
         onResendEmail={handleResendVerificationEmail}
       />
 
-      {/* Forgot Password / Signup Modal (mode controlled by forgotModalMode) */}
+      {/* Forgot Password Modal */}
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}
         onClose={() => {
           setIsForgotModalOpen(false);
-          // reset mode to default so next open is predictable
           setForgotModalMode('forgot-password');
         }}
         mode={forgotModalMode}
-        // only prefill when modal is in signup mode (avoid accidental prefill for forgot-password)
         initialMobile={forgotModalMode === 'signup' ? (formData.mobile || '') : ''}
       />
-    </main>
+
+      {/* Mobile Phone OTP Modal */}
+      {showMobileSignIn && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Phone Authentication</h3>
+              <button
+                onClick={() => {
+                  setShowMobileSignIn(false);
+                  setPhoneAuthStep('phone');
+                  setOtp(['', '', '', '', '', '']);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mb-6">
+              {phoneAuthStep === 'phone' ? renderPhoneInput() : renderOtpInput()}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

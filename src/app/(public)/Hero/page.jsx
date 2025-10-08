@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useCountAnimationOnView } from '../../../hooks/useCountAnimation';
+import { capitalizeFirst } from '../../../lib/utils';
 
 /**
  * HeroSection Component
@@ -14,6 +15,69 @@ import { useCountAnimationOnView } from '../../../hooks/useCountAnimation';
 const HeroSection = () => {
   const router = useRouter();
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const searchInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
+  const debounceTimeoutRef = useRef(null);
+
+  // API service function for fetching suggestions
+  const fetchSuggestions = useCallback(async (query) => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://hyre.hyrelancer.com/api/getSuggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sugg: query.trim()
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.suggestions || []);
+        setShowSuggestions(data.suggestions && data.suggestions.length > 0);
+        setSelectedSuggestionIndex(-1); // Reset selection when new suggestions load
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Debounced search input handler
+  const handleInputChange = useCallback((e) => {
+    const value = e.target.value;
+    setSearchKeyword(value);
+
+    // Clear previous timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced API call
+    debounceTimeoutRef.current = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300); // 300ms debounce delay
+  }, [fetchSuggestions]);
 
   // Memoized search handler for better performance
   const handleSearch = useCallback(() => {
@@ -24,13 +88,42 @@ const HeroSection = () => {
     router.push(`/UsersList?${queryParams.toString()}`);
   }, [searchKeyword, router]);
 
-  // Handle Enter key press
+  // Handle suggestion selection - only fill input, don't search
+  const handleSuggestionSelect = useCallback((suggestion) => {
+    setSearchKeyword(suggestion);
+    setShowSuggestions(false);
+    // Focus back to input after selection
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, []);
+
+  // Handle Enter key press and arrow navigation
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSearch();
+      if (showSuggestions && selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
+        // If a suggestion is selected, use it
+        handleSuggestionSelect(suggestions[selectedSuggestionIndex]);
+      } else {
+        // Otherwise, perform search with current input
+        handleSearch();
+      }
+    } else if (e.key === 'ArrowDown' && showSuggestions) {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev < suggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp' && showSuggestions) {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev > 0 ? prev - 1 : suggestions.length - 1
+      );
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
     }
-  }, [handleSearch]);
+  }, [handleSearch, handleSuggestionSelect, showSuggestions, selectedSuggestionIndex, suggestions]);
 
   // Handle form submission
   const handleSubmit = useCallback((e) => {
@@ -41,8 +134,37 @@ const HeroSection = () => {
   // Handle popular search selection
   const handlePopularSearch = useCallback((label) => {
     setSearchKeyword(label);
+    setShowSuggestions(false);
     handleSearch();
   }, [handleSearch]);
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Animated Statistics Component
   const AnimatedStat = ({ stat }) => {
@@ -109,21 +231,27 @@ const HeroSection = () => {
             </header>
 
             {/* Search Section */}
-            <div className="w-full max-w-5xl mx-auto">
+            <div className="w-full max-w-5xl mx-auto relative z-10">
               {/* Search Form */}
               <form
-                className="bg-white rounded-full h-14 sm:h-16 md:h-18 lg:h-20 shadow-xl mb-6 sm:mb-7 md:mb-8"
+                className="bg-white rounded-full h-14 sm:h-16 md:h-18 lg:h-20 shadow-xl mb-6 sm:mb-7 md:mb-8 relative"
                 onSubmit={handleSubmit}
               >
                 <div className="flex items-center h-full pl-4 sm:pl-5 md:pl-6 pr-3 sm:pr-4 gap-3 sm:gap-4">
                   <input
+                    ref={searchInputRef}
                     id="service-search"
                     type="search"
                     placeholder="What Service are you looking for?"
                     className="flex-1 text-gray-600 text-sm sm:text-base md:text-lg font-medium outline-none bg-transparent placeholder-gray-400"
                     value={searchKeyword}
-                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
+                    onFocus={() => {
+                      if (suggestions.length > 0 && searchKeyword.trim()) {
+                        setShowSuggestions(true);
+                      }
+                    }}
                     aria-label="Search for freelance services"
                   />
                   <button
@@ -134,7 +262,67 @@ const HeroSection = () => {
                     <Search className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </button>
                 </div>
+                {/* Suggestions Dropdown */}
+                {showSuggestions && (
+                  <div
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-[99999] max-h-60 overflow-y-auto custom-scrollbar"
+                    style={{ zIndex: 99999, maxHeight: '15rem', overflowY: 'auto' }}
+                  >
+                    {isLoading ? (
+                      <div className="px-4 py-3 text-center text-gray-500">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#3a599c]"></div>
+                          <span className="ml-2 text-sm">Searching...</span>
+                        </div>
+                      </div>
+                    ) : suggestions.length > 0 ? (
+                      <div className="py-1">
+                        {suggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className={`w-full px-4 py-2.5 text-left transition-colors duration-150 flex items-center gap-3 text-sm sm:text-base ${
+                              index === selectedSuggestionIndex
+                                ? 'bg-[#3a599c] text-white'
+                                : 'text-gray-700 hover:bg-gray-50 hover:text-[#3a599c]'
+                            }`}
+                            onClick={() => handleSuggestionSelect(suggestion)}
+                            onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                          >
+                            <Search className={`w-4 h-4 flex-shrink-0 ${
+                              index === selectedSuggestionIndex ? 'text-white' : 'text-gray-400'
+                            }`} />
+                             <span className="font-medium truncate">{capitalizeFirst(suggestion)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                        No suggestions found
+                      </div>
+                    )}
+                  </div>
+                )}
               </form>
+              {/* Custom scrollbar styles for suggestions dropdown */}
+              <style jsx>{`
+                .custom-scrollbar {
+                  scrollbar-width: thin;
+                  scrollbar-color: #3a599c #f4f4f4;
+                }
+                .custom-scrollbar::-webkit-scrollbar {
+                  width: 8px;
+                  background: #f4f4f4;
+                  border-radius: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: #3a599c;
+                  border-radius: 8px;
+                }
+              `}</style>
+
+              
 
               {/* Popular Searches */}
               <div className="text-center">
