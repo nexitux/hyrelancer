@@ -1,74 +1,47 @@
 'use client';
 import { useEffect } from 'react';
-import { mergeMetadata } from '@/lib/meta-defaults';
+import { getPageSEO } from '@/lib/page-seo-metadata';
+import { metaDefaults } from '@/lib/meta-defaults';
 
 /**
  * SEO Component for managing metadata
- * 
- * Expected meta shape:
- * {
- *   title: string,                    // Page title (will be combined with siteTitle)
- *   description: string,              // Meta description
- *   canonical: string,                // Canonical URL (absolute or relative)
- *   og: {                            // Open Graph tags
- *     title: string,
- *     description: string,
- *     image: string,
- *     type: string,
- *     url: string
- *   },
- *   twitter: {                       // Twitter Card tags
- *     card: string,
- *     title: string,
- *     description: string,
- *     image: string
- *   },
- *   scripts: string[],               // External script URLs (must be in allowlist)
- *   additionalMeta: object           // Additional meta tags
- * }
+ * Automatically gets page-specific SEO data based on pathname
  */
 
-export default function SEO({ meta = {}, pathname = '' }) {
-  const mergedMeta = mergeMetadata(meta);
+export default function SEO({ pathname = '' }) {
+  const pageMeta = getPageSEO(pathname);
   
   useEffect(() => {
     // Update document title
-    const title = meta.title 
-      ? `${meta.title} - ${mergedMeta.siteTitle}`
-      : mergedMeta.siteTitle;
-    
-    document.title = title;
+    document.title = pageMeta.title;
     
     // Update or create meta tags
-    updateMetaTag('name', 'description', mergedMeta.description);
-    updateMetaTag('name', 'keywords', mergedMeta.additionalMeta.keywords);
-    updateMetaTag('name', 'author', mergedMeta.additionalMeta.author);
-    updateMetaTag('name', 'robots', mergedMeta.additionalMeta.robots);
-    updateMetaTag('name', 'theme-color', mergedMeta.additionalMeta['theme-color']);
+    updateMetaTag('name', 'description', pageMeta.description);
+    updateMetaTag('name', 'keywords', pageMeta.keywords);
+    updateMetaTag('name', 'author', metaDefaults.additionalMeta.author);
+    updateMetaTag('name', 'robots', metaDefaults.additionalMeta.robots);
+    updateMetaTag('name', 'theme-color', metaDefaults.additionalMeta['theme-color']);
     
     // Open Graph tags
-    updateMetaTag('property', 'og:title', meta.title || mergedMeta.siteTitle);
-    updateMetaTag('property', 'og:description', mergedMeta.description);
-    updateMetaTag('property', 'og:image', mergedMeta.og.image);
-    updateMetaTag('property', 'og:type', mergedMeta.og.type);
-    updateMetaTag('property', 'og:site_name', mergedMeta.og.siteName);
-    updateMetaTag('property', 'og:locale', mergedMeta.og.locale);
+    updateMetaTag('property', 'og:title', pageMeta.og.title);
+    updateMetaTag('property', 'og:description', pageMeta.og.description);
+    updateMetaTag('property', 'og:image', pageMeta.og.image);
+    updateMetaTag('property', 'og:type', pageMeta.og.type);
+    updateMetaTag('property', 'og:site_name', metaDefaults.og.siteName);
+    updateMetaTag('property', 'og:locale', metaDefaults.og.locale);
     
     // Twitter Card tags
-    updateMetaTag('name', 'twitter:card', mergedMeta.twitter.card);
-    updateMetaTag('name', 'twitter:title', meta.title || mergedMeta.siteTitle);
-    updateMetaTag('name', 'twitter:description', mergedMeta.description);
-    updateMetaTag('name', 'twitter:image', mergedMeta.og.image);
-    updateMetaTag('name', 'twitter:creator', mergedMeta.twitter.creator);
-    updateMetaTag('name', 'twitter:site', mergedMeta.twitter.site);
+    updateMetaTag('name', 'twitter:card', metaDefaults.twitter.card);
+    updateMetaTag('name', 'twitter:title', pageMeta.og.title);
+    updateMetaTag('name', 'twitter:description', pageMeta.og.description);
+    updateMetaTag('name', 'twitter:image', pageMeta.og.image);
+    updateMetaTag('name', 'twitter:creator', metaDefaults.twitter.creator);
+    updateMetaTag('name', 'twitter:site', metaDefaults.twitter.site);
     
     // Canonical URL
-    updateCanonicalLink(mergedMeta.canonical || `${mergedMeta.siteBaseUrl}${pathname}`);
+    updateCanonicalLink(`${metaDefaults.siteBaseUrl}${pathname}`);
     
-    // Handle external scripts
-    handleExternalScripts(mergedMeta.scripts || []);
-    
-  }, [meta, mergedMeta, pathname]);
+  }, [pageMeta, pathname]);
   
   return null; // This component doesn't render anything
 }
@@ -105,34 +78,3 @@ function updateCanonicalLink(href) {
   canonicalLink.setAttribute('href', href);
 }
 
-/**
- * Handle external scripts with security allowlist
- */
-function handleExternalScripts(scripts) {
-  const { allowedExternalScripts } = require('@/lib/meta-defaults').metaDefaults;
-  
-  scripts.forEach(scriptUrl => {
-    // Check if script is in allowlist
-    const isAllowed = allowedExternalScripts.some(allowedScript => 
-      scriptUrl.startsWith(allowedScript)
-    );
-    
-    if (!isAllowed) {
-      console.warn(`Script ${scriptUrl} is not in the allowed list and will not be loaded.`);
-      return;
-    }
-    
-    // Check if script is already loaded
-    const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
-    if (existingScript) return;
-    
-    // Create and load script
-    const script = document.createElement('script');
-    script.src = scriptUrl;
-    script.async = true;
-    script.defer = true;
-    script.setAttribute('data-noscript', 'true');
-    
-    document.head.appendChild(script);
-  });
-}

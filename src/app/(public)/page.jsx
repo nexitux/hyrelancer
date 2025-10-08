@@ -6,14 +6,14 @@ import FAQPage from './FAQPage/page';
 import VideSection from './VideSection/page';
 import ServicesHome from './Service/page';
 import Category from './Category/page';
-import { usePageMetadata } from '@/hooks/usePageMetadata';
+import { usePageSEO } from '@/components/SEO/withSEO';
 
 export default function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // SEO metadata automatically applied based on pathname
-  const seoComponent = usePageMetadata();
+  const seoComponent = usePageSEO();
 
   useEffect(() => {
     // Check for Google signup parameters and redirect to complete-signup

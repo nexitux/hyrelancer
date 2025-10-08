@@ -4,16 +4,18 @@ import { Provider } from 'react-redux';
 import { store } from '@/redux/store';
 import { ToastContainer } from 'react-toastify';
 import AuthWrapper from '@/components/AuthWrapper/page';
-import SEO from '@/components/SEO/SEO';
+import { useSEO } from '@/hooks/useSEO';
 import 'react-toastify/dist/ReactToastify.css';
 
 export default function RootLayout({ children }) {
+  const seoComponent = useSEO();
+  
   return (
     <html lang="en">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <SEO />
+        {seoComponent}
       </head>
       <body>
         <Provider store={store}>

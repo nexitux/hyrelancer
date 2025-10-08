@@ -3,12 +3,11 @@ import { useSEO } from '@/hooks/useSEO';
 /**
  * Higher-order component for adding SEO metadata to pages
  * @param {React.Component} WrappedComponent - The component to wrap
- * @param {Object} defaultMeta - Default metadata for this page
  * @returns {React.Component} Wrapped component with SEO
  */
-export function withSEO(WrappedComponent, defaultMeta = {}) {
+export function withSEO(WrappedComponent) {
   return function SEOEnhancedComponent(props) {
-    const seoComponent = useSEO(defaultMeta);
+    const seoComponent = useSEO();
     
     return (
       <>
@@ -20,10 +19,9 @@ export function withSEO(WrappedComponent, defaultMeta = {}) {
 }
 
 /**
- * Hook for pages that need dynamic metadata
- * @param {Object} meta - Page-specific metadata
+ * Hook for pages that need SEO metadata
  * @returns {JSX.Element} SEO component
  */
-export function usePageSEO(meta = {}) {
-  return useSEO(meta);
+export function usePageSEO() {
+  return useSEO();
 }
