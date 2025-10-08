@@ -49,6 +49,19 @@ export const fetchNotifications = createAsyncThunk(
   }
 );
 
+// Async thunk for marking notification as read
+export const markNotificationAsRead = createAsyncThunk(
+  'admin/markNotificationAsRead',
+  async (notificationId, { rejectWithValue }) => {
+    try {
+      const response = await adminNotificationsApi.markAsRead(notificationId);
+      return { notificationId, response };
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to mark notification as read');
+    }
+  }
+);
+
 const loadAdminState = () => {
   if (typeof window === 'undefined') return { 
     user: null, 
@@ -144,6 +157,16 @@ const adminSlice = createSlice({
       .addCase(fetchNotifications.fulfilled, (state, action) => {
         state.notifications = action.payload.notifications || [];
         state.unreadCount = action.payload.notifications?.filter(n => !n.is_read).length || 0;
+      })
+      .addCase(markNotificationAsRead.fulfilled, (state, action) => {
+        const { notificationId, response } = action.payload;
+        // Update the notification in the state
+        const notificationIndex = state.notifications.findIndex(n => n.id === notificationId);
+        if (notificationIndex !== -1) {
+          state.notifications[notificationIndex].is_read = true;
+          // Recalculate unread count
+          state.unreadCount = state.notifications.filter(n => !n.is_read).length;
+        }
       });
   }
 });

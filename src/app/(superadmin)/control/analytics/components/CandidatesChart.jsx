@@ -108,10 +108,6 @@ const CandidatesChart = ({ dashboardData }) => {
             <div className="text-sm text-gray-500 mb-1">Freelancers</div>
             <div className="flex items-center justify-center space-x-2">
               <span className="text-xl md:text-2xl font-semibold text-gray-900">{dashboardData?.FeCount || 0}</span>
-              <span className="flex items-center text-sm font-medium text-green-500">
-                <span className="mr-1">▲</span>
-                0.23%
-              </span>
             </div>
           </div>
 
@@ -120,10 +116,6 @@ const CandidatesChart = ({ dashboardData }) => {
             <div className="text-sm text-gray-500 mb-1">Customers</div>
             <div className="flex items-center justify-center space-x-2">
               <span className="text-xl md:text-2xl font-semibold text-gray-900">{dashboardData?.CuCount || 0}</span>
-              <span className="flex items-center text-sm font-medium text-red-500">
-                <span className="mr-1">▼</span>
-                0.11%
-              </span>
             </div>
           </div>
         </div>

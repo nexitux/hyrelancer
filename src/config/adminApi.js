@@ -180,6 +180,17 @@ export const adminNotificationsApi = {
       console.error('Error fetching notifications:', error);
       throw error;
     }
+  },
+
+  // Mark notification as read
+  markAsRead: async (notificationId) => {
+    try {
+      const response = await adminApi.post(`/AdminNotifications/read/${notificationId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
   }
 };
 

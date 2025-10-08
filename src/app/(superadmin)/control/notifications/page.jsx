@@ -7,7 +7,7 @@ import {
   MdChevronLeft,
   MdChevronRight
 } from 'react-icons/md';
-import { fetchNotifications } from '../../../../redux/slices/adminSlice';
+import { fetchNotifications, markNotificationAsRead } from '../../../../redux/slices/adminSlice';
 import { useRouter } from 'next/navigation';
 
 const NotificationsPage = () => {
@@ -52,12 +52,31 @@ const NotificationsPage = () => {
     }
   };
 
-  const handleNotificationClick = (notification) => {
-    // Navigate to the link if available
-    if (notification.data?.link) {
-      const url = new URL(notification.data.link);
-      const path = url.pathname.replace('/api/admin', '/control');
-      router.push(path);
+  const handleNotificationClick = async (notification) => {
+    try {
+      // Mark notification as read if it's not already read
+      if (!notification.is_read) {
+        await dispatch(markNotificationAsRead(notification.id));
+      }
+      
+      // Parse the notification data to get the link
+      const data = parseNotificationData(notification.data);
+      
+      // Navigate to the link if available
+      if (data?.link) {
+        const url = new URL(data.link);
+        const path = url.pathname.replace('/api/admin', '/control');
+        router.push(path);
+      }
+    } catch (error) {
+      console.error('Error handling notification click:', error);
+      // Still navigate even if marking as read fails
+      const data = parseNotificationData(notification.data);
+      if (data?.link) {
+        const url = new URL(data.link);
+        const path = url.pathname.replace('/api/admin', '/control');
+        router.push(path);
+      }
     }
   };
 
