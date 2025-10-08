@@ -10,6 +10,7 @@ import {
 } from 'react-icons/md';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
+import adminApi from '@/config/adminApi';
 // import AdminMessageViewer from '../components/AdminMessageViewer';
 
 export default function AdminMessagesPage() {
@@ -65,18 +66,8 @@ export default function AdminMessagesPage() {
 
       // This would need to be a new admin API endpoint that returns all users with their recent message activity
       // For now, we'll simulate this with the existing inbox API
-      const response = await fetch('https://hyre.hyrelancer.com/api/admin/UserChatInbox/all', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const response = await adminApi.get('/UserChatInbox/all');
+      const data = response.data;
       console.log('Admin All Users API Response:', data);
       
       if (data.status && data.data && Array.isArray(data.data)) {

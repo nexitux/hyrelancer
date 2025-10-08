@@ -161,7 +161,7 @@ export default function Sidebar() {
     },
     { 
       id: 'searchKeywords', 
-      label: 'Search Keywords', 
+      label: 'Search Words', 
       icon: MdMiscellaneousServices, 
       href: '/search-keywords',
       subLinks: [
@@ -299,7 +299,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom Section */}
-        {!isCollapsed && (
+        {/* {!isCollapsed && (
           <div className="absolute right-0 bottom-0 left-0 p-4 border-t border-slate-700 dark:border-gray-300">
             <div className="p-3 bg-gradient-to-r rounded-xl border from-blue-500/10 to-blue-600/10 border-blue-500/20 dark:from-gray-200 dark:to-gray-300 dark:border-gray-400">
               <h4 className="mb-1 text-sm font-medium text-white dark:text-gray-900">Need Help?</h4>
@@ -312,7 +312,7 @@ export default function Sidebar() {
               </button>
             </div>
           </div>
-        )}
+        )} */}
       </aside>
     </div>
   );

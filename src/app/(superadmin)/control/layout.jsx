@@ -7,10 +7,14 @@ import Sidebar from "../components/Sidebar/page";
 import Header from "../components/Header/page";
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
+import { useAdminInactivityLogout } from '@/hooks/useAdminInactivityLogout';
 
 export default function SuperAdminLayout({ children }) {
   const router = useRouter();
   const isAuthenticated = useSelector((s) => s.admin?.isAuthenticated);
+
+  // Initialize admin inactivity logout (30 minutes timeout)
+  useAdminInactivityLogout(30, isAuthenticated);
 
   useEffect(() => {
     // Only redirect when we *know* the user is unauthenticated.

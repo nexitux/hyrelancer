@@ -13,6 +13,8 @@ const ValidatedAntdInput = ({
   onChange, 
   value, 
   showCharacterIndicator = true,
+  showCount = false,
+  maxLength,
   ...props 
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -34,6 +36,8 @@ const ValidatedAntdInput = ({
       sanitizedValue = sanitizeInput(inputValue, validationConfigs.description);
     } else if (validationType === 'message') {
       sanitizedValue = sanitizeInput(inputValue, validationConfigs.message);
+    } else if (validationType === 'professionalHeadline') {
+      sanitizedValue = sanitizeInput(inputValue, validationConfigs.professionalHeadline);
     } else {
       sanitizedValue = sanitizeInput(inputValue, validationConfig);
     }
@@ -71,7 +75,7 @@ const ValidatedAntdInput = ({
       }
     }
     // For other text inputs, check against forbidden characters
-    else if (['text', 'title', 'description', 'message', 'name'].includes(validationType)) {
+    else if (['text', 'title', 'description', 'message', 'name', 'professionalHeadline'].includes(validationType)) {
       const forbiddenChars = /[<>{}[\]\\|`~;$\^&]/;
       if (forbiddenChars.test(char)) {
         isRestricted = true;
@@ -100,6 +104,8 @@ const ValidatedAntdInput = ({
           value={value}
           onChange={handleChange}
           onKeyPress={handleKeyPress}
+          showCount={showCount}
+          maxLength={maxLength}
         />
       </RestrictedCharTooltip>
       

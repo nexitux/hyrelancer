@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Search, ArrowLeft, Eye } from 'lucide-react';
+import adminApi from '@/config/adminApi';
 
 export default function AdminMessageViewer({ userId, userName, userType, onClose }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -61,18 +62,8 @@ export default function AdminMessageViewer({ userId, userName, userType, onClose
             }
 
             console.log('Fetching inbox for userId:', userId);
-            const response = await fetch(`https://hyre.hyrelancer.com/api/admin/UserChatInbox/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
+            const response = await adminApi.get(`/UserChatInbox/${userId}`);
+            const data = response.data;
             console.log('Admin Inbox API Response:', data);
             
             if (data.status && data.data && Array.isArray(data.data)) {
@@ -140,18 +131,8 @@ export default function AdminMessageViewer({ userId, userName, userType, onClose
                 return;
             }
 
-            const response = await fetch(`https://hyre.hyrelancer.com/api/admin/UserChatConversation/${otherUserId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
+            const response = await adminApi.get(`/UserChatConversation/${otherUserId}`);
+            const data = response.data;
             console.log('Admin Conversation API Response:', data);
             
             if (data.status && data.data && Array.isArray(data.data)) {

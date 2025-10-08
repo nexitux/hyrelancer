@@ -37,40 +37,42 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
         const response = await termsAPI.getTermsAndConditions();
         
         if (response.status === 'success' && response.data) {
-          // Sort by tc_number
-          const sortedData = response.data.sort((a, b) => a.tc_number - b.tc_number);
+          const cmsData = response.data;
           
-          // Find main description (tc_number = 0)
-          const mainDesc = sortedData.find(item => item.tc_number === 0);
-          if (mainDesc) {
-            setMainDescription(mainDesc.tc_content);
+          // Set main description from cms_dec
+          if (cmsData.cms_dec) {
+            // Remove the extra quotes and escape characters
+            let cleanDescription = cmsData.cms_dec;
+            if (cleanDescription.startsWith('"') && cleanDescription.endsWith('"')) {
+              cleanDescription = cleanDescription.slice(1, -1);
+            }
+            // Unescape the content
+            cleanDescription = cleanDescription.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+            setMainDescription(cleanDescription);
           }
           
-          // Filter out main description and set terms data
-          const termsSections = sortedData.filter(item => item.tc_number !== 0);
-          setTermsData(termsSections);
+          // Set terms data from contents array
+          if (cmsData.contents && Array.isArray(cmsData.contents)) {
+            // Sort by cms_c_number
+            const sortedContents = cmsData.contents.sort((a, b) => a.cms_c_number - b.cms_c_number);
+            setTermsData(sortedContents);
+            
+            // Initialize expanded sections - first section expanded by default
+            const initialExpanded = {};
+            sortedContents.forEach((_, index) => {
+              initialExpanded[`section${index}`] = index === 0;
+            });
+            setExpandedSections(initialExpanded);
+          }
           
-          // Find the latest updated date
-          const latestUpdate = sortedData.reduce((latest, item) => {
-            const itemDate = new Date(item.updated_at);
-            const latestDate = new Date(latest);
-            return itemDate > latestDate ? item.updated_at : latest;
-          }, sortedData[0]?.updated_at || '');
-          
-          if (latestUpdate) {
-            const date = new Date(latestUpdate);
+          // Set last updated date from cms_date
+          if (cmsData.cms_date) {
+            const date = new Date(cmsData.cms_date);
             setLastUpdated(date.toLocaleDateString('en-US', { 
               year: 'numeric', 
               month: 'long' 
             }));
           }
-          
-          // Initialize expanded sections - first section expanded by default
-          const initialExpanded = {};
-          termsSections.forEach((_, index) => {
-            initialExpanded[`section${index}`] = index === 0;
-          });
-          setExpandedSections(initialExpanded);
         }
       } catch (error) {
         console.error('Error fetching terms data:', error);
@@ -83,18 +85,38 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
     fetchTermsData();
   }, []);
 
-  // Utility function to convert URLs to clickable links
+  // Utility function to convert URLs to clickable links and fix a tags
   const convertUrlsToLinks = (text) => {
     if (!text) return text;
     
-    // Regular expression to match URLs
-    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-    
-    return text.replace(urlRegex, (url) => {
-      // Add https:// if it starts with www.
-      const href = url.startsWith('www.') ? `https://${url}` : url;
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${url}</a>`;
+    // First, fix <a> tags that don't have href attributes
+    let processedText = text.replace(/<a>([^<]+)<\/a>/g, (match, linkText) => {
+      // If the text looks like a URL, add the href
+      if (linkText.includes('www.') || linkText.includes('http')) {
+        const href = linkText.startsWith('www.') ? `https://${linkText}` : linkText;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${linkText}</a>`;
+      }
+      // If it's just text, make it a link to the main site
+      return `<a href="https://www.hyrelancer.com" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${linkText}</a>`;
     });
+    
+    // Then handle regular URL patterns, but avoid processing URLs that are already inside <a> tags
+    // Split by <a> tags to avoid double processing
+    const parts = processedText.split(/(<a[^>]*>.*?<\/a>)/g);
+    
+    return parts.map(part => {
+      // If this part is already an <a> tag, return it as is
+      if (part.startsWith('<a') && part.endsWith('</a>')) {
+        return part;
+      }
+      
+      // Otherwise, process URLs in this part
+      const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+      return part.replace(urlRegex, (url) => {
+        const href = url.startsWith('www.') ? `https://${url}` : url;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${url}</a>`;
+      });
+    }).join('');
   };
 
   const toggleSection = (section) => {
@@ -243,7 +265,7 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
                 const isExpanded = expandedSections[sectionKey] || false;
                 
                 return (
-                  <div key={term.tc_id} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div key={term.cms_c_id} className="border border-gray-200 rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleSection(sectionKey)}
                       className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -255,7 +277,7 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
                           {index >= 2 && <FileTextOutlined className="text-lg" />}
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {term.tc_number}. {term.tc_heading || 'Terms Section'}
+                          {term.cms_c_number}. {term.cms_c_title || 'Terms Section'}
                         </h3>
                       </div>
                       {isExpanded ? (
@@ -268,7 +290,7 @@ const TermsAndConditions = ({ onNext, onBack, isRegistrationFlow = false, isRegi
                       <div className="p-4 pt-2 bg-white">
                         <div 
                           className="text-gray-600 leading-relaxed terms-content"
-                          dangerouslySetInnerHTML={{ __html: convertUrlsToLinks(term.tc_content) }}
+                          dangerouslySetInnerHTML={{ __html: convertUrlsToLinks(term.cms_c_content) }}
                         />
                       </div>
                     )}

@@ -517,7 +517,7 @@ export default function MessageBox() {
             </div>
         
             {/* Messages Container */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-2 sm:mx-4 lg:mx-6" >
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200 mx-2 sm:mx-4 lg:mx-6" style={{ height: 'calc(100vh - 180px)' }}>
                 <div className="flex h-full flex-col lg:flex-row">
                     {/* Users Sidebar */}
                     <div className={`${selectedUser ? 'hidden lg:flex' : 'flex'} w-full lg:w-1/3 xl:w-1/4 bg-slate-50 border-r border-slate-200 flex-col`}>

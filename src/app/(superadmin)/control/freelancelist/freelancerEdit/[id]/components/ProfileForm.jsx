@@ -26,20 +26,10 @@ import {
   User,
 } from "lucide-react";
 import { Select } from "antd";
+import adminApi from '@/config/adminApi';
+import api from '@/config/api';
 
 const { Option } = Select;
-
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("adminToken");
-    }
-    return null;
-  },
-  clearToken: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("adminToken");
-  },
-};
 
 export default function ProfileForm() {
   const params = useParams();
@@ -115,13 +105,10 @@ export default function ProfileForm() {
   useEffect(() => {
     const fetchLanguages = async () => {
       try {
-        const res = await fetch("https://hyre.hyrelancer.com/api/getLanglist", {
-          method: "GET",
-          headers: { "Accept": "application/json" },
-        });
+        const response = await api.get('/getLanglist');
         
-        if (res.ok) {
-          const data = await res.json();
+        if (response.status === 200) {
+          const data = response.data;
           setLanguages(data.la_list || []);
         }
       } catch (err) {
@@ -153,27 +140,17 @@ export default function ProfileForm() {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://hyre.hyrelancer.com/api/admin/getFeUProfile/${userIdBase64}`;
-        const token = TokenManager.getToken();
+        const response = await adminApi.get(`/getFeUProfile/${userIdBase64}`);
+        const data = response.data;
 
-        const res = await fetch(url, {
-          method: "GET",
-          headers: { "Accept": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        });
-
-        const text = await res.text();
-        let data;
-        try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
-
-        if (!res.ok) {
-          console.warn("Profile fetch failed", res.status, data);
-          if (res.status === 401) {
-            TokenManager.clearToken();
+        if (response.status !== 200) {
+          console.warn("Profile fetch failed", response.status, data);
+          if (response.status === 401) {
             setError("Unauthorized. Redirecting to login...");
             router.push("/admin/login");
             return;
           }
-          throw new Error(`HTTP ${res.status}`);
+          throw new Error(`HTTP ${response.status}`);
         }
 
         if (!cancelled) {
@@ -255,31 +232,19 @@ export default function ProfileForm() {
         formDataToSend.append(`language[${index}]`, lang);
       });
 
-      const token = TokenManager.getToken();
-      const res = await fetch("https://hyre.hyrelancer.com/api/admin/storeFeUProfile", {
-        method: "POST",
+      const response = await adminApi.post('/storeFeUProfile', formDataToSend, {
         headers: {
-          "Accept": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Content-Type': 'multipart/form-data',
         },
-        body: formDataToSend,
       });
 
-      const responseText = await res.text();
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch (e) {
-        console.error("Failed to parse response:", responseText);
-        data = responseText;
-      }
+      const data = response.data;
 
-      console.log("API Response Status:", res.status);
+      console.log("API Response Status:", response.status);
       console.log("API Response Data:", data);
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          TokenManager.clearToken();
+      if (response.status !== 200) {
+        if (response.status === 401) {
           setError("Unauthorized. Redirecting to login...");
           router.push("/admin/login");
           return;
@@ -291,7 +256,7 @@ export default function ProfileForm() {
           throw new Error(errorMessages.join(", "));
         }
         
-        throw new Error(data?.message || `HTTP ${res.status}: ${responseText}`);
+        throw new Error(data?.message || `HTTP ${response.status}`);
       }
 
       // Success - but check if profile was actually saved

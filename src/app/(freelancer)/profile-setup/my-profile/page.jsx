@@ -125,8 +125,8 @@ export default function ProfileTab({
 
         const mappedProfileData = {
           displayName: profile.fp_display_name || "",
-          tagLine: profile.fp_headline || "",
-          aboutMe: profile.fp_desc || "",
+          tagLine: (profile.fp_headline && profile.fp_headline !== "0") ? profile.fp_headline : "",
+          aboutMe: (profile.fp_desc && profile.fp_desc !== "0") ? profile.fp_desc : "",
           languages: profile.fp_lang
             ? profile.fp_lang
                 .split(",")
@@ -730,14 +730,17 @@ export default function ProfileTab({
 
                 <Form.Item
                   name="tagLine"
-                  label="Professional Headline (Optional)"
+                  label="Professional Headline (Optional - Max 150 characters)"
+                  extra="Briefly describe your professional expertise and skills"
                 >
                   <ValidatedAntdInput
                     prefix={<TagOutlined />}
                     className="h-10 rounded-lg"
                     placeholder="e.g., Senior Software Engineer | React Specialist"
-                    validationType="title"
-                    validationConfig={validationConfigs.title}
+                    validationType="professionalHeadline"
+                    validationConfig={validationConfigs.professionalHeadline}
+                    maxLength={150}
+                    showCount
                   />
                 </Form.Item>
 

@@ -26,22 +26,11 @@ import {
   BookOutlined,
   CarryOutOutlined,
 } from "@ant-design/icons";
+import adminApi from '@/config/adminApi';
 
 const { Option } = Select;
 const { Text, Title } = Typography;
 const { TextArea } = Input;
-
-const TokenManager = {
-  getToken: () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("adminToken");
-    }
-    return null;
-  },
-  clearToken: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("adminToken");
-  },
-};
 
 const FieldGroup = ({ title, children, onRemove, canRemove }) => (
   <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50 relative">
@@ -123,27 +112,11 @@ export default function AdminProfessionalPage() {
       setIsDataLoading(true);
       setError(null);
       
-      const token = TokenManager.getToken();
-      const response = await fetch(`https://hyre.hyrelancer.com/api/admin/getFeUProfessional/${userIdBase64}`, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+      const response = await adminApi.get(`/getFeUProfessional/${userIdBase64}`);
+      const data = response.data;
 
-      const responseText = await response.text();
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch (e) {
-        console.error("Failed to parse response:", responseText);
-        data = responseText;
-      }
-
-      if (!response.ok) {
+      if (response.status !== 200) {
         if (response.status === 401) {
-          TokenManager.clearToken();
           setError("Unauthorized. Redirecting to login...");
           router.push("/admin/login");
           return;
@@ -218,8 +191,6 @@ export default function AdminProfessionalPage() {
     setError(null);
     
     try {
-      const token = TokenManager.getToken();
-      
       // Prepare arrays for education
       const validEducation = values.education?.filter(edu => edu?.fc_type && edu?.fc_year) || [];
       const types = validEducation.map(edu => edu.fc_type);
@@ -250,28 +221,12 @@ export default function AdminProfessionalPage() {
         description: descriptions,
       };
 
-      const response = await fetch("https://hyre.hyrelancer.com/api/admin/storeFeUProfessional", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await adminApi.post('/storeFeUProfessional', payload);
 
-      const responseText = await response.text();
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch (e) {
-        console.error("Failed to parse response:", responseText);
-        data = responseText;
-      }
+      const data = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         if (response.status === 401) {
-          TokenManager.clearToken();
           setError("Unauthorized. Redirecting to login...");
           router.push("/admin/login");
           return;
@@ -294,7 +249,6 @@ export default function AdminProfessionalPage() {
     setError(null);
     
     try {
-      const token = TokenManager.getToken();
       const payload = {
         fp_u_id: userIdBase64,
         is_status: hasExistingData ? "old" : "new",
@@ -303,28 +257,12 @@ export default function AdminProfessionalPage() {
         fp_add_edu_profile: values.fp_add_edu_profile || false,
       };
 
-      const response = await fetch("https://hyre.hyrelancer.com/api/admin/updateFeUProfessional", {
-        method: "PUT",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await adminApi.put('/updateFeUProfessional', payload);
 
-      const responseText = await response.text();
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch (e) {
-        console.error("Failed to parse response:", responseText);
-        data = responseText;
-      }
+      const data = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         if (response.status === 401) {
-          TokenManager.clearToken();
           setError("Unauthorized. Redirecting to login...");
           router.push("/admin/login");
           return;
@@ -349,7 +287,6 @@ export default function AdminProfessionalPage() {
     
     const { education } = values;
     try {
-      const token = TokenManager.getToken();
       const validEducation = education.filter((edu) => edu && edu.fc_type && edu.fc_year);
       
       const updatePromises = validEducation.map(async (edu) => {
@@ -366,22 +303,13 @@ export default function AdminProfessionalPage() {
           payload.fc_id = btoa(edu.fc_id.toString());
         }
 
-        const response = await fetch("https://hyre.hyrelancer.com/api/admin/updateFeUEducation", {
-          method: "PUT",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(payload),
-        });
+        const response = await adminApi.put('/updateFeUEducation', payload);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Education update failed: ${errorText}`);
+        if (response.status !== 200) {
+          throw new Error(`Education update failed: ${response.data?.message || 'Unknown error'}`);
         }
 
-        return response.json();
+        return response.data;
       });
 
       await Promise.all(updatePromises);
@@ -402,7 +330,6 @@ export default function AdminProfessionalPage() {
     
     const { experience } = values;
     try {
-      const token = TokenManager.getToken();
       const validExperience = experience.filter((exp) => exp && (exp.fj_position || exp.fj_desc));
       
       const updatePromises = validExperience.map(async (exp) => {
@@ -426,22 +353,13 @@ export default function AdminProfessionalPage() {
           payload.fj_id = btoa(exp.fj_id.toString());
         }
 
-        const response = await fetch("https://hyre.hyrelancer.com/api/admin/updateFeUExperience", {
-          method: "PUT",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(payload),
-        });
+        const response = await adminApi.put('/updateFeUExperience', payload);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Experience update failed: ${errorText}`);
+        if (response.status !== 200) {
+          throw new Error(`Experience update failed: ${response.data?.message || 'Unknown error'}`);
         }
 
-        return response.json();
+        return response.data;
       });
 
       await Promise.all(updatePromises);

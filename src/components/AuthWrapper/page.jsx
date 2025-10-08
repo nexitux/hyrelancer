@@ -6,6 +6,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { restoreAuthState, logout } from "@/redux/slices/authSlice";
 import api from "@/config/api";
 import Loader from "../Loader/page";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 
 const VERIFY_ENDPOINT = null;
 
@@ -40,6 +41,9 @@ function AuthWrapperInner({ children }) {
   
   // Track if we've already made a redirect decision
   const [redirectHandled, setRedirectHandled] = useState(false);
+
+  // Initialize inactivity logout (30 minutes timeout)
+  useInactivityLogout(30, isAuthenticated);
 
   // Initialize auth state from localStorage
   useEffect(() => {
