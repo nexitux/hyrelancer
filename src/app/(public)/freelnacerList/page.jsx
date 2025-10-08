@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 const FreelancerListing = () => {
@@ -39,6 +39,22 @@ const FreelancerListing = () => {
   ];
 
   const [activeCategory, setActiveCategory] = useState(1);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col w-full max-w-[1440px] mx-auto items-center gap-12 px-4 py-12 relative">
@@ -55,23 +71,81 @@ const FreelancerListing = () => {
       {/* Main Content Section */}
       <section className="flex flex-col items-start gap-6 relative w-full">
         {/* Category Navigation */}
-        <nav className="flex flex-wrap items-center justify-center gap-4 px-4 py-0 relative w-full" role="navigation" aria-label="Freelancer categories">
-          {categories.map((category) => (
+        <nav className="flex flex-col items-center justify-center gap-4 px-4 py-0 relative w-full" role="navigation" aria-label="Freelancer categories">
+          {/* Desktop View - Button Grid */}
+          <div className="hidden md:flex flex-wrap items-center justify-center gap-4 w-full">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`category-button-hover inline-flex items-center justify-center gap-2.5 px-4 py-3 relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                  activeCategory === category.id
+                    ? "bg-[#3a599c] text-white shadow-md"
+                    : "bg-[#3a599c1f] text-[#3a599c] hover:bg-[#3a599c2f]"
+                }`}
+                aria-pressed={activeCategory === category.id}
+              >
+                <span className="font-top font-normal text-sm relative w-fit tracking-[0px] leading-6 whitespace-nowrap">
+                  {category.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Mobile View - Dropdown */}
+          <div ref={dropdownRef} className="md:hidden w-full max-w-sm relative z-[99999]">
             <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              className={`category-button-hover inline-flex items-center justify-center gap-2.5 px-4 py-3 relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
-                activeCategory === category.id
-                  ? "bg-[#3a599c] text-white shadow-md"
-                  : "bg-[#3a599c1f] text-[#3a599c] hover:bg-[#3a599c2f]"
-              }`}
-              aria-pressed={activeCategory === category.id}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-[#3a599c] text-white rounded-3xl shadow-md transition-all duration-300 hover:bg-[#2c4a7a] focus:outline-none focus:ring-2 focus:ring-[#3a599c] focus:ring-offset-2"
+              aria-expanded={isDropdownOpen}
+              aria-haspopup="true"
             >
-              <span className="font-top font-normal text-sm relative w-fit tracking-[0px] leading-6 whitespace-nowrap">
-                {category.label}
+              <span className="font-top font-normal text-sm tracking-[0px] leading-6 truncate">
+                {categories.find(cat => cat.id === activeCategory)?.label || "Select Category"}
               </span>
+              <svg 
+                className={`w-5 h-5 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-          ))}
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[999999] overflow-hidden"
+                   style={{ 
+                       zIndex: 999999,
+                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                   }}>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => {
+                      setActiveCategory(category.id);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-start px-4 py-3 text-left transition-all duration-200 hover:bg-gray-50 ${
+                      activeCategory === category.id
+                        ? "bg-[#3a599c1f] text-[#3a599c] font-medium"
+                        : "text-gray-700 hover:text-[#3a599c]"
+                    }`}
+                  >
+                    <span className="font-top font-normal text-sm tracking-[0px] leading-6">
+                      {category.label}
+                    </span>
+                    {activeCategory === category.id && (
+                      <svg className="w-4 h-4 ml-auto text-[#3a599c]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Freelancer Cards Grid */}

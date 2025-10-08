@@ -9,6 +9,7 @@ const ServicesHome = () => {
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [visibleElements, setVisibleElements] = useState(new Set());
     const [isInitialized, setIsInitialized] = useState(false);
     const [services, setServices] = useState([]);
@@ -23,6 +24,7 @@ const ServicesHome = () => {
     const cardsRef = useRef([]);
     const moreButtonRef = useRef(null);
     const carouselRef = useRef(null);
+    const categoryDropdownRef = useRef(null);
 
     // Fetch data from API
     useEffect(() => {
@@ -176,6 +178,9 @@ const ServicesHome = () => {
             if (moreButtonRef.current && !moreButtonRef.current.contains(event.target)) {
                 setIsMoreDropdownOpen(false);
             }
+            if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+                setIsCategoryDropdownOpen(false);
+            }
         };
         
         document.addEventListener('mousedown', handleClickOutside);
@@ -323,7 +328,8 @@ const ServicesHome = () => {
                         }`}
                         style={{ transitionDelay: '500ms' }}
                     >
-                        <div className="flex flex-wrap justify-center gap-3">
+                        {/* Desktop View - Button Grid */}
+                        <div className="hidden md:flex flex-wrap justify-center gap-3">
                             {categories.slice(0, 5).map((category) => (
                                 <button
                                     key={category.id}
@@ -339,6 +345,63 @@ const ServicesHome = () => {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Mobile View - Dropdown */}
+                        <div ref={categoryDropdownRef} className="md:hidden w-full max-w-sm relative z-150">
+                            <button
+                                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-[#3a599c] text-white rounded-3xl shadow-md transition-all duration-300 hover:bg-[#2c4a7a] focus:outline-none focus:ring-2 focus:ring-[#3a599c] focus:ring-offset-2 relative z-50"
+                                aria-expanded={isCategoryDropdownOpen}
+                                aria-haspopup="true"
+                            >
+                                <span className="font-medium text-sm tracking-[0px] leading-6 truncate">
+                                    {activeTab || "Select Category"}
+                                </span>
+                                <svg 
+                                    className={`w-5 h-5 transition-transform duration-300 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isCategoryDropdownOpen && (
+                                <div 
+                                    className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden"
+                                    style={{ 
+                                        zIndex: 9999,
+                                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                                    }}
+                                >
+                                    {categories.slice(0, 5).map((category) => (
+                                        <button
+                                            key={category.id}
+                                            onClick={() => {
+                                                setActiveTab(category.name);
+                                                setIsCategoryDropdownOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-start px-4 py-3 text-left transition-all duration-200 hover:bg-gray-50 ${
+                                                activeTab === category.name
+                                                    ? "bg-[#3a599c1f] text-[#3a599c] font-medium"
+                                                    : "text-gray-700 hover:text-[#3a599c]"
+                                            }`}
+                                        >
+                                            <span className="font-medium text-sm tracking-[0px] leading-6">
+                                                {category.name}
+                                            </span>
+                                            {activeTab === category.name && (
+                                                <svg className="w-4 h-4 ml-auto text-[#3a599c]" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -348,7 +411,7 @@ const ServicesHome = () => {
                         {/* Navigation Arrows */}
                         <button
                             onClick={prevSlide}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-200"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4  p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-200"
                         >
                             <ChevronLeft className="w-6 h-6 text-gray-600" />
                         </button>
@@ -363,7 +426,7 @@ const ServicesHome = () => {
                         {/* Carousel Container */}
                         <div 
                             ref={carouselRef}
-                            className="overflow-hidden"
+                            className="overflow-hidden relative z-0"
                         >
                             <div 
                                 className="flex transition-transform duration-500 ease-in-out"
@@ -386,7 +449,7 @@ const ServicesHome = () => {
                                                         key={service.id}
                                                         ref={(el) => (cardsRef.current[globalIndex] = el)}
                                                         data-animate-id={`card-${service.id}`}
-                                                        className={`bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-700 ease-out ${
+                                                        className={`bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-700 ease-out relative z-10 ${
                                                             visibleElements.has(`card-${service.id}`) 
                                                                 ? 'opacity-100 translate-y-0' 
                                                                 : 'opacity-0 translate-y-12'

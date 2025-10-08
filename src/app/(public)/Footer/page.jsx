@@ -69,7 +69,7 @@ const Footer = () => {
 
   return (
     <div className="w-full bg-white">
-      <footer className="relative rounded-[16px] sm:rounded-[24px] lg:rounded-[32px] overflow-hidden min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] mx-auto max-w-[1850px] my-2 sm:my-4 lg:my-8">
+      <footer className="relative rounded-[16px] sm:rounded-[24px] lg:rounded-[32px] overflow-hidden min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] mx-auto max-w-[1850px] my-2 sm:my-4 lg:my-8 pb-0 sm:pb-0 lg:pb-0">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <div
@@ -88,7 +88,7 @@ const Footer = () => {
           <div className="px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 pt-4 sm:pt-6 lg:pt-8">
             <div className="max-w-7xl mx-auto">
               {/* Logo */}
-              <div className="flex justify-center items-center mb-4 sm:mb-6 lg:mb-0">
+              <div className="flex justify-left items-left mb-4 sm:mb-6 lg:mb-0">
                 <img
                   src="/images/hyrelancerWhite.png"
                   alt="Hyrelancer Logo"
@@ -97,17 +97,17 @@ const Footer = () => {
               </div>
 
               {/* Navigation Grid - Mobile First Approach */}
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12 mb-6 sm:mb-8 lg:mb-10">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12 mb-4 sm:mb-6 lg:mb-10">
                 {/* Our Company */}
-                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3">
-                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2">
+                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 items-center sm:items-start">
+                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left">
                     Our Company
                   </h3>
                   {companyLinks.map((link, index) => (
                     <a
                       key={index}
                       href={link.href}
-                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight"
+                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left"
                     >
                       {link.label}
                     </a>
@@ -115,15 +115,15 @@ const Footer = () => {
                 </nav>
 
                 {/* Locations */}
-                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3">
-                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2">
+                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 items-center sm:items-start">
+                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left">
                     Locations
                   </h3>
                   {locations.map((location, index) => (
                     <a
                       key={index}
                       href={location.href}
-                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight"
+                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left"
                     >
                       {location.name}
                     </a>
@@ -131,15 +131,15 @@ const Footer = () => {
                 </nav>
 
                 {/* Featured Services */}
-                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 xs:col-span-2 sm:col-span-1 md:col-span-1">
-                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2">
+                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 xs:col-span-2 sm:col-span-1 md:col-span-1 items-center sm:items-start">
+                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left">
                     Featured Services
                   </h3>
                   {featuredServices.map((service, index) => (
                     <a
                       key={index}
                       href={service.href}
-                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight"
+                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left"
                     >
                       {service.name}
                     </a>
@@ -147,10 +147,10 @@ const Footer = () => {
                 </nav>
 
                 {/* Subscribe Section - Full width on mobile, then responsive */}
-                <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 lg:gap-7 w-full xs:col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1">
+                <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 lg:gap-7 w-full xs:col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1 items-center sm:items-start">
                   {/* Subscribe Input */}
                   <div className="flex flex-col gap-1 sm:gap-2 lg:gap-3 w-full">
-                    <label className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-semibold mb-0">
+                    <label className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-semibold mb-0 text-center sm:text-left">
                       Subscribe
                     </label>
                     <div className="flex items-center bg-[#375a9f] rounded-full px-1 py-1 w-full">
@@ -160,7 +160,7 @@ const Footer = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Enter your email"
                         disabled={isLoading}
-                        className="flex-1 bg-white rounded-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-black text-xs sm:text-sm md:text-md outline-none placeholder-gray-500 border-none"
+                        className="flex-1 bg-white rounded-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-black text-xs sm:text-sm md:text-md outline-none placeholder-gray-500 border-none text-center sm:text-left"
                       />
                       <button
                         onClick={handleSubscribe}
@@ -177,21 +177,21 @@ const Footer = () => {
                   </div>
 
                   {/* Contact Information */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full mt-1 mb-1 gap-1 sm:gap-2 md:gap-0">
-                    <div className="flex flex-col items-start gap-0">
-                      <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-[12px] font-medium">Toll Free Customer Care</span>
+                  <div className="flex flex-col sm:flex-row justify-center sm:justify-between items-center w-full mt-1 mb-1 gap-1 sm:gap-2 md:gap-0">
+                    <div className="flex flex-col items-center sm:items-start gap-0">
+                      <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-[12px] font-medium text-center sm:text-left">Toll Free Customer Care</span>
                       <a
                         href="tel:+11234560000"
-                        className="text-white font-semibold text-[10px] sm:text-[12px] md:text-[14px] leading-tight hover:underline"
+                        className="text-white font-semibold text-[10px] sm:text-[12px] md:text-[14px] leading-tight hover:underline text-center sm:text-left"
                       >
                         +(1) 123 456 0000
                       </a>
                     </div>
-                    <div className="flex flex-col items-start gap-0">
-                      <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-[12px] font-medium">Need live support?</span>
+                    <div className="flex flex-col items-center sm:items-start gap-0">
+                      <span className="text-gray-400 text-[8px] sm:text-[10px] md:text-[12px] font-medium text-center sm:text-left">Need live support?</span>
                       <a
                         href="mailto:info@hyrelancer.com"
-                        className="text-white font-semibold text-[10px] sm:text-[12px] md:text-[14px] leading-tight hover:underline break-all"
+                        className="text-white font-semibold text-[10px] sm:text-[12px] md:text-[14px] leading-tight hover:underline break-all text-center sm:text-left"
                       >
                         info@hyrelancer.com
                       </a>
@@ -199,7 +199,7 @@ const Footer = () => {
                   </div>
 
                   {/* Social Media */}
-                  <div className="flex flex-row items-center w-full justify-start gap-1 sm:gap-2">
+                  <div className="flex flex-row items-center w-full justify-center sm:justify-start gap-1 sm:gap-2">
                     <span className="text-white text-[8px] sm:text-[10px] md:text-xs whitespace-nowrap">Follow Us</span>
                     <a href="#" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full border border-white flex items-center justify-center text-white hover:bg-white hover:text-gray-800 transition-colors ml-1 sm:ml-2">
                       <FaFacebookF size={12} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
@@ -223,10 +223,10 @@ const Footer = () => {
           </div>
 
           {/* Bottom Section - Responsive positioning */}
-          <div className="flex justify-center lg:justify-start px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 relative sm:absolute sm:top-110">
-            <div className="w-full max-w-4xl lg:mx-80 mb-12 sm:mb-16 lg:mb-20">
+          <div className="flex justify-center lg:justify-start px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 relative lg:absolute lg:top-110">
+            <div className="w-full max-w-4xl lg:mx-80 mb-4 sm:mb-8 lg:mb-20">
               {/* Divider on top */}
-              <div className="w-full h-px bg-gray-400 opacity-40 mb-12 sm:mb-15"></div>
+              <div className="w-full h-px bg-gray-400 opacity-40 mb-4 sm:mb-8 lg:mb-15"></div>
               <div className="bg-[#3636368F]/90 rounded-full px-2 sm:px-3 md:px-4 lg:px-12 xl:px-20 py-2 sm:py-3 md:py-4 lg:py-6 flex flex-col sm:flex-row items-center justify-between w-full shadow-lg gap-1 sm:gap-2 md:gap-3 lg:gap-0">
                 {/* Copyright and Powered By */}
                 <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 md:gap-3">
@@ -261,17 +261,17 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Download App Section - Fully responsive positioning */}
-        <div className="absolute bottom-0 right-0 bg-white rounded-tl-[12px] sm:rounded-tl-[16px] md:rounded-tl-[20px] lg:rounded-tl-[30px] w-48 xs:w-56 sm:w-64 md:w-80 lg:w-96 xl:w-110 h-20 xs:h-24 sm:h-28 md:h-32 lg:h-40 flex flex-col items-center justify-center px-2 sm:px-3 md:px-4 lg:px-8 py-2 sm:py-3 md:py-4 lg:py-6 z-20">
+        {/* Large Screen Layout - Curved Design */}
+        <div className="absolute bottom-0 right-0 bg-white rounded-tl-[30px] w-96 xl:w-[440px] h-40 items-center justify-center px-8 py-6 z-20 hidden lg:flex flex-col">
           {/* SVG curve - Left side */}
-          <div className="absolute -left-2 sm:-left-3 md:-left-4 bottom-0">
-            <svg width="8" height="8" className="w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4" viewBox="0 0 20 20" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <div className="absolute -left-4 bottom-0">
+            <svg width="16" height="16" className="w-4 h-4" viewBox="0 0 20 20" fill="white" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 20V0C20 12 12 20 0 20H20Z" />
             </svg>
           </div>
 
-          {/* SVG curve - Top side - Hidden on mobile */}
-          <div className="absolute bottom-30 left-90 -translate-y-[40px] hidden md:block">
+          {/* SVG curve - Top side */}
+          <div className="absolute bottom-30 left-90 -translate-y-[40px]">
             <svg
               width="80"
               height="56"
@@ -284,18 +284,16 @@ const Footer = () => {
             </svg>
           </div>
 
-          <span className="text-gray-800 font-semibold text-[10px] sm:text-xs md:text-sm lg:text-lg mb-1 sm:mb-2 lg:mb-4 text-center">
+          <span className="text-gray-800 font-semibold text-lg mb-4 text-center">
             Download App!
           </span>
-          <div className="flex flex-col gap-1 sm:gap-2 lg:gap-3">
-            <div className="flex gap-1 sm:gap-2 lg:gap-3">
-              <a href="#" className="flex items-center gap-1 bg-black text-white px-1 sm:px-2 md:px-3 lg:px-4 py-1 sm:py-2 lg:py-3 rounded-lg hover:opacity-80 transition-opacity">
-                <img src="/images/google-play.png" alt="Google Play" className="h-3 w-auto sm:h-4 md:h-5 lg:h-7" />
-              </a>
-              <a href="#" className="flex items-center gap-1 bg-black text-white px-1 sm:px-2 md:px-3 lg:px-4 py-1 sm:py-2 lg:py-3 rounded-lg hover:opacity-80 transition-opacity">
-                <img src="/images/app_store.png" alt="App Store" className="h-3 w-auto sm:h-4 md:h-5 lg:h-7" />
-              </a>
-            </div>
+          <div className="flex gap-3">
+            <a href="#" className="flex items-center gap-1 bg-black text-white px-4 py-3 rounded-lg hover:opacity-80 transition-opacity">
+              <img src="/images/google-play.png" alt="Google Play" className="h-7 w-auto" />
+            </a>
+            <a href="#" className="flex items-center gap-1 bg-black text-white px-4 py-3 rounded-lg hover:opacity-80 transition-opacity">
+              <img src="/images/app_store.png" alt="App Store" className="h-7 w-auto" />
+            </a>
           </div>
         </div>
       </footer>

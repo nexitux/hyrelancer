@@ -75,7 +75,7 @@ const HeroSection = () => {
   ];
 
   return (
-    <div className="pt-4 sm:pt-6 md:pt-8 lg:pt-10 px-3 sm:px-4 md:px-6 lg:px-8 bg-white">
+    <div className="pt-4 sm:pt-6 md:pt-8 lg:pt-10 px-3 sm:px-4 md:px-6 lg:px-8 py-6 bg-white">
       <div className="mx-auto w-full max-w-full">
         {/* Hero Section with Video Background */}
         <section className="relative rounded-2xl sm:rounded-3xl lg:rounded-[32px] shadow-lg overflow-hidden min-h-[500px] sm:min-h-[550px] md:min-h-[600px] lg:min-h-[650px] xl:min-h-[700px]">
