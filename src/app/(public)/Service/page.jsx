@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
-import { Star, Heart, ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Star, Heart, ChevronDown, ChevronRight, MoreHorizontal, ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import avatar from '../../../../public/images/service/avatar1.png';
 
@@ -9,25 +9,29 @@ const ServicesHome = () => {
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [visibleElements, setVisibleElements] = useState(new Set());
     const [isInitialized, setIsInitialized] = useState(false);
     const [services, setServices] = useState([]);
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [currentSlide, setCurrentSlide] = useState(0);
     const tabRefs = useRef({});
     const containerRef = useRef(null);
     const headerRef = useRef(null);
     const tabsRef = useRef(null);
     const cardsRef = useRef([]);
     const moreButtonRef = useRef(null);
+    const carouselRef = useRef(null);
+    const categoryDropdownRef = useRef(null);
 
     // Fetch data from API
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch('https://hyre.hyrelancer.com/api/getSiteData');
+                const response = await fetch('https://backend.hyrelancer.in/api/getSiteData');
                 const data = await response.json();
                 
                 if (data && data.sc_list && data.se_list) {
@@ -63,7 +67,7 @@ const ServicesHome = () => {
                             author: `User${service.se_id}`,
                             price: `₹${(Math.random() * 100 + 20).toFixed(2)}`,
                             image: service.se_img 
-                                ? `https://hyre.hyrelancer.com/${service.se_img.split('--')[0]}`
+                                ? `https://backend.hyrelancer.in/${service.se_img.split('--')[0]}`
                                 : placeholderImage,
                             bgColor: 'bg-gradient-to-br from-blue-400 to-purple-500' // Default gradient
                         };
@@ -128,6 +132,12 @@ const ServicesHome = () => {
             observer.observe(subheaderEl);
         }
 
+        // Observe description
+        const descriptionEl = document.querySelector('[data-animate-id="description"]');
+        if (descriptionEl) {
+            observer.observe(descriptionEl);
+        }
+
         // Observe tabs
         if (tabsRef.current) {
             observer.observe(tabsRef.current);
@@ -168,6 +178,9 @@ const ServicesHome = () => {
             if (moreButtonRef.current && !moreButtonRef.current.contains(event.target)) {
                 setIsMoreDropdownOpen(false);
             }
+            if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+                setIsCategoryDropdownOpen(false);
+            }
         };
         
         document.addEventListener('mousedown', handleClickOutside);
@@ -186,6 +199,7 @@ const ServicesHome = () => {
             // Keep header and tabs visible if they were already visible
             if (prev.has('header')) newSet.add('header');
             if (prev.has('subheader')) newSet.add('subheader');
+            if (prev.has('description')) newSet.add('description');
             if (prev.has('tabs')) newSet.add('tabs');
             
             // Remove all card animations
@@ -194,6 +208,7 @@ const ServicesHome = () => {
             });
             return newSet;
         });
+        setCurrentSlide(0); // Reset carousel to first slide
     }, [activeTab]);
 
     if (error) {
@@ -215,71 +230,93 @@ const ServicesHome = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 py-12 px-4">
-                <div className="max-w-7xl mx-auto">
+            <div className="min-h-screen bg-white py-16 px-4">
+                <div className=" mx-auto">
                     <div className="text-center mb-12">
-                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Feature Services</h1>
+                        <p className="text-sm font-medium text-[#3a599c] mb-2">Boost Your Working Flow</p>
+                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Featured Services</h1>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                             Discover our featured services designed to elevate your experience
                         </p>
                     </div>
-                    <div className="flex justify-center">
-                        <div className="animate-pulse bg-gray-300 h-10 w-64 rounded"></div>
+                    <div className="flex justify-center mb-12">
+                        <div className="flex gap-3">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="animate-pulse bg-gray-300 h-12 w-24 rounded-full"></div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-                        {[...Array(8)].map((_, i) => (
-                            <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                                <div className="animate-pulse bg-gray-300 h-48 w-full"></div>
-                                <div className="p-4">
-                                    <div className="animate-pulse bg-gray-300 h-4 w-1/3 mb-3 rounded"></div>
-                                    <div className="animate-pulse bg-gray-300 h-6 w-full mb-4 rounded"></div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className="animate-pulse bg-gray-300 w-8 h-8 rounded-full"></div>
-                                            <div className="animate-pulse bg-gray-300 h-4 w-20 rounded"></div>
-                                        </div>
-                                        <div className="animate-pulse bg-gray-300 h-6 w-16 rounded"></div>
+                    <div className="relative">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                    <div className="animate-pulse bg-gray-300 h-48 w-full"></div>
+                                    <div className="p-4">
+                                        <div className="animate-pulse bg-gray-300 h-4 w-1/3 mb-3 rounded"></div>
+                                        <div className="animate-pulse bg-gray-300 h-6 w-full mb-2 rounded"></div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
         );
     }
 
+    // Carousel navigation functions
+    const nextSlide = () => {
+        const maxSlides = Math.ceil(filteredServices.length / 4) - 1;
+        setCurrentSlide(prev => prev < maxSlides ? prev + 1 : 0);
+    };
+
+    const prevSlide = () => {
+        const maxSlides = Math.ceil(filteredServices.length / 4) - 1;
+        setCurrentSlide(prev => prev > 0 ? prev - 1 : maxSlides);
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-white py-16 px-4">
+            <div className=" mx-auto"style={{ maxWidth: "1550px" }}>
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <h1
+                    <p
                         ref={headerRef}
                         data-animate-id="header"
-                        className={`text-4xl md:text-5xl font-bold text-gray-900 mb-4 transition-all duration-700 ease-out ${
+                        className={`text-sm font-medium text-[#3a599c] mb-2 transition-all duration-700 ease-out ${
                             visibleElements.has('header')
                                 ? 'opacity-100 translate-y-0'
                                 : 'opacity-0 translate-y-8'
                         }`}
                         style={{ transitionDelay: '100ms' }}
                     >
-                        Feature Services
-                    </h1>
-                    <p
+                        Boost Your Working Flow
+                    </p>
+                    <h1
                         data-animate-id="subheader"
-                        className={`text-lg text-gray-600 max-w-2xl mx-auto transition-all duration-700 ease-out ${
+                        className={`text-4xl md:text-5xl font-bold text-gray-900 mb-4 transition-all duration-700 ease-out ${
                             visibleElements.has('subheader')
                                 ? 'opacity-100 translate-y-0'
                                 : 'opacity-0 translate-y-8'
                         }`}
                         style={{ transitionDelay: '250ms' }}
                     >
+                        Featured Services
+                    </h1>
+                    <p
+                        data-animate-id="description"
+                        className={`text-lg text-gray-600 max-w-2xl mx-auto transition-all duration-700 ease-out ${
+                            visibleElements.has('description')
+                                ? 'opacity-100 translate-y-0'
+                                : 'opacity-0 translate-y-8'
+                        }`}
+                        style={{ transitionDelay: '400ms' }}
+                    >
                         Discover our featured services designed to elevate your experience
                     </p>
                 </div>
 
-                {/* Tabs */}
+                {/* Filter Buttons */}
                 {categories.length > 0 && (
                     <div 
                         ref={tabsRef}
@@ -289,185 +326,175 @@ const ServicesHome = () => {
                                 ? 'opacity-100 translate-y-0' 
                                 : 'opacity-0 translate-y-8'
                         }`}
-                        style={{ transitionDelay: '400ms' }}
+                        style={{ transitionDelay: '500ms' }}
                     >
-                        {/* Mobile Dropdown */}
-                        <div className="sm:hidden relative">
+                        {/* Desktop View - Button Grid */}
+                        <div className="hidden md:flex flex-wrap justify-center gap-3">
+                            {categories.slice(0, 5).map((category) => (
+                                <button
+                                    key={category.id}
+                                    ref={(el) => (tabRefs.current[category.name] = el)}
+                                    onClick={() => setActiveTab(category.name)}
+                                    className={`px-6 py-3 rounded-full font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                                        activeTab === category.name
+                                            ? 'bg-[#3a599c] text-white shadow-md'
+                                            : 'bg-white text-gray-700 border border-gray-300 hover:border-[#3a599c] hover:text-[#3a599c]'
+                                    }`}
+                                >
+                                    {category.name}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Mobile View - Dropdown */}
+                        <div ref={categoryDropdownRef} className="md:hidden w-full max-w-sm relative z-150">
                             <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-between w-64 px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#3e5a9a]"
+                                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-[#3a599c] text-white rounded-3xl shadow-md transition-all duration-300 hover:bg-[#2c4a7a] focus:outline-none focus:ring-2 focus:ring-[#3a599c] focus:ring-offset-2 relative z-50"
+                                aria-expanded={isCategoryDropdownOpen}
+                                aria-haspopup="true"
                             >
-                                <span className="font-medium text-gray-900">{activeTab}</span>
-                                <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                <span className="font-medium text-sm tracking-[0px] leading-6 truncate">
+                                    {activeTab || "Select Category"}
+                                </span>
+                                <svg 
+                                    className={`w-5 h-5 transition-transform duration-300 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
 
-                            {isDropdownOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                                    {categories.map((category) => (
+                            {/* Dropdown Menu */}
+                            {isCategoryDropdownOpen && (
+                                <div 
+                                    className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden"
+                                    style={{ 
+                                        zIndex: 9999,
+                                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                                    }}
+                                >
+                                    {categories.slice(0, 5).map((category) => (
                                         <button
                                             key={category.id}
                                             onClick={() => {
                                                 setActiveTab(category.name);
-                                                setIsDropdownOpen(false);
+                                                setIsCategoryDropdownOpen(false);
                                             }}
-                                            className={`w-full text-left px-4 py-3 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                                                activeTab === category.name ? 'bg-blue-50 text-[#3e5a9a] font-medium' : 'text-gray-900'
+                                            className={`w-full flex items-center justify-start px-4 py-3 text-left transition-all duration-200 hover:bg-gray-50 ${
+                                                activeTab === category.name
+                                                    ? "bg-[#3a599c1f] text-[#3a599c] font-medium"
+                                                    : "text-gray-700 hover:text-[#3a599c]"
                                             }`}
                                         >
-                                            {category.name}
+                                            <span className="font-medium text-sm tracking-[0px] leading-6">
+                                                {category.name}
+                                            </span>
+                                            {activeTab === category.name && (
+                                                <svg className="w-4 h-4 ml-auto text-[#3a599c]" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
                             )}
                         </div>
-
-                        {/* Desktop Tabs */}
-                        <div className="hidden sm:block relative overflow-x-auto">
-                            <div
-                                ref={containerRef}
-                                className="flex space-x-4 md:space-x-8 lg:space-x-12 px-4 md:px-0"
-                            >
-                                {visibleTabs.map((category) => (
-                                    <button
-                                        key={category.id}
-                                        ref={(el) => (tabRefs.current[category.name] = el)}
-                                        onClick={() => setActiveTab(category.name)}
-                                        className={`pb-4 font-medium transition-all duration-200 whitespace-nowrap text-sm md:text-base ${
-                                            activeTab === category.name
-                                                ? 'text-gray-900'
-                                                : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                    >
-                                        {category.name}
-                                    </button>
-                                ))}
-                                
-                                {/* More dropdown button for additional categories */}
-                                {hiddenTabs.length > 0 && (
-                                    <div className="relative" ref={moreButtonRef}>
-                                        <button
-                                            onClick={() => setIsMoreDropdownOpen(!isMoreDropdownOpen)}
-                                            className={`pb-4 font-medium transition-all duration-200 whitespace-nowrap text-sm md:text-base flex items-center ${
-                                                hiddenTabs.some(cat => cat.name === activeTab)
-                                                    ? 'text-gray-900'
-                                                    : 'text-gray-600 hover:text-gray-900'
-                                            }`}
-                                        >
-                                            More <ChevronDown className="w-4 h-4 ml-1" />
-                                        </button>
-                                        
-                                        {isMoreDropdownOpen && (
-                                            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[150px]">
-                                                {hiddenTabs.map((category) => (
-                                                    <button
-                                                        key={category.id}
-                                                        onClick={() => {
-                                                            setActiveTab(category.name);
-                                                            setIsMoreDropdownOpen(false);
-                                                        }}
-                                                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                                                            activeTab === category.name ? 'bg-blue-50 text-[#3e5a9a] font-medium' : 'text-gray-900'
-                                                        }`}
-                                                    >
-                                                        {category.name}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Full width underline */}
-                            <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-300"></div>
-
-                            {/* Blue active indicator */}
-                            <div
-                                className="absolute bottom-0 h-0.5 bg-[#3e5a9a] transition-all duration-300 ease-in-out"
-                                style={{
-                                    left: `${indicatorStyle.left}px`,
-                                    width: `${indicatorStyle.width}px`
-                                }}
-                            />
-                        </div>
                     </div>
                 )}
 
-                {/* Service Cards Grid */}
+                {/* Service Cards Carousel */}
                 {filteredServices.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {filteredServices.map((service, index) => (
+                    <div className="relative">
+                        {/* Navigation Arrows */}
+                        <button
+                            onClick={prevSlide}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4  p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-200"
+                        >
+                            <ChevronLeft className="w-6 h-6 text-gray-600" />
+                        </button>
+                        
+                        <button
+                            onClick={nextSlide}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-200"
+                        >
+                            <ChevronRight className="w-6 h-6 text-gray-600" />
+                        </button>
+
+                        {/* Carousel Container */}
+                        <div 
+                            ref={carouselRef}
+                            className="overflow-hidden relative z-0"
+                        >
                             <div 
-                                key={service.id}
-                                ref={(el) => (cardsRef.current[index] = el)}
-                                data-animate-id={`card-${service.id}`}
-                                className={`bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-700 ease-out ${
-                                    visibleElements.has(`card-${service.id}`) 
-                                        ? 'opacity-100 translate-y-0' 
-                                        : 'opacity-0 translate-y-12'
-                                }`}
+                                className="flex transition-transform duration-500 ease-in-out"
                                 style={{
-                                    transitionDelay: `${index * 150}ms`
+                                    transform: `translateX(-${currentSlide * 100}%)`
                                 }}
                             >
-                                {/* Service Image */}
-                                <div className="relative h-48 w-full bg-gradient-to-br from-blue-400 to-purple-500">
-                                    <img
-                                        src={service.image}
-                                        alt={service.title}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            e.target.src = `https://picsum.photos/400/300?random=${service.id}`;
-                                        }}
-                                    />
-                                    <button className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow z-10">
-                                        <Heart className="w-5 h-5 text-gray-600" />
-                                    </button>
-                                </div>
+                                {/* Create slides with 4 cards each */}
+                                {Array.from({ length: Math.ceil(filteredServices.length / 5) }, (_, slideIndex) => (
+                                    <div 
+                                        key={slideIndex} 
+                                        className="w-full flex-shrink-0"
+                                        style={{ maxWidth: "1500px", margin: "0 auto" }} // Match top component width
+                                    >
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 px-6">
+                                            {filteredServices.slice(slideIndex * 4, (slideIndex + 1) * 4).map((service, cardIndex) => {
+                                                const globalIndex = slideIndex * 4 + cardIndex;
+                                                return (
+                                                    <div 
+                                                        key={service.id}
+                                                        ref={(el) => (cardsRef.current[globalIndex] = el)}
+                                                        data-animate-id={`card-${service.id}`}
+                                                        className={`bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-700 ease-out relative z-10 ${
+                                                            visibleElements.has(`card-${service.id}`) 
+                                                                ? 'opacity-100 translate-y-0' 
+                                                                : 'opacity-0 translate-y-12'
+                                                        }`}
+                                                        style={{
+                                                            transitionDelay: `${cardIndex * 150}ms`
+                                                        }}
+                                                    >
+                                                        {/* Service Image */}
+                                                        <div className="relative h-48 w-full rounded-lg p-2">
+                                                            <div className="w-full h-full rounded-lg overflow-hidden">
+                                                                <img
+                                                                    src={service.image}
+                                                                    alt={service.title}
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => {
+                                                                        e.target.src = `https://picsum.photos/400/300?random=${service.id}`;
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <button className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow z-10">
+                                                                <Heart className="w-5 h-5 text-gray-600" />
+                                                            </button>
+                                                        </div>
 
-                                {/* Service Content */}
-                                <div className="p-4">
-                                    {/* Category */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-sm font-medium text-gray-500">{service.category}</span>
-                                        <div className="flex items-center gap-1">
-                                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                                            <span className="text-sm font-medium text-gray-700">{service.rating.toFixed(1)}</span>
-                                            <span className="text-sm text-gray-500">({service.reviews})</span>
+                                                        {/* Service Content */}
+                                                        <div className="p-4">
+                                                            {/* Category */}
+                                                            <div className="mb-3">
+                                                                <span className="text-sm font-medium text-gray-500">{service.category}</span>
+                                                            </div>
+
+                                                            {/* Title */}
+                                                            <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 leading-tight">
+                                                                {service.title}
+                                                            </h3>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
-
-                                    {/* Title */}
-                                    <h3 className="text-base font-semibold text-gray-900 mb-4 line-clamp-2 leading-tight">
-                                        {service.title}
-                                    </h3>
-
-                                    {/* Description */}
-                                    {service.description && (
-                                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                                            {service.description.replace(/<[^>]*>/g, '')}
-                                        </p>
-                                    )}
-
-                                    {/* Author and Price */}
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
-                                                <Image 
-                                                    src={avatar} 
-                                                    alt="avatar" 
-                                                    width={32}
-                                                    height={32}
-                                                    className="rounded-full"
-                                                />
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-700">{service.author}</span>
-                                        </div>
-                                        <span className="text-lg font-bold text-gray-900">{service.price}</span>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
                     </div>
                 ) : (
                     <div className="text-center py-12">

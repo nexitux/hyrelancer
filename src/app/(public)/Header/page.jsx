@@ -21,7 +21,7 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import Logo from "../../../../public/images/image.png";
+import Logo from "../../../../public/images/hyrelancerMain.png";
 import Image from "next/image";
 import api, { freelancerJobAPI } from "@/config/api";
 import PhoneVerificationModal from "../../registration/Header/components/PhoneVerificationModal";
@@ -369,51 +369,74 @@ const Header = ({ params }) => {
   const userMenuItems = getUserMenuItems();
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white text-black shadow-md" : "bg-[#3e5a9a] text-white"
-        }`}
-    >
-      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 md:h-20">
+    <header className="flex w-full h-20 md:h-24 items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 2xl:px-36 py-4 md:py-6 sticky top-0 z-50 bg-[#ffffff80] backdrop-blur-xl border border-solid border-[#ffffff1a]">
+      <div className="flex justify-between items-center w-full max-w-[1440px] mx-auto">
+        {/* Left side - Mobile menu button and Logo */}
+        <div className="flex items-center gap-4">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-md hover:bg-white/10 transition-colors"
+            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-700"
             aria-label="Toggle menu"
           >
             <MenuIcon className="w-6 h-6" />
           </button>
 
-          {/* Logo and Categories Button (grouped together) */}
-          <div
-            className="flex items-center space-x-4 cursor-pointer"
-            onClick={() => router.push("/")}
-            role="button"
-            tabIndex={0}
-            aria-label="Go to home page"
-            onKeyDown={e => {
-              if (e.key === "Enter" || e.key === " ") {
-                router.push("/");
-              }
+          {/* Logo */}
+          <a 
+            href="/" 
+            aria-label="Hyrelancer Home"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/");
             }}
+            className="cursor-pointer"
           >
             <Image
               src={Logo}
               alt="Hyrelancer Logo"
-              className="w-32 md:w-40 h-auto"
+              className="relative w-32 sm:w-36 md:w-40 lg:w-44 h-auto"
               priority
             />
-          </div>
+          </a>
+        </div>
+
+        {/* Center - Navigation - Only show when NOT authenticated */}
+        {!isAuthenticated && (
+          <nav
+            className="hidden lg:flex items-center gap-6 xl:gap-8"
+            aria-label="Main navigation"
+          >
+            <button
+              className="inline-flex h-12 items-center gap-2 px-4 xl:px-6 bg-[#3a599c2e] rounded-[32px] cursor-pointer hover:bg-[#3a599c40] transition-colors"
+              aria-label="Categories menu"
+            >
+              <span className="font-semibold text-[#3a599c] text-sm whitespace-nowrap">
+                Categories
+              </span>
+            </button>
+
+            {navigationItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.href || "#"}
+                className="font-normal text-black text-sm whitespace-nowrap hover:text-[#3a599c] transition-colors px-2"
+              >
+                {item.name}
+              </a>
+            ))}
+          </nav>
+        )}
+
+        {/* Right side - User actions */}
+        <div className="hidden lg:flex items-center gap-3 xl:gap-4">
           {/* User Dropdown and Verification Button - Only show if authenticated and not on login/register pages */}
           {shouldShowUserDropdown && (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2 xl:gap-3">
               {/* Message Button */}
               <button
                 onClick={handleMessageClick}
-                className={`flex items-center space-x-2 p-2 rounded-full transition-colors duration-200 ${isScrolled
-                  ? "hover:bg-gray-100 text-gray-700"
-                  : "hover:bg-white/10 text-white"
-                  }`}
+                className="flex items-center p-2 rounded-full transition-colors duration-200 hover:bg-gray-100 text-gray-700"
                 title="Messages"
               >
                 <MessageCircle className="w-5 h-5" />
@@ -423,10 +446,7 @@ const Header = ({ params }) => {
               <div className="relative notification-dropdown">
                 <button
                   onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
-                  className={`flex items-center space-x-2 p-2 rounded-full transition-colors duration-200 relative ${isScrolled
-                    ? "hover:bg-gray-100 text-gray-700"
-                    : "hover:bg-white/10 text-white"
-                    }`}
+                  className="flex items-center p-2 rounded-full transition-colors duration-200 relative hover:bg-gray-100 text-gray-700"
                   title="Notifications"
                 >
                   <Bell className="w-5 h-5" />
@@ -480,14 +500,11 @@ const Header = ({ params }) => {
               {isFreelancer && (
                 <button
                   onClick={handleOnlineToggle}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isOnline
-                    ? isScrolled
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    isOnline
                       ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-200"
-                      : "bg-green-500 text-white hover:bg-green-600"
-                    : isScrolled
-                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-                    : "bg-gray-500 text-white hover:bg-gray-600"
-                    }`}
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+                  }`}
                   title={isOnline ? "Go Offline" : "Go Online"}
                 >
                   {isOnline ? (
@@ -495,7 +512,7 @@ const Header = ({ params }) => {
                   ) : (
                     <WifiOff className="w-4 h-4" />
                   )}
-                  <span className="hidden sm:inline">
+                  <span className="hidden xl:inline">
                     {isOnline ? "Online" : "Offline"}
                   </span>
                 </button>
@@ -505,13 +522,10 @@ const Header = ({ params }) => {
               {!isMobileVerified && (
                 <button
                   onClick={handleVerifyPhone}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isScrolled
-                    ? "bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200"
-                    : "bg-orange-500 text-white hover:bg-orange-600"
-                    }`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200"
                 >
                   <Shield className="w-4 h-4" />
-                  <span className="hidden sm:inline">Verify Phone</span>
+                  <span className="hidden xl:inline">Verify Phone</span>
                 </button>
               )}
 
@@ -519,21 +533,13 @@ const Header = ({ params }) => {
               <div className="relative user-dropdown">
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className={`flex items-center space-x-2 p-2 rounded-full transition-colors duration-200 ${isScrolled
-                    ? "hover:bg-gray-100 text-gray-700"
-                    : "hover:bg-white/10 text-white"
-                    }`}
+                  className="flex items-center gap-2 p-2 rounded-full transition-colors duration-200 hover:bg-gray-100 text-gray-700"
                 >
-                  <div
-                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${isScrolled
-                      ? "border-gray-300 bg-gray-50"
-                      : "border-white/30 bg-white/10"
-                      }`}
-                  >
+                  <div className="w-8 h-8 rounded-full border-2 flex items-center justify-center border-gray-300 bg-gray-50">
                     <User className="w-4 h-4" />
                   </div>
 
-                  <span className="hidden sm:inline-block text-sm font-medium truncate max-w-[10rem]">
+                  <span className="hidden xl:inline-block text-sm font-medium truncate max-w-[8rem] 2xl:max-w-[10rem]">
                     {`Hi, ${user?.name ||
                       user?.username ||
                       user?.slug ||
@@ -581,16 +587,34 @@ const Header = ({ params }) => {
 
           {/* Show Login button when not authenticated or on login/register pages */}
           {shouldShowLoginButton && (
-            <button
-              onClick={() => router.push("/Login")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md font-medium transition-colors duration-200 ${isScrolled
-                  ? "bg-[#3e5a9a] text-white hover:bg-[#2d4370]"
-                  : "bg-white text-[#3e5a9a] hover:bg-gray-100"
-                }`}
+            <a
+              href="/login"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/Login");
+              }}
+              className="inline-flex h-12 items-center justify-center px-4 xl:px-6 rounded-3xl border border-solid border-[#3a599c] hover:bg-[#3a599c0a] transition-colors"
             >
-              <User className="w-4 h-4" />
-              <span>Login</span>
-            </button>
+              <span className="font-semibold text-[#3a599c] text-sm whitespace-nowrap">
+                Login
+              </span>
+            </a>
+          )}
+
+          {/* Become A Service Provider Button - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <a
+              href="/become-provider"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/select-user-type");
+              }}
+              className="inline-flex h-12 items-center justify-center px-4 xl:px-6 bg-[#3a599c] rounded-3xl hover:bg-[#2f4a7f] transition-colors"
+            >
+              <span className="font-normal text-white text-sm whitespace-nowrap">
+                Become A Service Provider
+              </span>
+            </a>
           )}
         </div>
       </div>
@@ -600,113 +624,115 @@ const Header = ({ params }) => {
         className={`fixed inset-0 z-40 overflow-y-auto transition-all duration-300 ease-in-out transform ${isMobileMenuOpen
           ? "translate-x-0 opacity-100"
           : "translate-x-full opacity-0"
-          } ${isScrolled ? "bg-white" : "bg-[#3e5a9a]"}`}
+          } bg-white`}
         style={{
-          top: "64px", // Height of the header
-          height: "calc(100vh - 64px)",
+          top: "80px", // Height of the header (adjusted for mobile)
+          height: "calc(100vh - 80px)",
           display: isMobileMenuOpen ? "block" : "none",
         }}
       >
-        <div className="px-4 py-4 space-y-2">
-          {/* Mobile Categories */}
-          <div className="border-b pb-2">
-            <h3 className="font-bold text-lg mb-2">Categories</h3>
-            {!loading &&
-              categories.map((category) => (
-                <div key={category.id} className="mb-1">
-                  <button
-                    onClick={() => toggleMobileCategory(category.id)}
-                    className={`w-full flex justify-between items-center px-3 py-2 rounded-md ${isScrolled ? "hover:bg-gray-100" : "hover:bg-[#4c6aa6]"
-                      }`}
-                  >
-                    <div className="flex items-center">
-                      <div className="mr-3">{category.icon}</div>
-                      <span>{category.name}</span>
-                    </div>
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${mobileCategoryOpen === category.id ? "rotate-180" : ""
-                        }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
+        <div className="px-4 sm:px-6 py-6 space-y-4">
+          {/* Mobile Categories - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="font-bold text-lg mb-4 text-gray-900">Categories</h3>
+              {!loading &&
+                categories.map((category) => (
+                  <div key={category.id} className="mb-2">
+                    <button
+                      onClick={() => toggleMobileCategory(category.id)}
+                      className="w-full flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
+                      <div className="flex items-center gap-3">
+                        <div>{category.icon}</div>
+                        <span className="font-medium">{category.name}</span>
+                      </div>
+                      <svg
+                        className={`w-4 h-4 transition-transform duration-200 ${mobileCategoryOpen === category.id ? "rotate-180" : ""
+                          }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
 
-                  {mobileCategoryOpen === category.id && (
-                    <div className="pl-8 mt-1 space-y-1">
-                      {category.subcategories.map((sub) => (
-                        <div key={sub.title} className="mb-2">
-                          <h4 className="font-medium mb-1">{sub.title}</h4>
-                          <ul className="space-y-1 pl-2">
-                            {sub.items.map((item) => (
-                              <li key={item}>
-                                <a
-                                  href="#"
-                                  className={`block py-1 text-sm ${isScrolled
-                                    ? "text-gray-700 hover:text-[#3e5a9a]"
-                                    : "text-gray-200 hover:text-white"
-                                    }`}
-                                >
-                                  {item}
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    {mobileCategoryOpen === category.id && (
+                      <div className="pl-12 mt-2 space-y-2">
+                        {category.subcategories.map((sub) => (
+                          <div key={sub.title} className="mb-3">
+                            <h4 className="font-medium mb-2 text-gray-900">{sub.title}</h4>
+                            <ul className="space-y-1 pl-2">
+                              {sub.items.map((item) => (
+                                <li key={item}>
+                                  <a
+                                    href="#"
+                                    className="block py-2 px-2 text-sm text-gray-700 hover:text-[#3a599c] hover:bg-gray-50 rounded transition-colors"
+                                  >
+                                    {item}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* Mobile Navigation Items - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <div className="space-y-2">
+              {navigationItems.map((item) => (
+                <a
+                  key={item.name}
+                  href="#"
+                  className="block px-4 py-3 rounded-lg font-medium hover:bg-gray-100 text-gray-700 transition-colors"
+                >
+                  {item.name}
+                </a>
               ))}
-          </div>
+            </div>
+          )}
 
-          {/* Mobile Navigation Items */}
-          <div className="space-y-1">
-            {navigationItems.map((item) => (
-              <a
-                key={item.name}
-                href="#"
-                className={`block px-3 py-2 rounded-md font-medium ${isScrolled ? "hover:bg-gray-100" : "hover:bg-[#4c6aa6]"
-                  }`}
+          {/* Mobile Buttons - Only show when NOT authenticated */}
+          {!isAuthenticated && (
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  router.push("/select-user-type");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full px-6 py-4 rounded-lg font-bold bg-[#3a599c] text-white hover:bg-[#2f4a7f] transition-colors"
               >
-                {item.name}
-              </a>
-            ))}
-          </div>
-
-          {/* Mobile Buttons */}
-          <button
-            className={`w-full px-4 py-3 rounded-md font-bold my-4 ${isScrolled
-              ? "bg-[#3e5a9a] text-white hover:bg-[#2d4370]"
-              : "bg-white text-[#3e5a9a] hover:bg-gray-100"
-              }`}
-          >
-            Become A Service Provider
-          </button>
+                Become A Service Provider
+              </button>
+            </div>
+          )}
 
           {/* Mobile Action Buttons - Only show if authenticated */}
           {shouldShowUserDropdown && (
-            <div className="space-y-2 pt-2 border-t">
+            <div className="space-y-3 pt-4 border-t border-gray-200">
               {/* Message Button */}
               <button
                 onClick={() => {
                   handleMessageClick();
                   setIsMobileMenuOpen(false);
                 }}
-                className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md ${
-                  isScrolled ? "hover:bg-gray-100" : "hover:bg-[#4c6aa6]"
-                }`}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
               >
                 <MessageCircle className="w-5 h-5" />
-                <span>Messages</span>
+                <span className="font-medium">Messages</span>
               </button>
 
               {/* Notification Button */}
@@ -715,12 +741,10 @@ const Header = ({ params }) => {
                   setShowNotificationDropdown(!showNotificationDropdown);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md relative ${
-                  isScrolled ? "hover:bg-gray-100" : "hover:bg-[#4c6aa6]"
-                }`}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg relative hover:bg-gray-100 text-gray-700 transition-colors"
               >
                 <Bell className="w-5 h-5" />
-                <span>Notifications</span>
+                <span className="font-medium">Notifications</span>
                 {unreadCount > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {unreadCount}
@@ -735,14 +759,10 @@ const Header = ({ params }) => {
                     handleOnlineToggle();
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md ${
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors ${
                     isOnline
-                      ? isScrolled
-                        ? "bg-green-100 text-green-700"
-                        : "bg-green-500 text-white"
-                      : isScrolled
-                      ? "bg-gray-100 text-gray-700"
-                      : "bg-gray-500 text-white"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-700"
                   }`}
                 >
                   {isOnline ? (
@@ -750,25 +770,23 @@ const Header = ({ params }) => {
                   ) : (
                     <WifiOff className="w-5 h-5" />
                   )}
-                  <span>{isOnline ? "Online" : "Offline"}</span>
+                  <span className="font-medium">{isOnline ? "Online" : "Offline"}</span>
                 </button>
               )}
             </div>
           )}
 
           {shouldShowLoginButton && (
-            <div className="pt-2 border-t">
+            <div className="pt-4 border-t border-gray-200">
               <button
                 onClick={() => {
                   router.push("/Login");
                   setIsMobileMenuOpen(false);
                 }}
-                className={`flex items-center space-x-2 w-full px-3 py-2 rounded-md ${
-                  isScrolled ? "hover:bg-gray-100" : "hover:bg-[#4c6aa6]"
-                }`}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
               >
                 <User className="w-5 h-5" />
-                <span>Login</span>
+                <span className="font-medium">Login</span>
               </button>
             </div>
           )}
