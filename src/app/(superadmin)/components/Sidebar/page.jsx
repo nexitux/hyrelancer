@@ -160,8 +160,17 @@ export default function Sidebar() {
       ]
     },
     { 
+      id: 'searchKeywords', 
+      label: 'Search Keywords', 
+      icon: MdMiscellaneousServices, 
+      href: '/search-keywords',
+      subLinks: [
+        { id: 'search-keywords-list', label: 'Keywords List', href: '/control/search-keywords' }
+      ]
+    },
+    { 
       id: 'prefilledMessages', 
-      label: ' Messages', 
+      label: 'Messages', 
       icon: MdMessage, 
       href: '/control/prefilled-messages',
       subLinks: [

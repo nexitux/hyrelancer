@@ -67,12 +67,31 @@ const HeroSection = () => {
   console.log('Category display set to:', category.sc_name); // Debug log
 };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
+    // Store keyword in backend (silent, best-effort)
+    const trimmed = (searchKeyword || '').trim();
+    if (trimmed.length >= 2) {
+      try {
+    //    await fetch('http://localhost:8000/api/search/store', {
+          await fetch('https://backend.hyrelancer.in/api/search/store', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ keyword: trimmed })
+        });
+      } catch (e) {
+        // Non-blocking: ignore errors
+        // console.warn('Failed to store search keyword', e);
+      }
+    }
+
     // Build query parameters
     const queryParams = new URLSearchParams();
 
-    if (searchKeyword.trim()) {
-      queryParams.append('search_key', searchKeyword.trim());
+    if (trimmed) {
+      queryParams.append('search_key', trimmed);
     }
 
     if (selectedCategory) {
