@@ -33,6 +33,8 @@ export default function ListServicePage() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -57,7 +59,7 @@ export default function ListServicePage() {
 
       // Create a map of categories to display names
       const uniqueCategories = new Map();
-      result.data.forEach(service => {
+      (Array.isArray(list) ? list : []).forEach(service => {
         // This is a placeholder. A real-world scenario would require a separate category API call
         // to get the category names from their IDs (se_sc_id). For this example, we'll just use the ID.
         uniqueCategories.set(service.se_sc_id, `Category ${service.se_sc_id}`);
@@ -86,6 +88,23 @@ export default function ListServicePage() {
       selectedCategory === "all" || service.se_sc_id === parseInt(selectedCategory);
     return matchesSearch && matchesCategory;
   });
+
+  // Clamp current page when filters or data change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filteredServices.length / itemsPerPage));
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [filteredServices.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredServices.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedServices = filteredServices.slice(startIndex, endIndex);
 
   // Handle row selection
   const handleSelectService = (serviceId) => {
@@ -337,7 +356,7 @@ const handleDeleteSelected = async () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {filteredServices.map((item) => (
+                {paginatedServices.map((item) => (
                   <tr
                     key={item.se_id}
                     className="transition-colors hover:bg-slate-50"
@@ -428,17 +447,24 @@ const handleDeleteSelected = async () => {
           {/* Table Footer */}
           <div className="flex justify-between items-center px-6 py-4 border-t border-slate-200">
             <div className="text-sm text-slate-600">
-              Showing {filteredServices.length} of {totalServices} services
+              Showing {filteredServices.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredServices.length)} of {filteredServices.length}
             </div>
-            {/* Pagination is not implemented in this version, as the API only returns one page */}
             <div className="flex gap-2 items-center">
-              <button className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 cursor-not-allowed" disabled>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors border border-slate-200 ${currentPage === 1 ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-50'}`}
+                disabled={currentPage === 1}
+              >
                 Previous
               </button>
-              <button className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg">
-                1
-              </button>
-              <button className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 cursor-not-allowed" disabled>
+              <span className="px-3 py-1.5 text-sm text-slate-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors border border-slate-200 ${currentPage === totalPages ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-50'}`}
+                disabled={currentPage === totalPages}
+              >
                 Next
               </button>
             </div>
