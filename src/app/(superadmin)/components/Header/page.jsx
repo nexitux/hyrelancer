@@ -15,6 +15,7 @@ import {
 } from 'react-icons/md';
 import { logoutAdmin } from '@/redux/slices/adminSlice';
 import NotificationDropdown from '@/components/NotificationDropdown';
+import LogoutModal from '@/components/LogoutModal/LogoutModal';
 
 export default function Header() {
   const dispatch = useDispatch();
@@ -23,16 +24,25 @@ export default function Header() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // LOGOUT handler (frontend-only)
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+    setShowProfileMenu(false);
+    setShowMobileMenu(false);
+  };
+
+  const handleLogoutConfirm = () => {
+    setIsLoggingOut(true);
     console.log('➡️ handleLogout called (desktop)'); // debug
     // clear redux state + localStorage via slice reducer
     dispatch(logoutAdmin());
     console.log('➡️ dispatched logoutAdmin, localStorage token:', localStorage.getItem('adminToken'));
     // close any open menus and navigate to gateway
-    setShowProfileMenu(false);
-    setShowMobileMenu(false);
+    setShowLogoutModal(false);
+    setIsLoggingOut(false);
     // use replace so back button doesn't return to protected page
     router.replace('/gateway');
   };
@@ -129,7 +139,7 @@ export default function Header() {
               <div className="border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick}
                   className="flex items-center px-4 py-3 space-x-3 w-full text-left text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
                 >
                   <MdLogout size={18} />
@@ -170,7 +180,7 @@ export default function Header() {
             </button>
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               className="flex items-center p-2 space-x-2 w-full text-red-600 rounded-lg hover:bg-red-50"
             >
               <MdLogout size={18} />
@@ -179,6 +189,14 @@ export default function Header() {
           </div>
         </div>
       )}
+
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogoutConfirm}
+        isLoading={isLoggingOut}
+      />
     </header>
   );
 }

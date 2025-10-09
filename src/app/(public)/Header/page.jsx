@@ -25,6 +25,8 @@ import Logo from "../../../../public/images/hyrelancerMain.png";
 import Image from "next/image";
 import api, { freelancerJobAPI } from "@/config/api";
 import PhoneVerificationModal from "../../registration/Header/components/PhoneVerificationModal";
+import LogoutModal from "@/components/LogoutModal/LogoutModal";
+import UserNotificationDropdown from "@/components/UserNotificationDropdown";
 
 // Default category icons mapping
 const defaultCategoryIcons = {
@@ -47,7 +49,8 @@ const Header = ({ params }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch();
@@ -154,9 +157,6 @@ const Header = ({ params }) => {
       if (!event.target.closest(".user-dropdown")) {
         setShowUserDropdown(false);
       }
-      if (!event.target.closest(".notification-dropdown")) {
-        setShowNotificationDropdown(false);
-      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -260,37 +260,16 @@ const Header = ({ params }) => {
     return "/";
   };
 
-  // Sample notification data - replace with actual API call
-  const notifications = [
-    {
-      id: 1,
-      title: "New Message",
-      message: "You have a new message from John Doe",
-      time: "2 minutes ago",
-      isRead: false,
-    },
-    {
-      id: 2,
-      title: "Job Application",
-      message: "Your application for 'Web Development' was accepted",
-      time: "1 hour ago",
-      isRead: true,
-    },
-    {
-      id: 3,
-      title: "Payment Received",
-      message: "Payment of ₹5,000 has been received",
-      time: "3 hours ago",
-      isRead: true,
-    },
-  ];
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
   // Check if user is freelancer
   const isFreelancer = user?.user_type === "Freelancer" || user?.user_type === "freelancer";
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+    setShowUserDropdown(false);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
     try {
       // Call backend logout API
       await api.post("/logout");
@@ -305,8 +284,9 @@ const Header = ({ params }) => {
       // Dispatch Redux logout action to clear the store
       dispatch(logout());
 
-      // Close the dropdown
-      setShowUserDropdown(false);
+      // Close the modal
+      setShowLogoutModal(false);
+      setIsLoggingOut(false);
 
       // Redirect to login page
       router.push("/Login");
@@ -360,7 +340,7 @@ const Header = ({ params }) => {
     baseItems.push({
       name: "Logout",
       icon: <LogOut className="w-4 h-4" />,
-      onClick: handleLogout,
+      onClick: handleLogoutClick,
     });
 
     return baseItems;
@@ -442,59 +422,8 @@ const Header = ({ params }) => {
                 <MessageCircle className="w-5 h-5" />
               </button>
 
-              {/* Notification Button with Dropdown */}
-              <div className="relative notification-dropdown">
-                <button
-                  onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
-                  className="flex items-center p-2 rounded-full transition-colors duration-200 relative hover:bg-gray-100 text-gray-700"
-                  title="Notifications"
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Notification Dropdown Menu */}
-                {showNotificationDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-96 overflow-y-auto">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-                    </div>
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`px-4 py-3 hover:bg-gray-50 transition-colors duration-150 ${
-                            !notification.isRead ? "bg-blue-50 border-l-4 border-blue-500" : ""
-                          }`}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900">
-                                {notification.title}
-                              </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {notification.time}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-8 text-center text-gray-500">
-                        <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                        <p className="text-sm">No notifications yet</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              {/* User Notification Dropdown */}
+              <UserNotificationDropdown userType={user?.user_type?.toLowerCase()} />
 
               {/* Online/Offline Toggle - Only for Freelancers */}
               {isFreelancer && (
@@ -735,22 +664,14 @@ const Header = ({ params }) => {
                 <span className="font-medium">Messages</span>
               </button>
 
-              {/* Notification Button */}
-              <button
-                onClick={() => {
-                  setShowNotificationDropdown(!showNotificationDropdown);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg relative hover:bg-gray-100 text-gray-700 transition-colors"
-              >
+              {/* Mobile Notification Button */}
+              <div className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors">
                 <Bell className="w-5 h-5" />
                 <span className="font-medium">Notifications</span>
-                {unreadCount > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
+                <div className="ml-auto">
+                  <UserNotificationDropdown userType={user?.user_type?.toLowerCase()} />
+                </div>
+              </div>
 
               {/* Online/Offline Toggle - Only for Freelancers */}
               {isFreelancer && (
@@ -798,6 +719,14 @@ const Header = ({ params }) => {
         isOpen={showVerificationModal} 
         onClose={() => setShowVerificationModal(false)}
         onSuccess={handleVerificationSuccess}
+      />
+
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogoutConfirm}
+        isLoading={isLoggingOut}
       />
     </header>
   );
