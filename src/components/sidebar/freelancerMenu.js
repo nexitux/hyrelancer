@@ -1,4 +1,4 @@
-import { FaTachometerAlt, FaBriefcase, FaUser, FaComments, FaHeadset } from "react-icons/fa";
+import { FaTachometerAlt, FaBriefcase, FaUser, FaComments, FaHeadset, FaBell } from "react-icons/fa";
 
 export const freelancerMenu = [
   {
@@ -11,6 +11,12 @@ export const freelancerMenu = [
     icon: <FaComments className="w-4 h-4" />,
     name: "Messages",
     path: "/freelancer-dashboard/message",
+    pro: false,
+  },
+  {
+    icon: <FaBell className="w-4 h-4" />,
+    name: "Notifications",
+    path: "/freelancer-dashboard/notifications",
     pro: false,
   },
   {
