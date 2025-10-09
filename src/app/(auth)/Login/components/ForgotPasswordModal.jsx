@@ -333,8 +333,8 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                 return (
                     <div className="space-y-6 sm:space-y-8">
                         <div className="text-center space-y-2 sm:space-y-3">
-                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-50 rounded-xl flex items-center justify-center mx-auto">
-                                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#3A599C]/10 rounded-xl flex items-center justify-center mx-auto">
+                                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-[#3A599C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                                 </svg>
                             </div>
@@ -345,11 +345,11 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                         <div className="space-y-3 sm:space-y-4">
                             <button
                                 onClick={() => setCurrentStep('mobile-input')}
-                                className="group w-full bg-white hover:bg-gray-50 border border-gray-200 hover:border-blue-200 rounded-xl p-4 sm:p-5 transition-all duration-200 hover:shadow-sm"
+                                className="group w-full bg-white hover:bg-gray-50 border border-gray-200 hover:border-[#3A599C]/20 rounded-xl p-4 sm:p-5 transition-all duration-200 hover:shadow-sm"
                             >
                                 <div className="flex items-center space-x-4">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#3A599C]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-[#3A599C]" />
                                     </div>
                                     <div className="text-left">
                                         <h3 className="text-base sm:text-lg font-medium text-gray-900">Mobile Number</h3>
@@ -360,11 +360,11 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
 
                             <button
                                 onClick={() => setCurrentStep('email-input')}
-                                className="group w-full bg-white hover:bg-gray-50 border border-gray-200 hover:border-purple-200 rounded-xl p-4 sm:p-5 transition-all duration-200 hover:shadow-sm"
+                                className="group w-full bg-white hover:bg-gray-50 border border-gray-200 hover:border-[#3A599C]/20 rounded-xl p-4 sm:p-5 transition-all duration-200 hover:shadow-sm"
                             >
                                 <div className="flex items-center space-x-4">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#3A599C]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-[#3A599C]" />
                                     </div>
                                     <div className="text-left">
                                         <h3 className="text-base sm:text-lg font-medium text-gray-900">Email Address</h3>
@@ -380,8 +380,8 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                 return (
                     <div className="space-y-6 sm:space-y-8">
                         <div className="text-center space-y-2 sm:space-y-3">
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-50 rounded-xl flex items-center justify-center mx-auto">
-                                <Phone className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" />
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#3A599C]/10 rounded-xl flex items-center justify-center mx-auto">
+                                <Phone className="w-6 h-6 sm:w-7 sm:h-7 text-[#3A599C]" />
                             </div>
                             <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
                                 {mode === 'signup' ? 'Enter Your Mobile Number' : 'Enter Mobile Number'}
@@ -407,7 +407,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                                         setMobileError(''); // Clear error on change
                                     }}
                                     placeholder="Enter 10-digit mobile number"
-                                    className="w-full h-12 sm:h-14 bg-gray-50 border border-gray-200 focus:border-green-300 focus:ring-2 focus:ring-green-100 focus:bg-white rounded-xl pl-12 sm:pl-16 pr-4 sm:pr-6 text-gray-900 text-sm sm:text-base placeholder-gray-400 outline-none transition-all duration-200"
+                                    className="w-full h-12 sm:h-14 bg-gray-50 border border-gray-200 focus:border-[#3A599C] focus:ring-2 focus:ring-[#3A599C]/20 focus:bg-white rounded-xl pl-12 sm:pl-16 pr-4 sm:pr-6 text-gray-900 text-sm sm:text-base placeholder-gray-400 outline-none transition-all duration-200"
                                     maxLength={10}
                                 />
                             </div>
@@ -416,7 +416,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                             <button
                                 onClick={handleMobileSubmit}
                                 disabled={mobileNumber.length !== 10 || isLoading}
-                                className="w-full h-12 sm:h-14 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-sm sm:text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                                className="w-full h-12 sm:h-14 bg-[#3A599C] hover:bg-[#2d4577] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-sm sm:text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -435,8 +435,8 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                 return (
                     <div className="space-y-6 sm:space-y-8">
                         <div className="text-center space-y-2 sm:space-y-3">
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-50 rounded-xl flex items-center justify-center mx-auto">
-                                <svg className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#3A599C]/10 rounded-xl flex items-center justify-center mx-auto">
+                                <svg className="w-6 h-6 sm:w-7 sm:h-7 text-[#3A599C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                             </div>
@@ -457,7 +457,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                                         value={otpValues[index]}
                                         onChange={(e) => handleOtpChange(index, e.target.value)}
                                         onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                                        className="w-10 h-10 sm:w-12 sm:h-12 text-center text-lg font-semibold border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-lg bg-gray-50 focus:bg-white outline-none transition-all duration-200"
+                                        className="w-10 h-10 sm:w-12 sm:h-12 text-center text-lg font-semibold border border-gray-200 focus:border-[#3A599C] focus:ring-2 focus:ring-[#3A599C]/20 rounded-lg bg-gray-50 focus:bg-white outline-none transition-all duration-200"
                                         maxLength={1}
                                         inputMode="numeric"
                                     />
@@ -471,7 +471,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                                     disabled={countdown > 0 || isLoading}
                                     className={`text-xs sm:text-sm font-medium transition-colors ${countdown > 0 || isLoading
                                         ? 'text-gray-400 cursor-not-allowed'
-                                        : 'text-blue-600 hover:text-blue-700'
+                                        : 'text-[#3A599C] hover:text-[#2d4577]'
                                         }`}
                                 >
                                     {countdown > 0
@@ -486,7 +486,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                             <button
                                 onClick={handleOtpSubmit}
                                 disabled={!otpValues.every(value => value !== '') || isLoading}
-                                className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-sm sm:text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                                className="w-full h-12 sm:h-14 bg-[#3A599C] hover:bg-[#2d4577] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-sm sm:text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -505,8 +505,8 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                 return (
                     <div className="space-y-6 sm:space-y-8">
                         <div className="text-center space-y-2 sm:space-y-3">
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-50 rounded-xl flex items-center justify-center mx-auto">
-                                <Mail className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#3A599C]/10 rounded-xl flex items-center justify-center mx-auto">
+                                <Mail className="w-6 h-6 sm:w-7 sm:h-7 text-[#3A599C]" />
                             </div>
                             <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Enter Email Address</h2>
                             <p className="text-sm sm:text-base text-gray-600">We'll send a password reset link to your email</p>
@@ -522,7 +522,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                                         setEmailError('');
                                     }}
                                     placeholder="Enter your registered email address"
-                                    className="w-full h-12 sm:h-14 bg-gray-50 border border-gray-200 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 focus:bg-white rounded-xl px-4 sm:px-6 text-gray-900 text-sm sm:text-base placeholder-gray-400 outline-none transition-all duration-200"
+                                    className="w-full h-12 sm:h-14 bg-gray-50 border border-gray-200 focus:border-[#3A599C] focus:ring-2 focus:ring-[#3A599C]/20 focus:bg-white rounded-xl px-4 sm:px-6 text-gray-900 text-sm sm:text-base placeholder-gray-400 outline-none transition-all duration-200"
                                 />
                             </div>
                             {emailError && <p className="text-sm text-red-600 text-center -mt-2">{emailError}</p>}
@@ -530,7 +530,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                             <button
                                 onClick={handleEmailSubmit}
                                 disabled={!email || isLoading}
-                                className="w-full h-12 sm:h-14 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-sm sm:text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                                className="w-full h-12 sm:h-14 bg-[#3A599C] hover:bg-[#2d4577] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium text-sm sm:text-base rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -549,8 +549,8 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                 return (
                     <div className="space-y-6 sm:space-y-8">
                         <div className="text-center space-y-3 sm:space-y-4">
-                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-50 rounded-xl flex items-center justify-center mx-auto">
-                                <Check className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" />
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#3A599C]/10 rounded-xl flex items-center justify-center mx-auto">
+                                <Check className="w-7 h-7 sm:w-8 sm:h-8 text-[#3A599C]" />
                             </div>
                             <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Check Your Email</h2>
                             <div className="space-y-2">
@@ -581,7 +581,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, mode = 'forgot-password' }) => {
                                     Didn't receive the email? Check your spam folder or{' '}
                                     <button
                                         onClick={() => setCurrentStep('email-input')}
-                                        className="text-purple-600 hover:text-purple-700 font-medium"
+                                        className="text-[#3A599C] hover:text-[#2d4577] font-medium"
                                     >
                                         try a different email
                                     </button>

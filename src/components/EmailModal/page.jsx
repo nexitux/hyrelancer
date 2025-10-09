@@ -52,8 +52,8 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onResendEmail }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FaEnvelope className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 bg-[#3A599C]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FaEnvelope className="w-8 h-8 text-[#3A599C]" />
           </div>
           
           <h3 className="text-2xl font-bold text-gray-900 mb-2">
@@ -76,11 +76,11 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onResendEmail }) => {
             <button
               onClick={handleResendEmail}
               disabled={isResending || countdown > 0}
-              className="w-full py-3 text-blue-600 font-medium border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 text-[#3A599C] font-medium border border-[#3A599C]/20 rounded-xl hover:bg-[#3A599C]/5 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isResending ? (
                 <div className="flex items-center justify-center">
-                  <div className="mr-2 w-4 h-4 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+                  <div className="mr-2 w-4 h-4 border-2 border-[#3A599C] rounded-full animate-spin border-t-transparent"></div>
                   Sending...
                 </div>
               ) : countdown > 0 ? (
@@ -92,7 +92,7 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onResendEmail }) => {
             
             <button
               onClick={onClose}
-              className="w-full py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors duration-200"
+              className="w-full py-3 bg-[#3A599C] text-white font-medium rounded-xl hover:bg-[#2d4577] transition-colors duration-200"
             >
               Continue
             </button>

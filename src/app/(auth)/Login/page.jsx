@@ -690,8 +690,8 @@ const AuthForm = () => {
     if (modalContent.type === 'success') {
       return (
         <div className="flex flex-col items-center bg-transparent">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mt-4 mb-6">
-            <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 bg-[#3A599C]/10 rounded-full flex items-center justify-center mt-4 mb-6">
+            <svg className="w-12 h-12 text-[#3A599C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -700,7 +700,7 @@ const AuthForm = () => {
           <div className="w-full border-t border-gray-100 mb-4"></div>
           <button
             onClick={handleModalOk}
-            className="w-full py-4 bg-green-600 text-white font-medium hover:bg-green-700 transition-colors rounded-2xl"
+            className="w-full py-4 bg-[#3A599C] text-white font-medium hover:bg-[#2d4577] transition-colors rounded-2xl"
           >
             Continue to Dashboard
           </button>
@@ -709,8 +709,8 @@ const AuthForm = () => {
     } else if (modalContent.type === 'email_verification') {
       return (
         <div className="flex flex-col items-center bg-transparent">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mt-4 mb-6">
-            <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 bg-[#3A599C]/10 rounded-full flex items-center justify-center mt-4 mb-6">
+            <svg className="w-12 h-12 text-[#3A599C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
@@ -722,7 +722,7 @@ const AuthForm = () => {
           <div className="w-full border-t border-gray-100 mb-4"></div>
           <button
             onClick={() => setIsModalOpen(false)}
-            className="w-full py-4 bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors rounded-2xl"
+            className="w-full py-4 bg-[#3A599C] text-white font-medium hover:bg-[#2d4577] transition-colors rounded-2xl"
           >
             Continue
           </button>
@@ -739,7 +739,7 @@ const AuthForm = () => {
           type="tel"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
-          className="w-full h-11 bg-gray-50 border-2 rounded-xl px-4 text-gray-900 focus:border-gray-900 focus:bg-white focus:outline-none transition-all duration-200"
+          className="w-full h-11 bg-gray-50 border-2 rounded-xl px-4 text-gray-900 focus:border-[#3A599C] focus:bg-white focus:outline-none transition-all duration-200"
           placeholder="Enter your phone number"
         />
       </div>
@@ -747,9 +747,9 @@ const AuthForm = () => {
         type="button"
         onClick={handleSendOtp}
         disabled={isPhoneLoading}
-        className="flex items-center justify-center h-11 w-full bg-white rounded-xl shadow-sm border border-gray-200 text-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-sm disabled:opacity-50"
+        className="flex items-center justify-center h-11 w-full bg-[#3A599C] rounded-xl shadow-sm text-white hover:bg-[#2d4577] transition-all duration-200 font-medium text-sm disabled:opacity-50"
       >
-        <MailOutlined className="w-4 h-4 mr-3 text-gray-500" />
+        <MailOutlined className="w-4 h-4 mr-3 text-white" />
         {isPhoneLoading ? 'Sending...' : 'Send OTP'}
       </button>
     </div>
@@ -759,7 +759,7 @@ const AuthForm = () => {
     <div className="space-y-4">
       <div className="text-center">
         {otpSuccessMessage && (
-          <div className="text-sm font-medium text-green-600 mb-2">
+          <div className="text-sm font-medium text-[#3A599C] mb-2">
             {otpSuccessMessage}
           </div>
         )}
@@ -782,7 +782,7 @@ const AuthForm = () => {
             value={otp[index]}
             onChange={(e) => handleOtpChange(index, e.target.value)}
             onKeyDown={(e) => handleOtpKeyDown(index, e)}
-            className="w-10 h-10 sm:w-12 sm:h-12 text-center text-xl border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+            className="w-10 h-10 sm:w-12 sm:h-12 text-center text-xl border border-gray-300 rounded-lg focus:border-[#3A599C] focus:ring-2 focus:ring-[#3A599C]/20 outline-none"
           />
         ))}
       </div>
@@ -792,7 +792,7 @@ const AuthForm = () => {
           type="button"
           onClick={handleResendOtp}
           disabled={countdown > 0 || isPhoneLoading}
-          className={`text-sm ${countdown > 0 || isPhoneLoading ? 'text-gray-400' : 'text-blue-600 hover:underline'}`}
+          className={`text-sm ${countdown > 0 || isPhoneLoading ? 'text-gray-400' : 'text-[#3A599C] hover:underline'}`}
         >
           {countdown > 0 ? `Resend OTP in ${countdown}s` : 'Resend OTP'}
         </button>
@@ -802,7 +802,7 @@ const AuthForm = () => {
         type="button"
         onClick={handleVerifyOtp}
         disabled={isPhoneLoading || otp.join('').length !== 6}
-        className="flex items-center justify-center h-11 w-full bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 transition-all duration-200 font-medium text-sm disabled:opacity-50"
+        className="flex items-center justify-center h-11 w-full bg-[#3A599C] text-white rounded-xl shadow-sm hover:bg-[#2d4577] transition-all duration-200 font-medium text-sm disabled:opacity-50"
       >
         {isPhoneLoading ? 'Verifying...' : 'Verify & Login'}
       </button>
@@ -813,7 +813,7 @@ const AuthForm = () => {
           setPhoneAuthStep('phone');
           setOtp(['', '', '', '', '', '']);
         }}
-        className="text-sm text-blue-600 hover:underline w-full text-center"
+        className="text-sm text-[#3A599C] hover:underline w-full text-center"
       >
         Change Phone Number
       </button>
@@ -1222,14 +1222,14 @@ const AuthForm = () => {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Phone Authentication</h3>
+              <h3 className="text-lg font-semibold text-[#3A599C]">Phone Authentication</h3>
               <button
                 onClick={() => {
                   setShowMobileSignIn(false);
                   setPhoneAuthStep('phone');
                   setOtp(['', '', '', '', '', '']);
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-[#3A599C] transition-colors"
               >
                 <X size={20} />
               </button>
