@@ -13,6 +13,7 @@ import {
   Camera,
   Image as ImageIcon,
   ChevronDown,
+  CheckCircle2,
   Settings,
   LogOut,
   Shield,
@@ -42,6 +43,7 @@ const Header = ({ params }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState(null);
   const [isTabletView, setIsTabletView] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -115,6 +117,9 @@ const Header = ({ params }) => {
         setCategories(transformedCategories);
         if (transformedCategories.length > 0) {
           setSelectedCategory(transformedCategories[0]);
+          if (transformedCategories[0].subcategories?.length > 0) {
+            setSelectedSubcategory(transformedCategories[0].subcategories[0]);
+          }
         }
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -198,10 +203,10 @@ const Header = ({ params }) => {
     pathname !== "/Register" &&
     pathname !== "/register";
 
-  const shouldShowLoginButton = !shouldShowUserDropdown && 
-    pathname !== "/Login" && 
-    pathname !== "/login" && 
-    pathname !== "/Register" && 
+  const shouldShowLoginButton = !shouldShowUserDropdown &&
+    pathname !== "/Login" &&
+    pathname !== "/login" &&
+    pathname !== "/Register" &&
     pathname !== "/register";
 
   // Check if mobile number is verified
@@ -230,7 +235,7 @@ const Header = ({ params }) => {
     try {
       const newStatus = !isOnline;
       const userId = user?.id;
-      
+
       if (!userId) {
         console.error("User ID not found");
         return;
@@ -238,10 +243,10 @@ const Header = ({ params }) => {
 
       // Update Redux state immediately for better UX
       dispatch(updateOnlineStatus(newStatus));
-      
+
       // Call API to update availability status
       await freelancerJobAPI.updateAvailability(userId, newStatus);
-      
+
       console.log(`Freelancer availability updated to: ${newStatus ? 'Online' : 'Offline'}`);
     } catch (error) {
       console.error("Error updating availability status:", error);
@@ -316,13 +321,13 @@ const Header = ({ params }) => {
   // Get the correct dashboard path based on user type
   const getDashboardPath = () => {
     const userType = user?.user_type;
-    
+
     if (userType === "Customer" || userType === "customer") {
       return "/customer-dashboard";
     } else if (userType === "Freelancer" || userType === "freelancer") {
       return "/freelancer-dashboard";
     }
-    
+
     // Default fallback
     return "/";
   };
@@ -331,7 +336,7 @@ const Header = ({ params }) => {
   const getUserMenuItems = () => {
     const userType = user?.user_type;
     const isCustomer = userType === "Customer" || userType === "customer";
-    
+
     const baseItems = [
       {
         name: "Dashboard",
@@ -383,8 +388,8 @@ const Header = ({ params }) => {
           </button>
 
           {/* Logo */}
-          <a 
-            href="/" 
+          <a
+            href="/"
             aria-label="Hyrelancer Home"
             onClick={(e) => {
               e.preventDefault();
@@ -408,6 +413,8 @@ const Header = ({ params }) => {
             aria-label="Main navigation"
           >
             <button
+              onClick={() => setShowDropdown((prev) => !prev)}
+              aria-expanded={showDropdown}
               className="inline-flex h-12 items-center gap-2 px-4 xl:px-6 bg-[#3a599c2e] rounded-[32px] cursor-pointer hover:bg-[#3a599c40] transition-colors"
               aria-label="Categories menu"
             >
@@ -467,9 +474,8 @@ const Header = ({ params }) => {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 hover:bg-gray-50 transition-colors duration-150 ${
-                            !notification.isRead ? "bg-blue-50 border-l-4 border-blue-500" : ""
-                          }`}
+                          className={`px-4 py-3 hover:bg-gray-50 transition-colors duration-150 ${!notification.isRead ? "bg-blue-50 border-l-4 border-blue-500" : ""
+                            }`}
                         >
                           <div className="flex items-start space-x-3">
                             <div className="flex-1 min-w-0">
@@ -500,11 +506,10 @@ const Header = ({ params }) => {
               {isFreelancer && (
                 <button
                   onClick={handleOnlineToggle}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    isOnline
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isOnline
                       ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-200"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-                  }`}
+                    }`}
                   title={isOnline ? "Go Offline" : "Go Online"}
                 >
                   {isOnline ? (
@@ -620,6 +625,118 @@ const Header = ({ params }) => {
       </div>
 
       {/* Mobile/Tablet Menu (shown on mobile and tablet) */}
+      {/* Desktop Categories Dropdown */}
+      {showDropdown && !isAuthenticated && (
+        <div className="category-dropdown absolute left-0 right-0 z-40 top-full">
+          <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 2xl:px-36">
+            <div className="overflow-hidden rounded-3xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] mt-2">
+              <div className="flex">
+                {/* Left: Subcategory list (uses current category's sub.titile) */}
+                <div className="w-[280px] bg-gray-50 p-6 border-r border-gray-200">
+                  <div className="space-y-1">
+                    {selectedCategory?.subcategories?.map((sub) => {
+                      const isSelected = selectedSubcategory?.title === sub.title;
+                      return (
+                        <button
+                          key={sub.title}
+                          onMouseEnter={() => setSelectedSubcategory(sub)}
+                          onClick={() => setSelectedSubcategory(sub)}
+                          className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-left transition-all ${isSelected
+                              ? "bg-white text-gray-900 shadow-sm"
+                              : "text-gray-700 hover:bg-white/50"
+                            }`}
+                          aria-current={isSelected ? "true" : undefined}
+                          tabIndex={0}
+                        >
+                          <span className={isSelected ? "text-[#3a599c]" : "text-gray-500"}>
+                            <CheckCircle2 className="h-4 w-4" />
+                          </span>
+                          {/* <span className="font-medium text-[15px]">{sub.title}</span> */}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Middle: Services for selected subcategory */}
+                <div className="flex-1 p-8 max-h-[500px] overflow-y-auto">
+                  {selectedSubcategory && (
+                    <>
+                      <div className="mb-6 pb-4 border-b border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#3a599c]"><CheckCircle2 className="h-4 w-4" /></span>
+                          <h2 className="text-lg font-semibold text-gray-900">{selectedSubcategory.title}</h2>
+                        </div>
+                      </div>
+                      <ul className="grid grid-cols-2 gap-x-12 gap-y-3">
+                        {selectedSubcategory.items?.length > 0 ? (
+                          selectedSubcategory.items.map((item) => (
+                            <li key={item}>
+                              <a
+                                href="#"
+                                className="flex items-start gap-2 text-[14px] text-gray-600 hover:text-[#3a599c] transition-colors group"
+                              >
+                                <CheckCircle2 className="h-4 w-4 text-[#3a599c] flex-shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
+                                <span>{item}</span>
+                              </a>
+                            </li>
+                          ))
+                        ) : (
+                          <div className="col-span-2 text-center py-8 text-gray-500">No services available</div>
+                        )}
+                      </ul>
+                    </>
+                  )}
+                 
+                </div>
+                 {/* Right: Promotional section */}
+                 <div className="w-[320px] bg-gray-50 p-6 border-l border-gray-200">
+                  <div className="sticky top-6">
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                      <Image
+                        src={require('../../../../public/images/web-developer.jpg')}
+                        alt="Premium services"
+                        width={320}
+                        height={192}
+                        className="w-full h-[192px] object-cover"
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-[15px] font-semibold text-gray-900 mb-3">
+                        Premium services curated for your needs
+                      </p>
+                      <button
+                        onClick={() => {
+                          router.push('/Category');
+                          setShowDropdown(false);
+                        }}
+                        className="flex items-center gap-2 text-[#3a599c] font-semibold text-[14px] hover:gap-3 transition-all group"
+                      >
+                        <span>View All Categories</span>
+                        <svg
+                          className="h-4 w-4 group-hover:translate-x-1 transition-transform"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1 8H15M15 8L8 1M15 8L8 15"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         className={`fixed inset-0 z-40 overflow-y-auto transition-all duration-300 ease-in-out transform ${isMobileMenuOpen
           ? "translate-x-0 opacity-100"
@@ -759,11 +876,10 @@ const Header = ({ params }) => {
                     handleOnlineToggle();
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors ${
-                    isOnline
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors ${isOnline
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-700"
-                  }`}
+                    }`}
                 >
                   {isOnline ? (
                     <Wifi className="w-5 h-5" />
@@ -794,8 +910,8 @@ const Header = ({ params }) => {
       </div>
 
       {/* Phone Verification Modal */}
-      <PhoneVerificationModal 
-        isOpen={showVerificationModal} 
+      <PhoneVerificationModal
+        isOpen={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
         onSuccess={handleVerificationSuccess}
       />
