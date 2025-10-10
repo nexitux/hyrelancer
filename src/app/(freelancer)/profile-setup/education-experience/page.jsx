@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import {
   Form, Input, Button, Collapse, Card, Row, Col, Divider,
-  Table, Typography, Descriptions, Space, message, Select, Spin, Checkbox, Popconfirm, Progress, Tooltip
+  Table, Typography, Descriptions, Space, message, Select, Spin, Checkbox, Popconfirm, Progress, Tooltip, Tag
 } from "antd";
 import {
   PlusOutlined, CloseOutlined, EditOutlined, CheckOutlined,
-  BookOutlined, LaptopOutlined, UserOutlined, EyeOutlined, DeleteOutlined
+  BookOutlined, LaptopOutlined, UserOutlined, EyeOutlined, DeleteOutlined,
+  CheckCircleOutlined, ClockCircleOutlined
 } from "@ant-design/icons";
 import { useSelector } from 'react-redux';
 import api from "@/config/api";
@@ -56,6 +57,7 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
   const [educationData, setEducationData] = useState([]);
   const [experienceData, setExperienceData] = useState([]);
   const [profileData, setProfileData] = useState(null);
+  const [approvalData, setApprovalData] = useState(null);
 
   // Form field states
   const [educationFields, setEducationFields] = useState([]);
@@ -111,6 +113,11 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
 
       if (response.data) {
         const { u_profile, fe_edu, fe_work } = response.data;
+        
+        // Store approval data if available
+        if (response.data.u_approval) {
+          setApprovalData(response.data.u_approval);
+        }
 
         // Check if we have meaningful professional data
         const hasValidProfile = u_profile && (
@@ -563,6 +570,52 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
     return 0;
   };
 
+  const renderVerificationBadge = () => {
+    // Only show badge in freelancer mode (not registration)
+    if (isRegistration || !approvalData) return null;
+
+    const isVerified = approvalData.fa_tab_3_app === "1";
+    
+    return (
+      <Tag
+        icon={isVerified ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+        color={isVerified ? "success" : "warning"}
+        className="ml-2"
+      >
+        {isVerified ? "Verified" : "Pending"}
+      </Tag>
+    );
+  };
+
+  const renderFieldVerificationBadge = (fieldKey, isActive = null) => {
+    // Only show field badges if overall tab is verified and not in registration mode
+    if (isRegistration || !approvalData || approvalData.fa_tab_3_app !== "1") return null;
+
+    let isFieldVerified = false;
+    
+    // Handle different field types
+    if (isActive !== null) {
+      // For education/experience active status
+      isFieldVerified = isActive === 1;
+    } else if (fieldKey) {
+      // For approval data fields
+      isFieldVerified = approvalData[fieldKey] === "1";
+    }
+    
+    return (
+      <div
+        className={`w-5 h-5 rounded-full flex items-center justify-center ml-2 ${
+          isFieldVerified 
+            ? 'bg-lime-500 text-white' 
+            : 'bg-yellow-300 text-white'
+        }`}
+        title={isFieldVerified ? "Verified" : "Pending"}
+      >
+        {isFieldVerified ? <CheckCircleOutlined className="text-xl" /> : <ClockCircleOutlined className="text-xs" />}
+      </div>
+    );
+  };
+
   // Navigation functions
   const showEducationReview = () => setCurrentView('education');
   const showExperienceReview = () => setCurrentView('experience');
@@ -597,6 +650,12 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
       title: 'Year',
       dataIndex: 'fc_year',
       key: 'year',
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      render: (_, record) => renderFieldVerificationBadge(null, record.fc_is_active),
+      width: 80,
     },
     {
       title: 'Actions',
@@ -640,6 +699,12 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
       dataIndex: 'fj_desc',
       key: 'description',
       render: (text) => <Text ellipsis={{ tooltip: text }}>{text}</Text>,
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      render: (_, record) => renderFieldVerificationBadge(null, record.fj_is_active),
+      width: 80,
     },
     {
       title: 'Actions',
@@ -722,15 +787,18 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
               <div className="bg-white p-4 sm:p-6 border-b border-gray-100">
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                   <div className="flex-1">
-                    <Title level={3} className="!mb-1 !text-gray-900 !text-lg sm:!text-xl lg:!text-2xl">
-                      {currentView === 'form' ? (
-                        editingSection === 'education' ? "Edit Education" :
-                          editingSection === 'experience' ? "Edit Experience" :
-                            "Professional Profile"
-                      ) : (
-                        currentView === 'education' ? "Education Profile" : "Experience Profile"
-                      )}
-                    </Title>
+                    <div className="flex items-center">
+                      <Title level={3} className="!mb-1 !text-gray-900 !text-lg sm:!text-xl lg:!text-2xl mr-2">
+                        {currentView === 'form' ? (
+                          editingSection === 'education' ? "Edit Education" :
+                            editingSection === 'experience' ? "Edit Experience" :
+                              "Professional Profile"
+                        ) : (
+                          currentView === 'education' ? "Education Profile" : "Experience Profile"
+                        )}
+                      </Title>
+                      {renderVerificationBadge()}
+                    </div>
                     <Text type="secondary" className="text-sm sm:text-base">
                       {currentView === 'form' ? (
                         editingSection ? `Update your ${editingSection} information` :
@@ -879,10 +947,16 @@ const ResumeBuilderTab = ({ onNext, onBack, isRegistration = false, showCompleti
                       <div className="mb-6">
                         <Descriptions bordered column={1} className="mb-6" size="small">
                           <Descriptions.Item label="Current Occupation">
-                            <Text strong className="text-sm sm:text-base">{profileData?.fp_occupation || 'Not specified'}</Text>
+                          <div className="flex items-center">
+                          <Text strong className="text-sm sm:text-base">{profileData?.fp_occupation || 'Not specified'}</Text>
+                          {renderFieldVerificationBadge('fa_occupation_app')}
+                              </div>
                           </Descriptions.Item>
                           <Descriptions.Item label="Total Experience">
-                            <Text className="text-sm sm:text-base">{profileData?.fp_ex_year ? `${profileData.fp_ex_year}` : 'Not specified'}</Text>
+                          <div className="flex items-center">
+                          <Text className="text-sm sm:text-base">{profileData?.fp_ex_year ? `${profileData.fp_ex_year}` : 'Not specified'}</Text>
+                          {renderFieldVerificationBadge('fa_ex_year_app')}
+                              </div>
                           </Descriptions.Item>
                         </Descriptions>
                       </div>

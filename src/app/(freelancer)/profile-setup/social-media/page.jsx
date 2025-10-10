@@ -24,7 +24,9 @@ import {
   GlobalOutlined,
   EditOutlined,
   CheckOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined
 } from "@ant-design/icons";
 import api from '@/config/api'; // Update this import path
 import Loader from "../../../../components/Loader/page";
@@ -99,6 +101,7 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
   const [isEditing, setIsEditing] = useState(false);
   const [socialData, setSocialData] = useState(null);
   const [initialData, setInitialData] = useState({});
+  const [approvalData, setApprovalData] = useState(null);
 
   // Fetch social data on component mount
   useEffect(() => {
@@ -112,6 +115,11 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
 
       if (response.data && response.data.fp_social) {
         const socialInfo = response.data.fp_social;
+        
+        // Store approval data if available
+        if (response.data.u_approval) {
+          setApprovalData(response.data.u_approval);
+        }
 
         // Extract social media fields
         const socialFields = {
@@ -136,7 +144,8 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
               platform: platform?.name || key,
               url: value,
               icon: platform?.icon,
-              color: platform?.color
+              color: platform?.color,
+              fieldKey: key // Add field key for verification badge mapping
             };
           });
 
@@ -176,7 +185,8 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
               platform: platform?.name || key,
               url: value,
               icon: platform?.icon,
-              color: platform?.color
+              color: platform?.color,
+              fieldKey: key // Add field key for verification badge mapping
             };
           });
 
@@ -211,6 +221,43 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
     return Math.round((filled.length / socialPlatforms.length) * 100);
   };
 
+  const renderVerificationBadge = () => {
+    // Only show badge in freelancer mode (not registration)
+    if (isRegistration || !approvalData) return null;
+
+    const isVerified = approvalData.fa_tab_4_app === "1";
+    
+    return (
+      <Tag
+        icon={isVerified ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+        color={isVerified ? "success" : "warning"}
+        className="ml-2"
+      >
+        {isVerified ? "Verified" : "Pending"}
+      </Tag>
+    );
+  };
+
+  const renderFieldVerificationBadge = (fieldKey) => {
+    // Only show field badges if overall tab is verified and not in registration mode
+    if (isRegistration || !approvalData || approvalData.fa_tab_4_app !== "1") return null;
+
+    const isFieldVerified = approvalData[fieldKey] === "1" || approvalData[fieldKey] === 1;
+    
+    return (
+      <div
+        className={`w-5 h-5 rounded-full flex items-center justify-center ml-2 ${
+          isFieldVerified 
+            ? 'bg-lime-500 text-white' 
+            : 'bg-yellow-300 text-white'
+        }`}
+        title={isFieldVerified ? "Verified" : "Pending"}
+      >
+        {isFieldVerified ? <CheckCircleOutlined className="text-xl" /> : <ClockCircleOutlined className="text-xs" />}
+      </div>
+    );
+  };
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
@@ -231,9 +278,12 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
           <div className="bg-white p-6 border-b border-gray-100">
             <div className="flex justify-between items-start sm:items-center">
               <div>
-                <Title level={3} className="!mb-1 !text-gray-900">
-                  {isEditing ? "Social Media Links" : "Your Social Profiles"}
-                </Title>
+                <div className="flex items-center">
+                  <Title level={3} className="!mb-1 !text-gray-900 mr-2">
+                    {isEditing ? "Social Media Links" : "Your Social Profiles"}
+                  </Title>
+                  {renderVerificationBadge()}
+                </div>
                 <Text type="secondary">
                   {isEditing ? "Add your official social media handles" : "Manage your connected social profiles"}
                 </Text>
@@ -357,9 +407,12 @@ const SocialTab = ({ onNext, onBack, isRegistration = false, showCompletionModal
                             <span className="text-xl">{profile.icon}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <Text strong className="block text-gray-700">
-                              {profile.platform}
-                            </Text>
+                            <div className="flex items-center">
+                              <Text strong className="block text-gray-700 flex-1">
+                                {profile.platform}
+                              </Text>
+                              {renderFieldVerificationBadge(`fa_${profile.fieldKey.replace('fp_', '')}_app`)}
+                            </div>
                             <Text className="text-gray-500 text-sm truncate block">
                               {profile.url}
                             </Text>

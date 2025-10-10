@@ -7,7 +7,8 @@ import {
 import {
   PlusOutlined, EditOutlined, CheckOutlined,
   PlayCircleOutlined, FileOutlined, DeleteOutlined,
-  LoadingOutlined, EyeOutlined, SettingOutlined
+  LoadingOutlined, EyeOutlined, SettingOutlined,
+  CheckCircleOutlined, ClockCircleOutlined
 } from '@ant-design/icons';
 import api from '../../../../config/api'; // Adjust path to your api config
 import Loader from "../../../../components/Loader/page";
@@ -37,6 +38,8 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [approvalData, setApprovalData] = useState(null);
+  const [portfolioData, setPortfolioData] = useState(null);
   
   // Modal states
   const [skillModalVisible, setSkillModalVisible] = useState(false);
@@ -54,6 +57,43 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
   });
 
   const generateUID = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.floor(Math.random() * 10000)}`;
+
+  const renderVerificationBadge = () => {
+    // Only show badge in freelancer mode (not registration)
+    if (isRegistration || !approvalData) return null;
+
+    const isVerified = approvalData.fa_tab_5_app === "1";
+    
+    return (
+      <Tag
+        icon={isVerified ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+        color={isVerified ? "success" : "warning"}
+        className="ml-2"
+      >
+        {isVerified ? "Verified" : "Pending"}
+      </Tag>
+    );
+  };
+
+  const renderFieldVerificationBadge = (isActive) => {
+    // Only show field badges if overall tab is verified and not in registration mode
+    if (isRegistration || !approvalData || approvalData.fa_tab_5_app !== "1") return null;
+
+    const isFieldVerified = isActive === 1 || isActive === "1";
+    
+    return (
+      <div
+        className={`w-5 h-5 rounded-full flex items-center justify-center ml-2 ${
+          isFieldVerified 
+            ? 'bg-lime-500 text-white' 
+            : 'bg-yellow-300 text-white'
+        }`}
+        title={isFieldVerified ? "Verified" : "Pending"}
+      >
+        {isFieldVerified ? <CheckCircleOutlined className="text-xl" /> : <ClockCircleOutlined className="text-xs" />}
+      </div>
+    );
+  };
 
   const getFullImageUrl = (imagePath) => {
     if (!imagePath || imagePath.trim() === '' || imagePath === '0') return null;
@@ -74,6 +114,14 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
     try {
       setLoading(true);
       const response = await api.get('/getPortfolio');
+
+      // Store raw API response data
+      setPortfolioData(response.data);
+
+      // Store approval data if available
+      if (response.data.u_approval) {
+        setApprovalData(response.data.u_approval);
+      }
 
       if (response.data.fe_skills?.length > 0) {
         const skillNames = response.data.fe_skills.map(skill => skill.fs_skill);
@@ -554,7 +602,10 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
           <div className="bg-white p-3 sm:p-4 md:p-6 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
               <div className="w-full sm:w-auto">
-                <Title level={2} className="!mb-1 sm:!mb-2 !text-gray-800 text-lg sm:text-xl md:text-2xl">Portfolio Management</Title>
+                <div className="flex items-center">
+                  <Title level={2} className="!mb-1 sm:!mb-2 !text-gray-800 text-lg sm:text-xl md:text-2xl mr-2">Portfolio Management</Title>
+                  {renderVerificationBadge()}
+                </div>
                 <Text className="text-gray-600 text-sm sm:text-base">Manage your portfolio items and skills</Text>
               </div>
             </div>
@@ -617,27 +668,32 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                   </div>
                   
                   {skills.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                      {skills.map((skill, index) => (
-                        <div
-                          key={index}
-                          className="group relative bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 sm:p-3 hover:shadow-md transition-all duration-200"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs sm:text-sm font-medium text-blue-800 truncate pr-1 sm:pr-2 flex-1">
-                              {skill}
-                            </span>
+                    <div className="flex flex-wrap gap-2 sm:gap-3">
+                      {skills.map((skill, index) => {
+                        const skillData = portfolioData?.fe_skills?.find(s => s.fs_skill === skill);
+                        return (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="flex-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 sm:p-3 hover:shadow-md transition-all duration-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center flex-1">
+                                  <span className="text-xs sm:text-sm font-medium text-blue-800 truncate pr-1 sm:pr-2 flex-1">
+                                    {skill}
+                                  </span>
+                                  {renderFieldVerificationBadge(skillData?.fs_is_active)}
+                                </div>
+                              </div>
+                            </div>
                             <Button
                               type="text"
                               size="small"
                               icon={<DeleteOutlined />}
                               onClick={() => handleRemoveSkill(skill)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 sm:p-1 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center flex-shrink-0"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-6 w-6 flex items-center justify-center bg-white rounded-full shadow-md border border-red-200 flex-shrink-0"
                               title="Delete skill"
                             />
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-6 sm:py-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
@@ -732,7 +788,10 @@ export default function PortfolioForm({ onNext, onBack, isRegistration = false, 
                       >
                         <div className="flex flex-col flex-1 justify-between h-full p-3 sm:p-4 md:p-5">
                           <div>
-                            <Title level={5} className="!mb-1 sm:!mb-2 text-gray-900 font-semibold line-clamp-1 text-sm sm:text-base">{portfolio.title}</Title>
+                            <div className="flex items-center mb-1 sm:mb-2">
+                              <Title level={5} className="!mb-0 text-gray-900 font-semibold line-clamp-1 text-sm sm:text-base flex-1">{portfolio.title}</Title>
+                              {renderFieldVerificationBadge(portfolioData?.fe_porfolio?.find(p => p.fpo_id === portfolio.fpo_id)?.fpo_is_active)}
+                            </div>
                             <Text className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 block line-clamp-2 sm:line-clamp-3">
                               {portfolio.description}
                             </Text>

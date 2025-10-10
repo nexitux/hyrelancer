@@ -71,28 +71,15 @@ const JobListingPage = () => {
         }
     };
 
-    const handleToggleStatus = async (jobId, currentStatus) => {
-        // Only allow approve when job is in Pending state (cuj_is_rejected === 0 && cuj_is_active === 1).
-        // currentStatus is job.cuj_is_active (1 for pending/active), we still confirm with user before approving.
+    const handleApprove = async (jobId) => {
         if (!confirm("Are you sure you want to approve this job?")) return;
 
         try {
             // backend expects base64 encoded id
             const res = await adminApi.get(`/approveJobByAdmin/${encodeId(jobId)}`);
 
-            // Update local state: set cuj_is_rejected = 1 and cuj_is_active = 1 (Approved / Active)
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.cuj_id === jobId
-                        ? {
-                            ...j,
-                            cuj_is_rejected: 1,
-                            cuj_is_active: 1,
-                            updated_at: new Date().toISOString(),
-                        }
-                        : j
-                )
-            );
+            // Refresh data from API to ensure consistency
+            await fetchJobs();
 
             // optional feedback
             alert(res?.data?.message || "Job approved.");
@@ -102,25 +89,35 @@ const JobListingPage = () => {
         }
     };
 
+    const handleReject = async (jobId) => {
+        if (!confirm("Are you sure you want to reject this job?")) return;
+
+        try {
+            // backend expects base64 encoded id
+            const res = await adminApi.get(`/rejectJobByAdmin/${encodeId(jobId)}`);
+
+            // Refresh data from API to ensure consistency
+            await fetchJobs();
+
+            // remove selection if it was selected
+            setSelectedJobs((prev) => prev.filter((id) => id !== jobId));
+
+            // optional feedback
+            alert(res?.data?.message || "Job rejected.");
+        } catch (err) {
+            console.error("Reject failed", err);
+            alert(err?.response?.data?.message || "Reject failed");
+        }
+    };
+
     const handleDelete = async (jobId) => {
         if (!confirm("Are you sure you want to delete this job?")) return;
         try {
             // backend expects base64 encoded id (deleteJobByAdmin/{id})
             const res = await adminApi.delete(`/deleteJobByAdmin/${encodeId(jobId)}`);
 
-            // Update local state to reflect soft-delete (cuj_is_rejected = 0, cuj_is_active = 0)
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.cuj_id === jobId
-                        ? {
-                            ...j,
-                            cuj_is_rejected: 0,
-                            cuj_is_active: 0,
-                            deleted_at: new Date().toISOString(),
-                        }
-                        : j
-                )
-            );
+            // Refresh data from API to ensure consistency
+            await fetchJobs();
 
             // remove selection if it was selected
             setSelectedJobs((prev) => prev.filter((id) => id !== jobId));
@@ -139,13 +136,9 @@ const JobListingPage = () => {
         try {
             // call restore API (adjust endpoint/body to match backend)
             await adminApi.post("/restoreJob", { id: jobId });
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.cuj_id === jobId
-                        ? { ...j, cuj_is_active: 1, cuj_is_rejected: 0 }
-                        : j
-                )
-            );
+            
+            // Refresh data from API to ensure consistency
+            await fetchJobs();
         } catch (err) {
             console.error("Restore failed", err);
             alert("Restore failed");
@@ -230,7 +223,8 @@ const JobListingPage = () => {
         } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 1) {
             status = "Pending";
         } else if (job.cuj_is_rejected === 0 && job.cuj_is_active === 0) {
-            status = "Deleted";
+            // Check if it's deleted (deleted_at is not null) or rejected (deleted_at is null)
+            status = job.deleted_at ? "Deleted" : "Rejected";
         } else {
             status = "Unknown"; // fallback
         }
@@ -244,8 +238,14 @@ const JobListingPage = () => {
                 );
             case "Pending":
                 return (
-                    <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
+                    <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">
                         Pending
+                    </span>
+                );
+            case "Rejected":
+                return (
+                    <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
+                        Rejected
                     </span>
                 );
             case "Deleted":
@@ -280,18 +280,13 @@ const JobListingPage = () => {
 
     const totalJobs = jobs.length;
     const activeJobs = jobs.filter((job) => {
-        let status = "Unknown";
-        if (job.cuj_is_rejected === 1 && job.cuj_is_active === 1) {
-            status = "Active";
-        }
-        return status === "Active";
+        return job.cuj_is_rejected === 1 && job.cuj_is_active === 1;
+    }).length;
+    const pendingJobs = jobs.filter((job) => {
+        return job.cuj_is_rejected === 0 && job.cuj_is_active === 1;
     }).length;
     const rejectedJobs = jobs.filter((job) => {
-        let status = "Unknown";
-        if (job.cuj_is_rejected === 0 && job.cuj_is_active === 1) {
-            status = "Pending";
-        }
-        return status === "Pending";
+        return job.cuj_is_rejected === 0 && job.cuj_is_active === 0 && !job.deleted_at;
     }).length;
 
     if (loading) {
@@ -374,15 +369,15 @@ const JobListingPage = () => {
                     </div>
                 </div>
 
-                {/* Rejected Jobs */}
+                {/* Pending Jobs */}
                 <div className="p-4 bg-white rounded-xl border shadow-sm border-slate-200">
                     <div className="flex justify-between items-center">
                         <div>
                             <p className="text-sm text-slate-600">Pending Approve</p>
-                            <p className="text-2xl font-bold text-red-600">{rejectedJobs}</p>
+                            <p className="text-2xl font-bold text-yellow-600">{pendingJobs}</p>
                         </div>
-                        <div className="flex justify-center items-center w-10 h-10 bg-red-100 rounded-lg">
-                            <MdCancel className="text-red-600" size={20} />
+                        <div className="flex justify-center items-center w-10 h-10 bg-yellow-100 rounded-lg">
+                            <MdCancel className="text-yellow-600" size={20} />
                         </div>
                     </div>
                 </div>
@@ -439,6 +434,9 @@ const JobListingPage = () => {
                                 </th>
                                 <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
                                     Created
+                                </th>
+                                <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">
+                                    Approve/Reject
                                 </th>
                                 <th className="px-6 py-3 text-sm font-semibold text-right text-gray-700">
                                     Actions
@@ -508,24 +506,84 @@ const JobListingPage = () => {
                                                 {formatDate(job.created_at)}
                                             </p>
                                         </td>
+                                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                                            {(() => {
+                                                const isPending =
+                                                    job.cuj_is_rejected === 0 && job.cuj_is_active === 1; // pending approval
+                                                const isRejected =
+                                                    job.cuj_is_rejected === 0 && job.cuj_is_active === 0 && !job.deleted_at; // rejected but not deleted
+                                                const isApproved =
+                                                    job.cuj_is_rejected === 1 && job.cuj_is_active === 1; // approved/active
+
+                                                if (isPending) {
+                                                    return (
+                                                        <div className="flex gap-2 justify-center items-center">
+                                                            {/* Approve button */}
+                                                            <button
+                                                                className="px-3 py-1.5 text-sm text-white bg-green-600 rounded-lg transition-colors hover:bg-green-700 flex items-center gap-1"
+                                                                title="Approve"
+                                                                onClick={() => handleApprove(job.cuj_id)}
+                                                            >
+                                                                <MdCheckCircle size={14} />
+                                                                Approve
+                                                            </button>
+                                                            {/* Reject button */}
+                                                            <button
+                                                                className="px-3 py-1.5 text-sm text-white bg-red-600 rounded-lg transition-colors hover:bg-red-700 flex items-center gap-1"
+                                                                title="Reject"
+                                                                onClick={() => handleReject(job.cuj_id)}
+                                                            >
+                                                                <MdCancel size={14} />
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                } else if (isRejected) {
+                                                    return (
+                                                        <div className="flex gap-2 justify-center items-center">
+                                                            {/* Approve button for rejected jobs */}
+                                                            <button
+                                                                className="px-3 py-1.5 text-sm text-white bg-green-600 rounded-lg transition-colors hover:bg-green-700 flex items-center gap-1"
+                                                                title="Approve"
+                                                                onClick={() => handleApprove(job.cuj_id)}
+                                                            >
+                                                                <MdCheckCircle size={14} />
+                                                                Approve
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                } else if (isApproved) {
+                                                    return (
+                                                        <span className="text-sm text-green-600 font-medium">
+                                                            Approved
+                                                        </span>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <span className="text-sm text-slate-500">
+                                                            N/A
+                                                        </span>
+                                                    );
+                                                }
+                                            })()}
+                                        </td>
                                         <td className="px-6 py-4 text-right whitespace-nowrap">
                                             {/** compute simple flags for clarity */}
                                             {(() => {
-                                                const isSoftDeleted =
-                                                    job.cuj_is_rejected === 0 && job.cuj_is_active === 0; // both 0 => show Restore and disable others
-                                                const activeButtonEnabled =
-                                                    job.cuj_is_rejected === 0 && job.cuj_is_active === 1; // enable Active only for this condition
-                                                // when isSoftDeleted === true, disable view/edit/freelancers and show Restore button instead of Delete
+                                                const isDeleted =
+                                                    job.cuj_is_rejected === 0 && job.cuj_is_active === 0 && job.deleted_at; // deleted (both 0 and deleted_at is not null)
+                                                const isRejected =
+                                                    job.cuj_is_rejected === 0 && job.cuj_is_active === 0 && !job.deleted_at; // rejected (both 0 but deleted_at is null)
 
                                                 return (
                                                     <div className="flex gap-2 justify-end items-center">
                                                         {/* View */}
                                                         <button
                                                             onClick={() =>
-                                                                !isSoftDeleted && handleViewJob(job.cuj_id)
+                                                                !isDeleted && handleViewJob(job.cuj_id)
                                                             }
-                                                            disabled={isSoftDeleted}
-                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted
+                                                            disabled={isDeleted}
+                                                            className={`p-2 rounded-lg transition-colors ${isDeleted
                                                                     ? "text-slate-300 cursor-not-allowed"
                                                                     : "text-blue-600 hover:bg-blue-50"
                                                                 }`}
@@ -538,10 +596,10 @@ const JobListingPage = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => openEditModal(job)}
-                                                            disabled={isSoftDeleted}
+                                                            disabled={isDeleted}
                                                             title="Edit"
-                                                            aria-disabled={isSoftDeleted}
-                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted
+                                                            aria-disabled={isDeleted}
+                                                            className={`p-2 rounded-lg transition-colors ${isDeleted
                                                                     ? "text-slate-300 cursor-not-allowed"
                                                                     : "text-slate-600 hover:bg-slate-50"
                                                                 }`}
@@ -549,31 +607,11 @@ const JobListingPage = () => {
                                                             <MdEdit size={16} />
                                                         </button>
 
-                                                        {/* Active button — always shown, enabled only for the specific condition */}
-                                                        <button
-                                                            className={`p-2 rounded-lg transition-colors ${activeButtonEnabled
-                                                                    ? "text-green-600 hover:bg-green-50"
-                                                                    : "text-slate-300 cursor-not-allowed"
-                                                                }`}
-                                                            title="Active"
-                                                            onClick={() =>
-                                                                activeButtonEnabled &&
-                                                                handleToggleStatus(
-                                                                    job.cuj_id,
-                                                                    job.cuj_is_active
-                                                                )
-                                                            }
-                                                            disabled={!activeButtonEnabled}
-                                                            aria-pressed={activeButtonEnabled}
-                                                        >
-                                                            <MdCheckCircle size={16} />
-                                                        </button>
-
                                                         {/* Freelancers list */}
                                                         <button
-                                                            onClick={() => !isSoftDeleted && openFreelancerModal(job)}
-                                                            disabled={isSoftDeleted}
-                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted
+                                                            onClick={() => !isDeleted && openFreelancerModal(job)}
+                                                            disabled={isDeleted}
+                                                            className={`p-2 rounded-lg transition-colors ${isDeleted
                                                                     ? "text-slate-300 cursor-not-allowed"
                                                                     : "text-purple-600 hover:bg-purple-50"
                                                                 }`}
@@ -584,9 +622,9 @@ const JobListingPage = () => {
 
                                                         {/* Remove Reason */}
                                                         <button
-                                                            onClick={() => !isSoftDeleted && openRemoveReasonModal(job)}
-                                                            disabled={isSoftDeleted}
-                                                            className={`p-2 rounded-lg transition-colors ${isSoftDeleted
+                                                            onClick={() => !isDeleted && openRemoveReasonModal(job)}
+                                                            disabled={isDeleted}
+                                                            className={`p-2 rounded-lg transition-colors ${isDeleted
                                                                     ? "text-slate-300 cursor-not-allowed"
                                                                     : "text-orange-600 hover:bg-orange-50"
                                                                 }`}
@@ -596,7 +634,7 @@ const JobListingPage = () => {
                                                         </button>
 
                                                         {/* Delete OR Restore */}
-                                                        {isSoftDeleted ? (
+                                                        {isDeleted ? (
                                                             <button
                                                                 className="p-2 text-indigo-600 rounded-lg transition-colors hover:bg-indigo-50"
                                                                 title="Restore"
@@ -621,7 +659,7 @@ const JobListingPage = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center">
+                                    <td colSpan="7" className="px-6 py-12 text-center">
                                         <div className="flex justify-center items-center mx-auto mb-4 w-16 h-16 rounded-full bg-slate-100">
                                             <MdSearch className="text-slate-400" size={24} />
                                         </div>

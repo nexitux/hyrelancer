@@ -15,6 +15,7 @@ import {
   Spin,
   Progress,
   Tooltip,
+  Tag,
 } from "antd";
 import ImgCrop from "antd-img-crop";
 import {
@@ -27,6 +28,8 @@ import {
   ContactsOutlined,
   EyeOutlined,
   ExclamationCircleOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined
 } from "@ant-design/icons";
 import api from "@/config/api";
 import { useSelector } from "react-redux";
@@ -72,6 +75,7 @@ export default function ProfileTab({
   const [hasExistingProfile, setHasExistingProfile] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [imageRequiredError, setImageRequiredError] = useState(false);
+  const [approvalData, setApprovalData] = useState(null);
   const uploadRef = useRef(null);
 
   // Get token from Redux store
@@ -122,6 +126,11 @@ export default function ProfileTab({
 
       if (response.data && response.data.u_profile) {
         const profile = response.data.u_profile;
+        
+        // Store approval data if available
+        if (response.data.u_approval) {
+          setApprovalData(response.data.u_approval);
+        }
 
         const mappedProfileData = {
           displayName: profile.fp_display_name || "",
@@ -430,6 +439,43 @@ export default function ProfileTab({
     });
   };
 
+  const renderVerificationBadge = () => {
+    // Only show badge in freelancer mode (not registration)
+    if (isRegistration || !approvalData) return null;
+
+    const isVerified = approvalData.fa_tab_1_app === "1";
+    
+    return (
+      <Tag
+        icon={isVerified ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+        color={isVerified ? "success" : "warning"}
+        className="ml-2"
+      >
+        {isVerified ? "Verified" : "Pending"}
+      </Tag>
+    );
+  };
+
+  const renderFieldVerificationBadge = (fieldKey) => {
+    // Only show field badges if overall tab is verified and not in registration mode
+    if (isRegistration || !approvalData || approvalData.fa_tab_1_app !== "1") return null;
+
+    const isFieldVerified = approvalData[fieldKey] === "1";
+    
+    return (
+      <div
+        className={`w-5 h-5 rounded-full flex items-center justify-center ml-2 ${
+          isFieldVerified 
+            ? 'bg-lime-500 text-white' 
+            : 'bg-yellow-400 text-white'
+        }`}
+        title={isFieldVerified ? "Verified" : "Pending"}
+      >
+        {isFieldVerified ? <CheckCircleOutlined className="text-xl" /> : <ClockCircleOutlined className="text-xs" />}
+      </div>
+    );
+  };
+
   // Show loading spinner while fetching profile data
   if (profileFetchLoading) {
     return (
@@ -455,15 +501,18 @@ export default function ProfileTab({
           {/* Header */}
           <div className="bg-white border-b border-gray-200 p-6 flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
-                {showConfirmation
-                  ? "Confirm Your Profile"
-                  : isEditing
-                  ? hasExistingProfile
-                    ? "Edit Your Profile"
-                    : "Create Your Profile"
-                  : "Your Profile"}
-              </h1>
+              <div className="flex items-center">
+                <h1 className="text-2xl font-semibold text-gray-900 mr-2">
+                  {showConfirmation
+                    ? "Confirm Your Profile"
+                    : isEditing
+                    ? hasExistingProfile
+                      ? "Edit Your Profile"
+                      : "Create Your Profile"
+                    : "Your Profile"}
+                </h1>
+                {renderVerificationBadge()}
+              </div>
               <p className="text-gray-600 mt-1">
                 {showConfirmation
                   ? "Review your information before saving"
@@ -792,12 +841,15 @@ export default function ProfileTab({
               // Final View Mode (after confirmation or existing profile)
               <div>
                 <div className="text-center mb-8">
-                  <Avatar
-                    size={128}
-                    src={imagePreview}
-                    icon={!imagePreview && <UserOutlined />}
-                    className="shadow-md border-4 bg-gray-200"
-                  />
+                  <div className="relative inline-block">
+                    <Avatar
+                      size={128}
+                      src={imagePreview}
+                      icon={!imagePreview && <UserOutlined />}
+                      className="shadow-md border-4 bg-gray-200"
+                    />
+                    {renderFieldVerificationBadge('fa_img_app')}
+                  </div>
                   <Title level={3}>{profileData.displayName}</Title>
                   <Text type="secondary">{profileData.tagLine}</Text>
                 </div>
@@ -811,12 +863,16 @@ export default function ProfileTab({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="bg-gray-50 p-6 rounded-lg">
-                    <Text strong>Display Name</Text>
+                    <div className="flex items-center">
+                      <Text strong>Display Name</Text>
+                      {renderFieldVerificationBadge('fa_display_name_app')}
+                    </div>
                     <p>{profileData.displayName}</p>
 
-                    <Text strong className="block mt-4">
-                      Languages
-                    </Text>
+                    <div className="flex items-center mt-4">
+                      <Text strong>Languages</Text>
+                      {renderFieldVerificationBadge('fa_lang_app')}
+                    </div>
                     <Space wrap className="mt-1">
                       {getLanguageLabels(profileData.languages).map((lang) => (
                         <span
@@ -828,14 +884,18 @@ export default function ProfileTab({
                       ))}
                     </Space>
 
-                    <Text strong className="block mt-4">
-                      Professional Headline
-                    </Text>
+                    <div className="flex items-center mt-4">
+                      <Text strong>Professional Headline</Text>
+                      {renderFieldVerificationBadge('fa_headline_app')}
+                    </div>
                     <p>{profileData.tagLine}</p>
                   </div>
 
                   <div className="bg-gray-50 p-6 rounded-lg">
-                    <Text strong>About Me</Text>
+                    <div className="flex items-center">
+                      <Text strong>About Me</Text>
+                      {renderFieldVerificationBadge('fa_desc_app')}
+                    </div>
                     <p className="whitespace-pre-line mt-2">
                       {profileData.aboutMe}
                     </p>

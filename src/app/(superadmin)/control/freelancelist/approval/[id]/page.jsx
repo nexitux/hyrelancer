@@ -30,18 +30,24 @@ export default function FreelancerApprovalPage({ params }) {
   const router = useRouter();
   const [activeKey, setActiveKey] = useState("1");
   const [freelancerData, setFreelancerData] = useState(null);
+  const [approvalStatus, setApprovalStatus] = useState(null);
+  const [tabData, setTabData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [tabLoading, setTabLoading] = useState({});
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
 
-  // Fetch freelancer data
+  // Fetch initial freelancer data and approval status
   useEffect(() => {
-    const fetchFreelancerData = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
-        const decodedId = Base64.decode(id);
-        const response = await adminApi.get(`/freelancers/${id}`);
-        setFreelancerData(response.data);
+        const response = await adminApi.get(`/getFeUProfile/${id}`);
+        setFreelancerData(response.data.u_profile);
+        setApprovalStatus(response.data.u_approval);
+        
+        // Pre-load first tab data
+        await loadTabData('1');
       } catch (error) {
         console.error('Error fetching freelancer data:', error);
         message.error('Failed to load freelancer data');
@@ -52,49 +58,76 @@ export default function FreelancerApprovalPage({ params }) {
     };
 
     if (id) {
-      fetchFreelancerData();
+      fetchInitialData();
     }
   }, [id, router]);
+
+  // Load tab-specific data
+  const loadTabData = async (tabKey) => {
+    if (tabData[tabKey]) return; // Already loaded
+
+    try {
+      setTabLoading(prev => ({ ...prev, [tabKey]: true }));
+      
+      const apiEndpoints = {
+        '1': `/getFeUProfile/${id}`,
+        '2': `/getFeUService/${id}`,
+        '3': `/getFeUProfessional/${id}`,
+        '4': `/getFeUsocial/${id}`,
+        '5': `/getFeUPortfolio/${id}`
+      };
+
+      const response = await adminApi.get(apiEndpoints[tabKey]);
+      setTabData(prev => ({ ...prev, [tabKey]: response.data }));
+    } catch (error) {
+      console.error(`Error loading tab ${tabKey} data:`, error);
+      message.error(`Failed to load ${getTabName(tabKey)} data`);
+    } finally {
+      setTabLoading(prev => ({ ...prev, [tabKey]: false }));
+    }
+  };
+
+  // Get tab name for error messages
+  const getTabName = (tabKey) => {
+    const names = {
+      '1': 'Profile',
+      '2': 'Service',
+      '3': 'Career',
+      '4': 'Social Media',
+      '5': 'Portfolio'
+    };
+    return names[tabKey] || 'Unknown';
+  };
+
+  // Check if tab is approved
+  const isTabApproved = (tabKey) => {
+    if (!approvalStatus) return false;
+    return approvalStatus[`fa_tab_${tabKey}_app`] === "1";
+  };
+
+  // Handle tab change with lazy loading
+  const handleTabChange = async (key) => {
+    setActiveKey(key);
+    await loadTabData(key);
+  };
 
   // Handle tab-specific approval
   const handleTabApprove = async (tabKey) => {
     try {
       setApproving(true);
       
-      // Debug: Log the values being sent
-      console.log('Tab Key:', tabKey);
-      console.log('ID:', id);
-      console.log('Full URL:', `/approveFeUTabData/${tabKey}/${id}`);
-      
       // Backend expects GET with path params: /approveFeUTabData/{type}/{base64UserId}
       const response = await adminApi.get(`/approveFeUTabData/${tabKey}/${id}`);
       
-      console.log('API Response:', response);
+      message.success(`${getTabName(tabKey)} section approved successfully!`);
       
-      const tabNames = {
-        '1': 'Profile',
-        '2': 'Service', 
-        '3': 'Career',
-        '4': 'Social Media',
-        '5': 'Portfolio'
-      };
-      
-      message.success(`${tabNames[tabKey]} section approved successfully!`);
-      
-      // Optionally refresh data or update UI state
-      // You might want to refetch freelancer data to show updated approval status
+      // Refresh approval status to update UI
+      const updatedResponse = await adminApi.get(`/getFeUProfile/${id}`);
+      setApprovalStatus(updatedResponse.data.u_approval);
       
     } catch (error) {
       console.error('Error approving tab:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        url: error.config?.url
-      });
       
-      // Show more detailed error information
       let errorMessage = 'Failed to approve section';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -148,12 +181,22 @@ export default function FreelancerApprovalPage({ params }) {
               icon={<CheckCircleOutlined />}
               onClick={() => handleTabApprove('1')}
               loading={approving}
-              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              disabled={isTabApproved('1')}
+              className={isTabApproved('1') 
+                ? "bg-gray-400 border-gray-400 cursor-not-allowed" 
+                : "bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              }
             >
-              Approve Profile
+              {isTabApproved('1') ? 'Approved' : 'Approve Profile'}
             </Button>
           </div>
-          <ProfileForm freelancerId={id} isApprovalMode={true} />
+          {tabLoading['1'] ? (
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
+            </div>
+          ) : (
+            <ProfileForm freelancerId={id} isApprovalMode={true} />
+          )}
         </div>
       ),
     },
@@ -177,12 +220,22 @@ export default function FreelancerApprovalPage({ params }) {
               icon={<CheckCircleOutlined />}
               onClick={() => handleTabApprove('2')}
               loading={approving}
-              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              disabled={isTabApproved('2')}
+              className={isTabApproved('2') 
+                ? "bg-gray-400 border-gray-400 cursor-not-allowed" 
+                : "bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              }
             >
-              Approve Service
+              {isTabApproved('2') ? 'Approved' : 'Approve Service'}
             </Button>
           </div>
-          <Service freelancerId={id} isApprovalMode={true} />
+          {tabLoading['2'] ? (
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
+            </div>
+          ) : (
+            <Service freelancerId={id} isApprovalMode={true} />
+          )}
         </div>
       ),
     },
@@ -206,12 +259,22 @@ export default function FreelancerApprovalPage({ params }) {
               icon={<CheckCircleOutlined />}
               onClick={() => handleTabApprove('3')}
               loading={approving}
-              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              disabled={isTabApproved('3')}
+              className={isTabApproved('3') 
+                ? "bg-gray-400 border-gray-400 cursor-not-allowed" 
+                : "bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              }
             >
-              Approve Career
+              {isTabApproved('3') ? 'Approved' : 'Approve Career'}
             </Button>
           </div>
-          <Education freelancerId={id} isApprovalMode={true} />
+          {tabLoading['3'] ? (
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
+            </div>
+          ) : (
+            <Education freelancerId={id} isApprovalMode={true} />
+          )}
         </div>
       ),
     },
@@ -235,12 +298,22 @@ export default function FreelancerApprovalPage({ params }) {
               icon={<CheckCircleOutlined />}
               onClick={() => handleTabApprove('4')}
               loading={approving}
-              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              disabled={isTabApproved('4')}
+              className={isTabApproved('4') 
+                ? "bg-gray-400 border-gray-400 cursor-not-allowed" 
+                : "bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              }
             >
-              Approve Social Media
+              {isTabApproved('4') ? 'Approved' : 'Approve Social Media'}
             </Button>
           </div>
-          <Scoialmedia freelancerId={id} isApprovalMode={true} />
+          {tabLoading['4'] ? (
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
+            </div>
+          ) : (
+            <Scoialmedia freelancerId={id} isApprovalMode={true} />
+          )}
         </div>
       ),
     },
@@ -264,12 +337,22 @@ export default function FreelancerApprovalPage({ params }) {
               icon={<CheckCircleOutlined />}
               onClick={() => handleTabApprove('5')}
               loading={approving}
-              className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              disabled={isTabApproved('5')}
+              className={isTabApproved('5') 
+                ? "bg-gray-400 border-gray-400 cursor-not-allowed" 
+                : "bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              }
             >
-              Approve Portfolio
+              {isTabApproved('5') ? 'Approved' : 'Approve Portfolio'}
             </Button>
           </div>
-          <Portfolio freelancerId={id} isApprovalMode={true} />
+          {tabLoading['5'] ? (
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
+            </div>
+          ) : (
+            <Portfolio freelancerId={id} isApprovalMode={true} />
+          )}
         </div>
       ),
     },
@@ -285,7 +368,7 @@ export default function FreelancerApprovalPage({ params }) {
 
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-6xl">
         {/* Header Section */}
         <div className="mb-6">
 
@@ -321,7 +404,7 @@ export default function FreelancerApprovalPage({ params }) {
         <Card className="shadow-sm border-0">
           <Tabs
             activeKey={activeKey}
-            onChange={setActiveKey}
+            onChange={handleTabChange}
             items={tabItems}
             className="approval-tabs-horizontal"
             size="large"
