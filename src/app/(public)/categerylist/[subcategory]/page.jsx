@@ -111,65 +111,59 @@ const SubcategoryDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back Button & Breadcrumb */}
-      <div className="bg-gradient-to-r from-[#3a599c] to-[#2d4373] py-4 shadow-sm">
-        <div className="max-w-7xl mx-10">
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/categories"
-              className="flex items-center text-[#ffffff] font-medium hover:text-[#2d4373] transition-colors"
-            >
-              <FaArrowLeft className="mr-2" />
-              Back to Categories
-            </Link>
-            <span className="text-white">/</span>
-            <Link
-              href="/categerylist"
-              className="text-[#ffffff] font-medium hover:text-[#2d4373] transition-colors capitalize"
-            >
-              {categoryName}
-            </Link>
-            <span className="text-white">/</span>
-            <span className="text-white">{subcategoryDetail.sc_name}</span>
+    <div className="min-h-screen bg-white">
+      {/* Subcategory Hero Section (match category banner) */}
+      <div className="relative h-60 md:h-[220px] overflow-hidden">
+        {/* Background Banner Image */}
+        <div className="absolute inset-0">
+          <img
+            src="/images/banner2.webp"
+            alt="Subcategory banner"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(58,89,156,0.35)_0%,rgba(0,0,0,0.55)_100%)]"></div>
+
+        {/* Breadcrumbs and Back Button inside banner */}
+        <div className="absolute top-0 left-0 w-full px-4 md:px-0 z-10">
+          <div className="max-w-7xl mx-auto pt-5">
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/"
+                className="flex items-center text-white font-medium hover:text-[#FCD535] transition-colors"
+              >
+                <FaArrowLeft className="mr-2" />
+                Back to Categories
+              </Link>
+              <span className="text-white">/</span>
+              <Link
+                href="/categerylist"
+                className="text-white capitalize hover:text-[#FCD535] transition-colors"
+              >
+                {categoryName}
+              </Link>
+              <span className="text-white">/</span>
+              <span className="text-white capitalize">{subcategoryDetail.sc_name}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Subcategory Hero Section */}
-      <section className="relative min-h-[320px] md:min-h-[400px] flex items-center justify-center overflow-hidden bg-gradient-to-r from-[#3a599c] via-[#4b6cb7] to-[#2d4373] shadow-lg">
-        {/* Background Image Overlay */}
-        {subcategoryDetail.sc_img && (
-          <div className="absolute inset-0">
-            <img
-              src={`https://hyre.hyrelancer.com/${subcategoryDetail.sc_img}`}
-              alt={subcategoryDetail.sc_name}
-              className="w-full h-full object-cover object-center scale-105 blur-[2px] brightness-75"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#3a599c]/80 via-[#4b6cb7]/60 to-[#2d4373]/80" />
-          </div>
-        )}
-        {/* Decorative Gradient Circles */}
-        <div className="absolute -top-16 -left-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center w-full px-4 py-12">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg px-4 py-8 md:px-8 md:py-12 w-full text-center border border-white/20">
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-white drop-shadow-lg tracking-tight">
-              {subcategoryDetail.sc_name}
-            </h1>
-            <p className="text-lg md:text-xl text-white/90 w-full mx-auto mb-2 font-medium drop-shadow-sm">
+        {/* Centered Title */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white px-4">
+            <h1 className="text-4xl md:text-5xl font-bold capitalize mb-4">{subcategoryDetail.sc_name}</h1>
+            <p className="text-xl max-w-2xl mx-auto">
               {subcategoryDetail.sc_desc?.replace(/<[^>]*>/g, '') || `Explore our premium ${subcategoryDetail.sc_name} services.`}
             </p>
-            <div className="mt-6 flex justify-center">
-              <span className="inline-block bg-white/20 text-white/90 px-4 py-2 rounded-full text-sm font-semibold shadow-sm border border-white/30 backdrop-blur-sm">
-                Discover top-rated services in <span className="font-bold">{subcategoryDetail.sc_name}</span>
+            <div className="mt-6">
+              <span className="bg-white/20 text-white px-4 py-2 rounded-full text-sm font-medium">
+                {subcategoryServices.length} services Available
               </span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Services Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -181,86 +175,72 @@ const SubcategoryDetailPage = () => {
         </div>
 
         {subcategoryServices.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {subcategoryServices.map((service, index) => (
-              <div key={service.se_id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={service.se_img ? `https://hyre.hyrelancer.com/${service.se_img}` : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'}
-                    alt={service.se_name}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full px-0">
+            {subcategoryServices.map((service, index) => {
+              const bgImage = service.se_img ? `https://hyre.hyrelancer.com/${service.se_img}` : '/images/USER1.png';
+              return (
+                <article
+                  key={service.se_id}
+                  className="group relative w-full h-[380px] rounded-[23.29px] border-b-[5px] border-solid border-[#3a599c] overflow-hidden cursor-pointer transition-all duration-500 hover:scale-105 hover:shadow-2xl"
+                  style={{
+                    backgroundImage: `url(${bgImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  }}
+                >
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(58,89,156,0)_59%,rgba(58,89,156,0.88)_100%)] group-hover:bg-[linear-gradient(180deg,rgba(58,89,156,0.7)_0%,rgba(58,89,156,0.95)_100%)] transition-all duration-700"></div>
 
-                  {/* Wishlist Button */}
+                  {/* Wishlist */}
                   <button
                     onClick={() => toggleWishlist(index)}
-                    className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all ${isWishlist[index] ? 'bg-white text-red-500' : 'bg-white/90 text-gray-400 hover:text-red-500'
-                      }`}
+                    className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all z-10 ${isWishlist[index] ? 'bg-white text-red-500' : 'bg-white/90 text-gray-400 hover:text-red-500'}`}
+                    aria-label="Toggle wishlist"
                   >
                     <FaHeart size={16} />
                   </button>
 
-                  {/* Category Badge */}
-                  <div className="absolute top-3 left-3 bg-white/90 text-gray-900 px-3 py-1.5 rounded-lg font-bold text-sm capitalize">
-                    {categoryName}
-                  </div>
+                  {/* Content - Bottom Left */}
+                  <div className="absolute bottom-0 left-0 p-6 z-10 transition-all duration-500 group-hover:bottom-[90px]">
+                    <div className="flex flex-col items-start gap-1 relative">
+                      <h3 className="font-sub-head font-semibold text-white text-2xl tracking-[0px] leading-7 transition-all duration-300 line-clamp-2">
+                        {service.se_name}
+                      </h3>
+                      <p className="font-normal text-white/90 text-sm tracking-[0px] leading-6 mb-1 transition-all duration-300 line-clamp-2">
+                        {service.se_desc?.replace(/<[^>]*>/g, '') || 'Professional service with experienced providers ready to help you.'}
+                      </p>
 
-                  {/* Status Badge */}
-                  {service.se_is_active && (
-                    <div className="absolute bottom-3 right-3 bg-green-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
-                      Available
-                    </div>
-                  )}
-                </div>
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 max-h-0 opacity-0 overflow-hidden group-hover:max-h-40 group-hover:opacity-100">
+                        <span className="px-3 py-1 bg-transparent border border-white text-white text-xs rounded-full font-normal capitalize">
+                          {categoryName}
+                        </span>
+                        <span className="px-3 py-1 bg-transparent border border-white text-white text-xs rounded-full font-normal">
+                          {subcategoryDetail.sc_name}
+                        </span>
+                        {service.se_is_active && (
+                          <span className="px-3 py-1 bg-green-500/20 border border-green-400 text-white text-xs rounded-full font-normal">
+                            Available
+                          </span>
+                        )}
+                      </div>
 
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-xl font-bold text-gray-900 line-clamp-2 mr-2">
-                      {service.se_name}
-                    </h3>
-                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg flex-shrink-0">
-                      <FaStar size={12} className="text-yellow-500" />
-                      <span className="text-sm font-semibold text-gray-900">4.5</span>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-600 mb-4 line-clamp-3">
-                    {service.se_desc?.replace(/<[^>]*>/g, '') || 'Professional service with experienced providers ready to help you.'}
-                  </p>
-
-
-
-                  {/* Skills/Tags */}
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    <span className="px-3 py-1 bg-[#f0f4ff] text-[#3a599c] text-xs rounded-full font-medium capitalize">
-                      {categoryName}
-                    </span>
-                    <span className="px-3 py-1 bg-[#f0f4ff] text-[#3a599c] text-xs rounded-full font-medium">
-                      {subcategoryDetail.sc_name}
-                    </span>
-                    <span className="px-3 py-1 bg-green-50 text-green-600 text-xs rounded-full font-medium">
-                      <FaTag size={10} className="inline mr-1" />
-                      Featured
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-
-                    <div className="flex gap-2">
-
-                      <Link
-                        href={`/categerylist/${encodeURIComponent(subcategoryName)}/${service.se_id}`}
-                        className="px-4 py-2 bg-[#3a599c] hover:bg-[#2d4373] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
-                      >
-                        <FaEye size={14} />
-                        View Providers
-                      </Link>
+                      {/* View Providers CTA */}
+                      <div className="max-h-0 opacity-0 overflow-hidden group-hover:max-h-20 group-hover:opacity-100 group-hover:mt-3 transition-all duration-500">
+                        <Link
+                          href={`/categerylist/${encodeURIComponent(subcategoryName)}/${service.se_id}`}
+                          className="inline-flex h-[38px] items-center justify-center gap-2.5 px-5 py-2 bg-white rounded-3xl border border-solid text-[#3a599c] font-medium text-sm transition-all duration-300 hover:scale-105 hover:bg-[#f8f9fa] hover:shadow-lg"
+                        >
+                          <FaEye size={14} />
+                          View Providers
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
@@ -278,61 +258,7 @@ const SubcategoryDetailPage = () => {
           </div>
         )}
 
-        {/* Additional Information Section */}
-        {subcategoryServices.length > 0 && (
-          <div className="mt-16 bg-white rounded-xl shadow-sm p-8">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Why Choose {subcategoryDetail.sc_name} Services?
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-                <div className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-[#f0f4ff] rounded-full flex items-center justify-center">
-                    <FaStar className="text-[#3a599c]" size={20} />
-                  </div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Quality Assured</h4>
-                  <p className="text-gray-600 text-sm">All service providers are verified and highly rated by customers.</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-[#f0f4ff] rounded-full flex items-center justify-center">
-                    <FaClock className="text-[#3a599c]" size={20} />
-                  </div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Quick Response</h4>
-                  <p className="text-gray-600 text-sm">Get connected with service providers within minutes of your request.</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-[#f0f4ff] rounded-full flex items-center justify-center">
-                    <FaHeart className="text-[#3a599c]" size={20} />
-                  </div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Customer Satisfaction</h4>
-                  <p className="text-gray-600 text-sm">100% satisfaction guarantee with 24/7 customer support.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Call to Action Section */}
-        <div className="mt-16 bg-gradient-to-r from-[#3a599c] to-[#2d4373] rounded-xl shadow-sm p-8 text-center text-white">
-          <h3 className="text-2xl font-bold mb-4">Ready to Get Started?</h3>
-          <p className="text-lg mb-6 opacity-90">
-            Connect with professional {subcategoryDetail.sc_name.toLowerCase()} service providers in your area.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link
-              href={`/post-requirement?category=${encodeURIComponent(categoryName)}&subcategory=${encodeURIComponent(subcategoryDetail.sc_name)}`}
-              className="px-6 py-3 bg-white text-[#3a599c] rounded-lg hover:bg-gray-100 transition-colors font-medium"
-            >
-              Post Your Requirement
-            </Link>
-            <Link
-              href="/contact"
-              className="px-6 py-3 bg-white/20 text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors font-medium"
-            >
-              Contact Support
-            </Link>
-          </div>
-        </div>
+        {/* Removed Additional Information and CTA sections to match category list */}
       </div>
     </div>
   );

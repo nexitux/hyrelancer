@@ -53,6 +53,9 @@ const Header = ({ params }) => {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch();
@@ -144,7 +147,11 @@ const Header = ({ params }) => {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsTabletView(window.innerWidth <= 1000);
+      setIsTabletView(window.innerWidth <= 1280);
+      // Close mobile menu when switching to desktop
+      if (window.innerWidth > 1280) {
+        setIsMobileMenuOpen(false);
+      }
     };
 
     // Set initial value
@@ -156,19 +163,66 @@ const Header = ({ params }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest(".category-dropdown")) {
+      const clickedInsideCategoryDropdown = event.target.closest(".category-dropdown");
+      const clickedOnCategoryTrigger = event.target.closest(".categories-trigger");
+      if (!clickedInsideCategoryDropdown && !clickedOnCategoryTrigger) {
         setShowDropdown(false);
       }
       if (!event.target.closest(".user-dropdown")) {
         setShowUserDropdown(false);
       }
+      if (!event.target.closest(".notification-dropdown")) {
+        setShowNotificationDropdown(false);
+      }
     };
 
+    const handleKeydown = (event) => {
+      if (event.key === 'Escape') {
+        setShowDropdown(false);
+        setShowUserDropdown(false);
+        setShowNotificationDropdown(false);
+      }
+    };
+
+    const handleScrollClose = () => setShowDropdown(false);
+
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeydown);
+    window.addEventListener("scroll", handleScrollClose, { passive: true });
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("scroll", handleScrollClose);
     };
   }, []);
+
+  // Close dropdowns on route changes
+  useEffect(() => {
+    setShowDropdown(false);
+    setShowUserDropdown(false);
+    setShowNotificationDropdown(false);
+  }, [pathname]);
+
+  // Close mobile menu when clicking outside or pressing escape
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = 'hidden'; // Prevent background scroll
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -354,17 +408,22 @@ const Header = ({ params }) => {
   const userMenuItems = getUserMenuItems();
 
   return (
-    <header className="flex w-full h-20 md:h-24 items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 2xl:px-36 py-4 md:py-6 sticky top-0 z-50 bg-[#ffffff80] backdrop-blur-xl border border-solid border-[#ffffff1a]">
+    <header className={`flex w-full h-16 sm:h-20 md:h-24 items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-24 py-3 sm:py-4 md:py-6 sticky top-0 z-50 transition-all duration-200 ${isScrolled ? 'bg-white/95 shadow-sm' : 'bg-[#ffffff80]'} backdrop-blur-xl border border-solid border-[#ffffff1a]`}>
       <div className="flex justify-between items-center w-full max-w-[1440px] mx-auto">
         {/* Left side - Mobile menu button and Logo */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-700"
-            aria-label="Toggle menu"
+            className="xl:hidden p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors text-gray-700 touch-manipulation"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
           >
-            <MenuIcon className="w-6 h-6" />
+            <div className="relative w-6 h-6">
+              <span className={`absolute top-1 left-0 w-6 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+              <span className={`absolute top-3 left-0 w-6 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
+              <span className={`absolute top-5 left-0 w-6 h-0.5 bg-current transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+            </div>
           </button>
 
           {/* Logo */}
@@ -374,13 +433,14 @@ const Header = ({ params }) => {
             onClick={(e) => {
               e.preventDefault();
               router.push("/");
+              setIsMobileMenuOpen(false);
             }}
-            className="cursor-pointer"
+            className="cursor-pointer flex-shrink-0"
           >
             <Image
               src={Logo}
               alt="Hyrelancer Logo"
-              className="relative w-32 sm:w-36 md:w-40 lg:w-44 h-auto"
+              className="relative w-24 sm:w-28 md:w-32 lg:w-36 xl:w-40 h-auto"
               priority
             />
           </a>
@@ -389,16 +449,16 @@ const Header = ({ params }) => {
         {/* Center - Navigation - Only show when NOT authenticated */}
         {!isAuthenticated && (
           <nav
-            className="hidden lg:flex items-center gap-6 xl:gap-8"
+            className="hidden xl:flex items-center gap-4 xl:gap-6 2xl:gap-8"
             aria-label="Main navigation"
           >
             <button
               onClick={() => setShowDropdown((prev) => !prev)}
               aria-expanded={showDropdown}
-              className="inline-flex h-12 items-center gap-2 px-4 xl:px-6 bg-[#3a599c2e] rounded-[32px] cursor-pointer hover:bg-[#3a599c40] transition-colors"
+              className="categories-trigger inline-flex h-10 lg:h-12 items-center gap-2 px-3 lg:px-4 xl:px-6 bg-[#3a599c2e] rounded-[32px] cursor-pointer hover:bg-[#3a599c40] active:bg-[#3a599c50] transition-colors touch-manipulation"
               aria-label="Categories menu"
             >
-              <span className="font-semibold text-[#3a599c] text-sm whitespace-nowrap">
+              <span className="font-semibold text-[#3a599c] text-xs lg:text-sm whitespace-nowrap">
                 Categories
               </span>
             </button>
@@ -407,7 +467,7 @@ const Header = ({ params }) => {
               <a
                 key={index}
                 href={item.href || "#"}
-                className="font-normal text-black text-sm whitespace-nowrap hover:text-[#3a599c] transition-colors px-2"
+                className="font-normal text-black text-xs lg:text-sm whitespace-nowrap hover:text-[#3a599c] transition-colors px-2 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 touch-manipulation"
               >
                 {item.name}
               </a>
@@ -416,37 +476,37 @@ const Header = ({ params }) => {
         )}
 
         {/* Right side - User actions */}
-        <div className="hidden lg:flex items-center gap-3 xl:gap-4">
-          {/* User Dropdown and Verification Button - Only show if authenticated and not on login/register pages */}
+        <div className="hidden xl:flex items-center gap-1 xl:gap-2 2xl:gap-3">
+              {/* User Dropdown and Verification Button - Only show if authenticated and not on login/register pages */}
           {shouldShowUserDropdown && (
-            <div className="flex items-center gap-2 xl:gap-3">
+            <div className="flex items-center gap-1 2xl:gap-2">
               {/* Message Button */}
               <button
                 onClick={handleMessageClick}
-                className="flex items-center p-2 rounded-full transition-colors duration-200 hover:bg-gray-100 text-gray-700"
+                className="flex items-center p-1.5 lg:p-2 rounded-full transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200 text-gray-700 touch-manipulation"
                 title="Messages"
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-4 h-4 lg:w-5 lg:h-5" />
               </button>
 
               {/* Notification Button with Dropdown */}
               <div className="relative notification-dropdown">
                 <button
                   onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
-                  className="flex items-center p-2 rounded-full transition-colors duration-200 relative hover:bg-gray-100 text-gray-700"
+                  className="flex items-center p-1.5 lg:p-2 rounded-full transition-colors duration-200 relative hover:bg-gray-100 active:bg-gray-200 text-gray-700 touch-manipulation"
                   title="Notifications"
                 >
-                  <Bell className="w-5 h-5" />
+                  <Bell className="w-4 h-4 lg:w-5 lg:h-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadCount}
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 lg:h-5 lg:w-5 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </button>
 
                 {/* Notification Dropdown Menu */}
                 {showNotificationDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-96 overflow-y-auto">
+                  <div className="absolute right-0 top-full mt-2 w-72 lg:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-96 overflow-y-auto">
                     <div className="px-4 py-2 border-b border-gray-100">
                       <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                     </div>
@@ -488,16 +548,16 @@ const Header = ({ params }) => {
               {isFreelancer && (
                 <button
                   onClick={handleOnlineToggle}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isOnline
-                      ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-200"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+                  className={`flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1.5 lg:py-2 rounded-md text-xs lg:text-sm font-medium transition-colors duration-200 touch-manipulation ${isOnline
+                      ? "bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300 border border-green-200"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 border border-gray-200"
                     }`}
                   title={isOnline ? "Go Offline" : "Go Online"}
                 >
                   {isOnline ? (
-                    <Wifi className="w-4 h-4" />
+                    <Wifi className="w-3 h-3 lg:w-4 lg:h-4" />
                   ) : (
-                    <WifiOff className="w-4 h-4" />
+                    <WifiOff className="w-3 h-3 lg:w-4 lg:h-4" />
                   )}
                   <span className="hidden xl:inline">
                     {isOnline ? "Online" : "Offline"}
@@ -509,9 +569,9 @@ const Header = ({ params }) => {
               {!isMobileVerified && (
                 <button
                   onClick={handleVerifyPhone}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200"
+                  className="flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1.5 lg:py-2 rounded-md text-xs lg:text-sm font-medium transition-colors duration-200 bg-orange-100 text-orange-700 hover:bg-orange-200 active:bg-orange-300 border border-orange-200 touch-manipulation"
                 >
-                  <Shield className="w-4 h-4" />
+                  <Shield className="w-3 h-3 lg:w-4 lg:h-4" />
                   <span className="hidden xl:inline">Verify Phone</span>
                 </button>
               )}
@@ -520,13 +580,13 @@ const Header = ({ params }) => {
               <div className="relative user-dropdown">
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center gap-2 p-2 rounded-full transition-colors duration-200 hover:bg-gray-100 text-gray-700"
+                  className="flex items-center gap-1 lg:gap-2 p-1.5 lg:p-2 rounded-full transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200 text-gray-700 touch-manipulation"
                 >
-                  <div className="w-8 h-8 rounded-full border-2 flex items-center justify-center border-gray-300 bg-gray-50">
-                    <User className="w-4 h-4" />
+                  <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full border-2 flex items-center justify-center border-gray-300 bg-gray-50">
+                    <User className="w-3 h-3 lg:w-4 lg:h-4" />
                   </div>
 
-                  <span className="hidden xl:inline-block text-sm font-medium truncate max-w-[8rem] 2xl:max-w-[10rem]">
+                  <span className="hidden xl:inline-block text-xs lg:text-sm font-medium truncate max-w-[6rem] 2xl:max-w-[8rem]">
                     {`Hi, ${user?.name ||
                       user?.username ||
                       user?.slug ||
@@ -537,20 +597,20 @@ const Header = ({ params }) => {
                   </span>
 
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""
+                    className={`w-3 h-3 lg:w-4 lg:h-4 transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""
                       }`}
                   />
                 </button>
 
                 {/* User Dropdown Menu */}
                 {showUserDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-44 lg:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     {userMenuItems.map((item, index) => (
                       <button
                         key={item.name}
                         onClick={item.onClick}
-                        className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-150 ${index === userMenuItems.length - 1
-                          ? "text-red-600 hover:bg-red-50"
+                        className={`w-full flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 text-left text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors duration-150 touch-manipulation ${index === userMenuItems.length - 1
+                          ? "text-red-600 hover:bg-red-50 active:bg-red-100"
                           : ""
                           }`}
                       >
@@ -563,7 +623,7 @@ const Header = ({ params }) => {
                         >
                           {item.icon}
                         </span>
-                        <span className="text-sm font-medium">{item.name}</span>
+                        <span className="text-xs lg:text-sm font-medium">{item.name}</span>
                       </button>
                     ))}
                   </div>
@@ -580,9 +640,9 @@ const Header = ({ params }) => {
                 e.preventDefault();
                 router.push("/Login");
               }}
-              className="inline-flex h-12 items-center justify-center px-4 xl:px-6 rounded-3xl border border-solid border-[#3a599c] hover:bg-[#3a599c0a] transition-colors"
+              className="inline-flex h-10 lg:h-12 items-center justify-center px-3 lg:px-4 xl:px-6 rounded-3xl border border-solid border-[#3a599c] hover:bg-[#3a599c0a] active:bg-[#3a599c15] transition-colors touch-manipulation"
             >
-              <span className="font-semibold text-[#3a599c] text-sm whitespace-nowrap">
+              <span className="font-semibold text-[#3a599c] text-xs lg:text-sm whitespace-nowrap">
                 Login
               </span>
             </a>
@@ -596,9 +656,9 @@ const Header = ({ params }) => {
                 e.preventDefault();
                 router.push("/select-user-type");
               }}
-              className="inline-flex h-12 items-center justify-center px-4 xl:px-6 bg-[#3a599c] rounded-3xl hover:bg-[#2f4a7f] transition-colors"
+              className="inline-flex h-10 lg:h-12 items-center justify-center px-3 lg:px-4 xl:px-6 bg-[#3a599c] rounded-3xl hover:bg-[#2f4a7f] active:bg-[#1e3a5f] transition-colors touch-manipulation"
             >
-              <span className="font-normal text-white text-sm whitespace-nowrap">
+              <span className="font-normal text-white text-xs lg:text-sm whitespace-nowrap">
                 Become A Service Provider
               </span>
             </a>
@@ -606,59 +666,63 @@ const Header = ({ params }) => {
         </div>
       </div>
 
-      {/* Mobile/Tablet Menu (shown on mobile and tablet) */}
       {/* Desktop Categories Dropdown */}
       {showDropdown && !isAuthenticated && (
         <div className="category-dropdown absolute left-0 right-0 z-40 top-full">
-          <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-24 2xl:px-36">
-            <div className="overflow-hidden rounded-3xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] mt-2">
+          <div className="mx-auto w-full max-w-[1440px] px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-24">
+            <div className="overflow-hidden rounded-2xl lg:rounded-3xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] mt-2">
               <div className="flex">
-                {/* Left: Subcategory list (uses current category's sub.titile) */}
-                <div className="w-[280px] bg-gray-50 p-6 border-r border-gray-200">
+                {/* Left: Subcategory list */}
+                <div className="w-[240px] lg:w-[280px] bg-gray-50 p-4 lg:p-6 border-r border-gray-200">
                   <div className="space-y-1">
-                    {selectedCategory?.subcategories?.map((sub) => {
+                    {selectedCategory?.subcategories?.slice(1, 16).map((sub) => {
                       const isSelected = selectedSubcategory?.title === sub.title;
                       return (
                         <button
                           key={sub.title}
                           onMouseEnter={() => setSelectedSubcategory(sub)}
                           onClick={() => setSelectedSubcategory(sub)}
-                          className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-left transition-all ${isSelected
+                          className={`flex items-center gap-2 lg:gap-3 w-full px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg text-left transition-all touch-manipulation ${isSelected
                               ? "bg-white text-gray-900 shadow-sm"
-                              : "text-gray-700 hover:bg-white/50"
+                              : "text-gray-700 hover:bg-white/50 active:bg-white/70"
                             }`}
                           aria-current={isSelected ? "true" : undefined}
                           tabIndex={0}
                         >
                           <span className={isSelected ? "text-[#3a599c]" : "text-gray-500"}>
-                            <CheckCircle2 className="h-4 w-4" />
+                            <CheckCircle2 className="h-3 w-3 lg:h-4 lg:w-4" />
                           </span>
-                          {/* <span className="font-medium text-[15px]">{sub.title}</span> */}
+                          <span className="font-medium text-sm lg:text-[15px]">{sub.title}</span>
                         </button>
                       );
                     })}
+                    {selectedCategory?.subcategories?.length > 16 && (
+                      <div className="text-center mt-2">
+                        <span className="text-xs text-gray-400">...and more</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Middle: Services for selected subcategory */}
-                <div className="flex-1 p-8 max-h-[500px] overflow-y-auto">
+                <div className="flex-1 p-4 lg:p-8 max-h-[400px] lg:max-h-[500px] overflow-y-auto">
                   {selectedSubcategory && (
                     <>
-                      <div className="mb-6 pb-4 border-b border-gray-200">
+                      <div className="mb-4 lg:mb-6 pb-3 lg:pb-4 border-b border-gray-200">
                         <div className="flex items-center gap-2">
-                          <span className="text-[#3a599c]"><CheckCircle2 className="h-4 w-4" /></span>
-                          <h2 className="text-lg font-semibold text-gray-900">{selectedSubcategory.title}</h2>
+                          <span className="text-[#3a599c]"><CheckCircle2 className="h-3 w-3 lg:h-4 lg:w-4" /></span>
+                          <h2 className="text-base lg:text-lg font-semibold text-gray-900">{selectedSubcategory.title}</h2>
                         </div>
                       </div>
-                      <ul className="grid grid-cols-2 gap-x-12 gap-y-3">
+                      <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 lg:gap-x-12 gap-y-2 lg:gap-y-3">
                         {selectedSubcategory.items?.length > 0 ? (
                           selectedSubcategory.items.map((item) => (
                             <li key={item}>
                               <a
                                 href="#"
-                                className="flex items-start gap-2 text-[14px] text-gray-600 hover:text-[#3a599c] transition-colors group"
+                                className="flex items-start gap-2 text-xs lg:text-[14px] text-gray-600 hover:text-[#3a599c] transition-colors group touch-manipulation"
                               >
-                                <CheckCircle2 className="h-4 w-4 text-[#3a599c] flex-shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
+                                <CheckCircle2 className="h-3 w-3 lg:h-4 lg:w-4 text-[#3a599c] flex-shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
                                 <span>{item}</span>
                               </a>
                             </li>
@@ -669,22 +733,21 @@ const Header = ({ params }) => {
                       </ul>
                     </>
                   )}
-                 
                 </div>
-                 {/* Right: Promotional section */}
-                 <div className="w-[320px] bg-gray-50 p-6 border-l border-gray-200">
+                {/* Right: Promotional section */}
+                <div className="hidden lg:block w-[280px] xl:w-[320px] bg-gray-50 p-4 lg:p-6 pt-32 lg:pt-40 border-l border-gray-200">
                   <div className="sticky top-6">
-                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                    <div className="bg-white rounded-xl lg:rounded-2xl overflow-hidden shadow-sm">
                       <Image
                         src={require('../../../../public/images/web-developer.jpg')}
                         alt="Premium services"
                         width={320}
                         height={192}
-                        className="w-full h-[192px] object-cover"
+                        className="w-full h-[160px] lg:h-[192px] object-cover"
                       />
                     </div>
-                    <div className="mt-4">
-                      <p className="text-[15px] font-semibold text-gray-900 mb-3">
+                    <div className="mt-3 lg:mt-4">
+                      <p className="text-sm lg:text-[15px] font-semibold text-gray-900 mb-2 lg:mb-3">
                         Premium services curated for your needs
                       </p>
                       <button
@@ -692,11 +755,11 @@ const Header = ({ params }) => {
                           router.push('/Category');
                           setShowDropdown(false);
                         }}
-                        className="flex items-center gap-2 text-[#3a599c] font-semibold text-[14px] hover:gap-3 transition-all group"
+                        className="flex items-center gap-2 text-[#3a599c] font-semibold text-xs lg:text-[14px] hover:gap-3 transition-all group touch-manipulation"
                       >
                         <span>View All Categories</span>
                         <svg
-                          className="h-4 w-4 group-hover:translate-x-1 transition-transform"
+                          className="h-3 w-3 lg:h-4 lg:w-4 group-hover:translate-x-1 transition-transform"
                           viewBox="0 0 16 16"
                           fill="none"
                           xmlns="http://www.w3.org/2000/svg"
@@ -719,167 +782,266 @@ const Header = ({ params }) => {
         </div>
       )}
 
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Menu */}
       <div
-        className={`fixed inset-0 z-40 overflow-y-auto transition-all duration-300 ease-in-out transform ${isMobileMenuOpen
-          ? "translate-x-0 opacity-100"
-          : "translate-x-full opacity-0"
-          } bg-white`}
+        className={`fixed inset-y-0 right-0 z-40 w-full max-w-sm bg-white shadow-2xl transition-all duration-300 ease-in-out transform ${isMobileMenuOpen
+          ? "translate-x-0"
+          : "translate-x-full"
+          }`}
         style={{
-          top: "80px", // Height of the header (adjusted for mobile)
-          height: "calc(100vh - 80px)",
-          display: isMobileMenuOpen ? "block" : "none",
+          top: "0",
+          height: "100vh",
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation menu"
       >
-        <div className="px-4 sm:px-6 py-6 space-y-4">
-          {/* Mobile Categories - Only show when NOT authenticated */}
-          {!isAuthenticated && (
-            <div className="border-b border-gray-200 pb-4">
-              <h3 className="font-bold text-lg mb-4 text-gray-900">Categories</h3>
-              {!loading &&
-                categories.map((category) => (
-                  <div key={category.id} className="mb-2">
-                    <button
-                      onClick={() => toggleMobileCategory(category.id)}
-                      className="w-full flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div>{category.icon}</div>
-                        <span className="font-medium">{category.name}</span>
-                      </div>
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-200 ${mobileCategoryOpen === category.id ? "rotate-180" : ""
-                          }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
+        {/* Mobile Menu Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors text-gray-500"
+            aria-label="Close menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-4 py-6 space-y-6">
+            {/* Mobile Categories - Only show when NOT authenticated */}
+            {!isAuthenticated && (
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg text-gray-900">Categories</h3>
+                {!loading &&
+                  categories.map((category) => (
+                    <div key={category.id} className="space-y-2">
+                      <button
+                        onClick={() => toggleMobileCategory(category.id)}
+                        className="w-full flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-700 transition-colors touch-manipulation"
+                        aria-expanded={mobileCategoryOpen === category.id}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
+                        <div className="flex items-center gap-3">
+                          <div className="text-gray-500">{category.icon}</div>
+                          <span className="font-medium text-left">{category.name}</span>
+                        </div>
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-200 text-gray-400 ${mobileCategoryOpen === category.id ? "rotate-180" : ""
+                            }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
 
-                    {mobileCategoryOpen === category.id && (
-                      <div className="pl-12 mt-2 space-y-2">
-                        {category.subcategories.map((sub) => (
-                          <div key={sub.title} className="mb-3">
-                            <h4 className="font-medium mb-2 text-gray-900">{sub.title}</h4>
-                            <ul className="space-y-1 pl-2">
-                              {sub.items.map((item) => (
-                                <li key={item}>
-                                  <a
-                                    href="#"
-                                    className="block py-2 px-2 text-sm text-gray-700 hover:text-[#3a599c] hover:bg-gray-50 rounded transition-colors"
-                                  >
-                                    {item}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          )}
-
-          {/* Mobile Navigation Items - Only show when NOT authenticated */}
-          {!isAuthenticated && (
-            <div className="space-y-2">
-              {navigationItems.map((item) => (
-                <a
-                  key={item.name}
-                  href="#"
-                  className="block px-4 py-3 rounded-lg font-medium hover:bg-gray-100 text-gray-700 transition-colors"
-                >
-                  {item.name}
-                </a>
-              ))}
-            </div>
-          )}
-
-          {/* Mobile Buttons - Only show when NOT authenticated */}
-          {!isAuthenticated && (
-            <div className="pt-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  router.push("/select-user-type");
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full px-6 py-4 rounded-lg font-bold bg-[#3a599c] text-white hover:bg-[#2f4a7f] transition-colors"
-              >
-                Become A Service Provider
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Action Buttons - Only show if authenticated */}
-          {shouldShowUserDropdown && (
-            <div className="space-y-3 pt-4 border-t border-gray-200">
-              {/* Message Button */}
-              <button
-                onClick={() => {
-                  handleMessageClick();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span className="font-medium">Messages</span>
-              </button>
-
-              {/* Mobile Notification Button */}
-              <div className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="font-medium">Notifications</span>
-                <div className="ml-auto">
-                  <UserNotificationDropdown userType={user?.user_type?.toLowerCase()} />
-                </div>
+                      {mobileCategoryOpen === category.id && (
+                        <div className="pl-4 space-y-3">
+                          {category.subcategories.map((sub) => (
+                            <div key={sub.title} className="space-y-2">
+                              <h4 className="font-medium text-gray-900 px-2">{sub.title}</h4>
+                              <ul className="space-y-1">
+                                {sub.items.slice(0, 5).map((item) => (
+                                  <li key={item}>
+                                    <a
+                                      href="#"
+                                      className="block py-2 px-3 text-sm text-gray-600 hover:text-[#3a599c] hover:bg-gray-50 rounded-lg transition-colors touch-manipulation"
+                                    >
+                                      {item}
+                                    </a>
+                                  </li>
+                                ))}
+                                {sub.items.length > 5 && (
+                                  <li>
+                                    <span className="block py-2 px-3 text-xs text-gray-400">
+                                      +{sub.items.length - 5} more services
+                                    </span>
+                                  </li>
+                                )}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
+            )}
 
-              {/* Online/Offline Toggle - Only for Freelancers */}
-              {isFreelancer && (
+            {/* Mobile Navigation Items - Only show when NOT authenticated */}
+            {!isAuthenticated && (
+              <div className="space-y-2">
+                <h3 className="font-bold text-lg text-gray-900 mb-3">Quick Links</h3>
+                {navigationItems.map((item) => (
+                  <a
+                    key={item.name}
+                    href="#"
+                    className="block px-4 py-3 rounded-lg font-medium hover:bg-gray-100 active:bg-gray-200 text-gray-700 transition-colors touch-manipulation"
+                  >
+                    {item.name}
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {/* Mobile Buttons - Only show when NOT authenticated */}
+            {!isAuthenticated && (
+              <div className="space-y-3">
                 <button
                   onClick={() => {
-                    handleOnlineToggle();
+                    router.push("/select-user-type");
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors ${isOnline
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-700"
-                    }`}
+                  className="w-full px-6 py-4 rounded-lg font-bold bg-[#3a599c] text-white hover:bg-[#2f4a7f] active:bg-[#1e3a5f] transition-colors touch-manipulation"
                 >
-                  {isOnline ? (
-                    <Wifi className="w-5 h-5" />
-                  ) : (
-                    <WifiOff className="w-5 h-5" />
-                  )}
-                  <span className="font-medium">{isOnline ? "Online" : "Offline"}</span>
+                  Become A Service Provider
                 </button>
-              )}
-            </div>
-          )}
+                <button
+                  onClick={() => {
+                    router.push("/Login");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full px-6 py-3 rounded-lg font-medium border border-[#3a599c] text-[#3a599c] hover:bg-[#3a599c0a] active:bg-[#3a599c15] transition-colors touch-manipulation"
+                >
+                  Login
+                </button>
+              </div>
+            )}
 
-          {shouldShowLoginButton && (
-            <div className="pt-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  router.push("/Login");
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
-              >
-                <User className="w-5 h-5" />
-                <span className="font-medium">Login</span>
-              </button>
-            </div>
-          )}
+            {/* Mobile Action Buttons - Only show if authenticated */}
+            {shouldShowUserDropdown && (
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg text-gray-900">Account</h3>
+                
+                {/* User Info */}
+                <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center border-gray-300 bg-gray-100">
+                    <User className="w-5 h-5 text-gray-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">
+                      {user?.name || user?.username || user?.slug || `User${user?.id}` || "User"}
+                    </p>
+                    <p className="text-sm text-gray-500 capitalize">{user?.user_type}</p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  {/* Dashboard Button */}
+                  <button
+                    onClick={() => {
+                      router.push(getDashboardPath());
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-700 transition-colors touch-manipulation"
+                  >
+                    <Layers className="w-5 h-5 text-gray-500" />
+                    <span className="font-medium">Dashboard</span>
+                  </button>
+
+                  {/* Message Button */}
+                  <button
+                    onClick={() => {
+                      handleMessageClick();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-700 transition-colors touch-manipulation"
+                  >
+                    <MessageCircle className="w-5 h-5 text-gray-500" />
+                    <span className="font-medium">Messages</span>
+                  </button>
+
+                  {/* Notification Button */}
+                  <div className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-700 transition-colors touch-manipulation">
+                    <Bell className="w-5 h-5 text-gray-500" />
+                    <span className="font-medium">Notifications</span>
+                    <div className="ml-auto">
+                      <UserNotificationDropdown userType={user?.user_type?.toLowerCase()} />
+                    </div>
+                  </div>
+
+                  {/* Profile Button - Only for non-customers */}
+                  {user?.user_type !== "Customer" && user?.user_type !== "customer" && (
+                    <button
+                      onClick={() => {
+                        const profileSlug = slug || user?.slug;
+                        router.push(`/profileView/${profileSlug}`);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-700 transition-colors touch-manipulation"
+                    >
+                      <Settings className="w-5 h-5 text-gray-500" />
+                      <span className="font-medium">My Profile</span>
+                    </button>
+                  )}
+
+                  {/* Online/Offline Toggle - Only for Freelancers */}
+                  {isFreelancer && (
+                    <button
+                      onClick={() => {
+                        handleOnlineToggle();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors touch-manipulation ${isOnline
+                          ? "bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
+                        }`}
+                    >
+                      {isOnline ? (
+                        <Wifi className="w-5 h-5" />
+                      ) : (
+                        <WifiOff className="w-5 h-5" />
+                      )}
+                      <span className="font-medium">{isOnline ? "Online" : "Offline"}</span>
+                    </button>
+                  )}
+
+                  {/* Mobile Verification Button */}
+                  {!isMobileVerified && (
+                    <button
+                      onClick={() => {
+                        handleVerifyPhone();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 active:bg-orange-300 transition-colors touch-manipulation"
+                    >
+                      <Shield className="w-5 h-5" />
+                      <span className="font-medium">Verify Phone</span>
+                    </button>
+                  )}
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogoutClick}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors touch-manipulation"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-medium">Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
 

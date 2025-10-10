@@ -8,11 +8,12 @@ import {
   FaInstagram,
   FaYoutube,
 } from "react-icons/fa";
-import { FiArrowRight } from "react-icons/fi";
+import { FiArrowRight, FiChevronDown } from "react-icons/fi";
 
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({});
 
   const companyLinks = [
     { label: "About Us", href: "#about" },
@@ -67,19 +68,37 @@ const Footer = () => {
     }, 1000);
   };
 
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   return (
     <div className="w-full bg-white">
       <footer className="relative rounded-[16px] sm:rounded-[24px] lg:rounded-[32px] overflow-hidden min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] mx-auto max-w-[1850px] my-2 sm:my-4 lg:my-8 pb-0 sm:pb-0 lg:pb-0">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
+          {/* Mobile: Background image with proper fit */}
           <div
-            className="absolute inset-0 bg-cover bg-center"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat md:hidden mx-1 rounded-2xl"
+            style={{
+              backgroundImage: "url('/images/FOOTERBG.png')"
+            }}
+          ></div>
+          {/* Mobile: subtle overlay for text readability */}
+          <div className="absolute inset-0 md:hidden mx-1 rounded-2xl bg-black/25"></div>
+          {/* Tablet and Desktop: Background image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center hidden md:block"
             style={{
               backgroundImage: "url('/images/FOOTERBG.png')",
               filter: 'grayscale(0.8)'
             }}
           />
-          <div className="absolute inset-0 bg-black/80"></div>
+          {/* Overlay for tablet and desktop only */}
+          <div className="absolute inset-0 bg-black/50 lg:bg-black/70 hidden md:block"></div>
         </div>
 
         {/* Main Content */}
@@ -92,62 +111,92 @@ const Footer = () => {
                 <img
                   src="/images/hyrelancerWhite.png"
                   alt="Hyrelancer Logo"
-                  className="h-12 w-20 xs:h-16 xs:w-28 sm:h-20 sm:w-32 md:h-24 md:w-36 lg:h-30 lg:w-40"
+                  className="h-12 w-20 xs:h-26 xs:w-48 sm:h-40 sm:w-32 md:h-24 md:w-36 lg:h-30 lg:w-40"
                 />
               </div>
 
               {/* Navigation Grid - Mobile First Approach */}
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12 mb-4 sm:mb-6 lg:mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12 mb-4 sm:mb-6 lg:mb-10">
                 {/* Our Company */}
                 <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 items-center sm:items-start">
-                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left">
+                  <button 
+                    onClick={() => toggleSection('company')}
+                    className="flex items-center justify-between w-full md:w-auto text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left md:justify-start"
+                  >
                     Our Company
-                  </h3>
-                  {companyLinks.map((link, index) => (
-                    <a
-                      key={index}
-                      href={link.href}
-                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
+                    <FiChevronDown 
+                      className={`ml-2 transition-transform duration-200 md:hidden ${
+                        expandedSections.company ? 'rotate-180' : ''
+                      }`} 
+                    />
+                  </button>
+                  <div className={`w-full md:block ${expandedSections.company ? 'block' : 'hidden md:block'}`}>
+                    {companyLinks.map((link, index) => (
+                      <a
+                        key={index}
+                        href={link.href}
+                        className="block text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left py-1"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
                 </nav>
 
                 {/* Locations */}
                 <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 items-center sm:items-start">
-                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left">
+                  <button 
+                    onClick={() => toggleSection('locations')}
+                    className="flex items-center justify-between w-full md:w-auto text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left md:justify-start"
+                  >
                     Locations
-                  </h3>
-                  {locations.map((location, index) => (
-                    <a
-                      key={index}
-                      href={location.href}
-                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left"
-                    >
-                      {location.name}
-                    </a>
-                  ))}
+                    <FiChevronDown 
+                      className={`ml-2 transition-transform duration-200 md:hidden ${
+                        expandedSections.locations ? 'rotate-180' : ''
+                      }`} 
+                    />
+                  </button>
+                  <div className={`w-full md:block ${expandedSections.locations ? 'block' : 'hidden md:block'}`}>
+                    {locations.map((location, index) => (
+                      <a
+                        key={index}
+                        href={location.href}
+                        className="block text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left py-1"
+                      >
+                        {location.name}
+                      </a>
+                    ))}
+                  </div>
                 </nav>
 
                 {/* Featured Services */}
-                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 xs:col-span-2 sm:col-span-1 md:col-span-1 items-center sm:items-start">
-                  <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left">
+                <nav className="flex flex-col gap-1 sm:gap-2 lg:gap-3 items-center sm:items-start">
+                  <button 
+                    onClick={() => toggleSection('services')}
+                    className="flex items-center justify-between w-full md:w-auto text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 mb-1 sm:mb-2 text-center sm:text-left md:justify-start"
+                  >
                     Featured Services
-                  </h3>
-                  {featuredServices.map((service, index) => (
-                    <a
-                      key={index}
-                      href={service.href}
-                      className="text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left"
-                    >
-                      {service.name}
-                    </a>
-                  ))}
+                    <FiChevronDown 
+                      className={`ml-2 transition-transform duration-200 md:hidden ${
+                        expandedSections.services ? 'rotate-180' : ''
+                      }`} 
+                    />
+                  </button>
+                  <div className={`w-full md:block ${expandedSections.services ? 'block' : 'hidden md:block'}`}>
+                    {featuredServices.map((service, index) => (
+                      <a
+                        key={index}
+                        href={service.href}
+                        className="block text-white hover:text-gray-300 transition-colors text-xs sm:text-sm md:text-md leading-tight text-center sm:text-left py-1"
+                      >
+                        {service.name}
+                      </a>
+                    ))}
+                  </div>
                 </nav>
 
                 {/* Subscribe Section - Full width on mobile, then responsive */}
-                <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 lg:gap-7 w-full xs:col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1 items-center sm:items-start">
+                <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 lg:gap-7 w-full md:col-span-3 xl:col-span-1 items-center sm:items-start">
                   {/* Subscribe Input */}
                   <div className="flex flex-col gap-1 sm:gap-2 lg:gap-3 w-full">
                     <label className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-semibold mb-0 text-center sm:text-left">
@@ -226,8 +275,8 @@ const Footer = () => {
           <div className="flex justify-center lg:justify-start px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 relative lg:absolute lg:top-110">
             <div className="w-full max-w-4xl lg:mx-80 mb-4 sm:mb-8 lg:mb-20">
               {/* Divider on top */}
-              <div className="w-full h-px bg-gray-400 opacity-40 mb-4 sm:mb-8 lg:mb-15"></div>
-              <div className="bg-[#3636368F]/90 rounded-full px-2 sm:px-3 md:px-4 lg:px-12 xl:px-20 py-2 sm:py-3 md:py-4 lg:py-6 flex flex-col sm:flex-row items-center justify-between w-full shadow-lg gap-1 sm:gap-2 md:gap-3 lg:gap-0">
+          <div className="w-full h-px bg-white/40 mb-3 sm:mb-6 lg:mb-15"></div>
+          <div className="backdrop-blur-sm bg-[#3636368F]/50 sm:bg-[#3636368F]/70 lg:bg-[#3636368F]/90 rounded-2xl sm:rounded-full px-3 sm:px-4 md:px-6 lg:px-12 xl:px-20 py-3 sm:py-3 md:py-4 lg:py-6 flex flex-col sm:flex-row items-center justify-between w-full shadow-lg gap-2 sm:gap-2 md:gap-3 lg:gap-0">
                 {/* Copyright and Powered By */}
                 <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 md:gap-3">
                   <span className="text-white text-[8px] sm:text-[10px] md:text-xs lg:text-sm whitespace-nowrap text-center sm:text-left">
@@ -261,8 +310,8 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Large Screen Layout - Curved Design */}
-        <div className="absolute bottom-0 right-0 bg-white rounded-tl-[30px] w-96 xl:w-[440px] h-40 items-center justify-center px-8 py-6 z-20 hidden lg:flex flex-col">
+        {/* Large Screen Layout - Curved Design - Only for 1300px+ screens */}
+        <div className="absolute bottom-0 right-0 bg-white rounded-tl-[30px] w-96 xl:w-[440px] h-40 items-center justify-center px-8 py-6 z-20 hidden xl:flex flex-col">
           {/* SVG curve - Left side */}
           <div className="absolute -left-4 bottom-0">
             <svg width="16" height="16" className="w-4 h-4" viewBox="0 0 20 20" fill="white" xmlns="http://www.w3.org/2000/svg">
