@@ -166,7 +166,7 @@ const Sidebar = ({ navItems, isCollapsed = false }) => {
       {/* Mobile menu button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed top-20 left-4 z-50 lg:hidden p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md text-gray-700 dark:text-gray-200"
+        className="fixed top-20 left-4 z-40 lg:hidden p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md text-gray-700 dark:text-gray-200"
         aria-label="Toggle menu"
       >
         ☰
@@ -175,7 +175,7 @@ const Sidebar = ({ navItems, isCollapsed = false }) => {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -185,7 +185,7 @@ const Sidebar = ({ navItems, isCollapsed = false }) => {
         ref={sidebarRef}
         className={`fixed lg:sticky lg:top-20 lg:h-screen top-0 left-0 h-full
           bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800
-          transition-all z-50 lg:w-72 
+          transition-all z-40 lg:w-72 
           ${isMobileOpen ? "w-72" : "-translate-x-full lg:translate-x-0"}`}
       >
         <div className="relative flex flex-col h-full p-4">

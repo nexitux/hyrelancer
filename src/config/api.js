@@ -145,4 +145,19 @@ export const termsAPI = {
   }
 };
 
+// User Notification API functions (for freelancers and customers)
+export const userNotificationAPI = {
+  // Get user notifications
+  getNotifications: async () => {
+    const response = await api.get('/notifications');
+    return response.data;
+  },
+
+  // Mark notification as read
+  markAsRead: async (notificationId) => {
+    const response = await api.post(`/notifications/read/${notificationId}`);
+    return response.data;
+  }
+};
+
 export default api;

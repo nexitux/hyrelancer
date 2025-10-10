@@ -347,20 +347,29 @@ export default function IncompleteRegistrationsPage() {
                             {/* Actions */}
                             <div className="lg:col-span-1">
                               <div className="flex items-center gap-2 justify-end">
-                                <Link
-                                  href={`/control/freelancelist/freelancerView/${Base64.encode(freelancer.id.toString())}`}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                  title="View Details"
-                                >
-                                  <MdVisibility className="w-5 h-5" />
-                                </Link>
-                                <Link
-                                  href={`/control/freelancelist/freelancerEdit/${Base64.encode(freelancer.id.toString())}`}
-                                  className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                                  title="Edit Registration"
-                                >
-                                  <MdEdit className="w-5 h-5" />
-                                </Link>
+                                {freelancer.user_type && (
+                                  <>
+                                    <Link
+                                      href={`/control/freelancelist/freelancerView/${Base64.encode(freelancer.id.toString())}`}
+                                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="View Details"
+                                    >
+                                      <MdVisibility className="w-5 h-5" />
+                                    </Link>
+                                    <Link
+                                      href={`/control/freelancelist/freelancerEdit/${Base64.encode(freelancer.id.toString())}`}
+                                      className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                      title="Edit Registration"
+                                    >
+                                      <MdEdit className="w-5 h-5" />
+                                    </Link>
+                                  </>
+                                )}
+                                {!freelancer.user_type && (
+                                  <div className="text-sm text-gray-500 italic">
+                                    No user type assigned
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>

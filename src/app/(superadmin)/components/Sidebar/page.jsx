@@ -15,7 +15,9 @@ import {
   MdStar,
   MdAssignment,
   MdSupport,
-  MdEmojiEvents
+  MdEmojiEvents,
+  MdPersonAdd,
+  MdDescription
 } from 'react-icons/md';
 import Image from "next/image";
 import { usePathname, useRouter } from 'next/navigation';
@@ -117,7 +119,6 @@ export default function Sidebar() {
       subLinks: [
         { id: 'freelancers-lists', label: 'Freelancer List', href: '/control/freelancelist' },
         { id: 'freelancers-add', label: 'Add Freelancer', href: '/control/freelancelist/addFreelancer' },
-        { id: 'freelancers-reg-incomplete', label: 'Incomplete Registration', href: '/control/freelancelist/incomplete-registration' },
         { id: 'freelancers-approval', label: 'Pending Approval', href: '/control/freelancelist/approval' },
         { id: 'freelancers-suggestions', label: 'Freelancer Suggestions', href: '/control/freelancelist/SuggectionFreelancer' },
 
@@ -134,10 +135,26 @@ export default function Sidebar() {
       ]
     },
     { 
+      id: 'incomplete-registration', 
+      label: 'Incompleted Users', 
+      icon: MdPersonAdd, 
+      href: '/control/freelancelist/incomplete-registration'
+    },
+    { 
       id: 'testimonials', 
       label: 'Testimonials', 
       icon: MdStar, 
       href: '/control/testimonials'
+    },
+    { 
+      id: 'cms-pages', 
+      label: 'CMS Pages', 
+      icon: MdDescription, 
+      href: '/cms-pages',
+      subLinks: [
+        { id: 'privacy-policy', label: 'Privacy Policy', href: '/control/cms-pages/privacy-policy' },
+        { id: 'terms-conditions', label: 'Terms and Conditions', href: '/control/cms-pages/terms-conditions' },
+      ]
     },
     { 
       id: 'AdminSupport', 
