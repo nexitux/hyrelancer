@@ -9,7 +9,7 @@ import {
   PlusOutlined, CloseOutlined, GlobalOutlined, TagOutlined,
   UploadOutlined, EditOutlined, CheckOutlined, IdcardOutlined,
   ClockCircleOutlined, DollarOutlined, BankOutlined, EnvironmentOutlined,
-  DeleteOutlined, InfoCircleOutlined
+  DeleteOutlined, InfoCircleOutlined, CheckCircleOutlined
 } from "@ant-design/icons";
 import api from "../../../../config/api";
 import Loader from "../../../../components/Loader/page";
@@ -39,6 +39,7 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
   const [isIdProofDeleted, setIsIdProofDeleted] = useState(false);
   const [isRemote, setIsRemote] = useState(false);
   const [isIdProofApproved, setIsIdProofApproved] = useState(false);
+  const [approvalData, setApprovalData] = useState(null);
 
   // State for service table - grouped by serviceType
   const [serviceTableData, setServiceTableData] = useState([]);
@@ -153,6 +154,12 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
       console.log('Full API response:', response.data);
       if (response.data) {
         setServiceData(response.data);
+        
+        // Store approval data if available
+        if (response.data.u_approval) {
+          setApprovalData(response.data.u_approval);
+        }
+        
         // Assuming backend provides 'fp_is_remote' flag (1 for true, 0 for false)
         const isRemoteWorker = !!response.data.u_profile?.fp_is_remote;
         setIsRemote(isRemoteWorker);
@@ -685,6 +692,52 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
     return Math.round(((filledFields.length + serviceProgress + areaProgress) / (fields.length + 4)) * 100);
   };
 
+  const renderVerificationBadge = () => {
+    // Only show badge in freelancer mode (not registration)
+    if (isRegistration || !approvalData) return null;
+
+    const isVerified = approvalData.fa_tab_2_app === "1";
+    
+    return (
+      <Tag
+        icon={isVerified ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+        color={isVerified ? "success" : "warning"}
+        className="ml-2"
+      >
+        {isVerified ? "Verified" : "Pending"}
+      </Tag>
+    );
+  };
+
+  const renderFieldVerificationBadge = (fieldKey, isActive = null) => {
+    // Only show field badges if overall tab is verified and not in registration mode
+    if (isRegistration || !approvalData || approvalData.fa_tab_2_app !== "1") return null;
+
+    let isFieldVerified = false;
+    
+    // Handle different field types
+    if (isActive !== null) {
+      // For service/city active status
+      isFieldVerified = isActive === 1;
+    } else if (fieldKey) {
+      // For approval data fields
+      isFieldVerified = approvalData[fieldKey] === "1";
+    }
+    
+    return (
+      <div
+        className={`w-5 h-5 rounded-full flex items-center justify-center ml-2 ${
+          isFieldVerified 
+            ? 'bg-lime-500 text-white' 
+            : 'bg-yellow-300 text-white'
+        }`}
+        title={isFieldVerified ? "Verified" : "Pending"}
+      >
+        {isFieldVerified ? <CheckCircleOutlined className="text-xl" /> : <ClockCircleOutlined className="text-xs" />}
+      </div>
+    );
+  };
+
   const onFinish = async (values) => {
     setLoading(true);
 
@@ -999,9 +1052,12 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
           <div className="bg-white p-6 border-b border-gray-100">
             <div className="flex justify-between items-start sm:items-center">
               <div>
-                <Title level={3} className="!mb-1 !text-gray-900">
-                  {isEditing ? "Service Details" : "Your Service Information"}
-                </Title>
+                <div className="flex items-center">
+                  <Title level={3} className="!mb-1 !text-gray-900 mr-2">
+                    {isEditing ? "Service Details" : "Your Service Information"}
+                  </Title>
+                  {renderVerificationBadge()}
+                </div>
                 <Text type="secondary">
                   {isEditing ? "Provide details about your services and availability" : "View and manage your service details"}
                 </Text>
@@ -1669,12 +1725,15 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                       return Object.values(serviceGroups).map(group => (
                         <Card key={group.key} title={group.serviceType}>
                           <div className="mb-4">
-                            <Text strong>Services:</Text>
+                            <div className="flex items-center">
+                              <Text strong>Services:</Text>
                             <Space wrap className="ml-2">
                               {group.service.map((serv, index) => (
                                 <Tag key={index} color="green">{serv}</Tag>
                               ))}
                             </Space>
+                            {renderFieldVerificationBadge(null, serviceData.se_service_list.find(s => s.frs_sc_id == group.key)?.frs_is_active)}
+                            </div>
                           </div>
                           {canDelete && (
                             <div>
@@ -1748,12 +1807,15 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                         return Object.values(stateGroups).map(group => (
                           <Card key={group.key} title={group.state}>
                             <div className="mb-4">
-                              <Text strong>Cities:</Text>
+                              <div className="flex items-center">
+                                <Text strong>Cities:</Text>
                               <Space wrap className="ml-2">
                                 {group.cities.map((city, index) => (
                                   <Tag key={index} color="green">{city}</Tag>
                                 ))}
                               </Space>
+                              {renderFieldVerificationBadge(null, serviceData.se_city_list.find(c => c.frc_s_id == group.key)?.frc_is_active)}
+                              </div>
                             </div>
                             {canDelete && (
                               <div>
@@ -1805,26 +1867,63 @@ const ServiceTab = ({ onNext, onBack, canDelete = false, isRegistration = false,
                     Work Details
                   </Title>
                   <Descriptions bordered column={1} className="mb-8">
-                    <Descriptions.Item label="Completion Time">
+                    <Descriptions.Item 
+                      label={
+                        <div className="flex items-center">
+                          <span>Completion Time</span>
+                        </div>
+                      }
+                    >
+                      <div className="flex items-center">
                       {serviceData?.u_profile?.fp_completing_time || "Not specified"}
+                      {renderFieldVerificationBadge('fa_completing_time_app')}
+                      </div>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Payment Method">
+                    <Descriptions.Item 
+                      label={
+                        <div className="flex items-center">
+                          <span>Payment Method</span>
+                        </div>
+                      }
+                    >
+                      <div className="flex items-center">
                       {serviceData?.u_profile?.fp_payment_methode || "Not specified"}
+                      {renderFieldVerificationBadge('fa_payment_methode_app')}
+                      </div>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Pricing Type">
+                    <Descriptions.Item 
+                      label={
+                        <div className="flex items-center">
+                          <span>Pricing Type</span>
+                        </div>
+                      }
+                    >
+                      <div className="flex items-center">
                       {serviceData?.u_profile?.fp_amount_for || "Not specified"}
+                      {renderFieldVerificationBadge('fa_amount_for_app')}
+                      </div>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Standard Rate">
+                    <Descriptions.Item 
+                      label={
+                        <div className="flex items-center">
+                          <span>Standard Rate</span>
+                          
+                        </div>
+                      }
+                    >
+                      <div className="flex items-center">
                       {serviceData?.u_profile?.fp_amt_hour
                         ? `${serviceData.u_profile.fp_amt_hour} INR`
                         : "Not specified"
                       }
+                      {renderFieldVerificationBadge('fa_amt_hour_app')}
+                      </div>
                     </Descriptions.Item>
                   </Descriptions>
 
-                  <Title level={4} className="!mb-4">
+                  <Title level={4} className="!mb-4 flex items-center mt-5">
                     <BankOutlined className="mr-2" />
-                    ID Verification
+                    ID Verification{renderFieldVerificationBadge(null, serviceData?.fe_idproof_data?.fi_is_active)}
                   </Title>
                   <Descriptions bordered column={1}>
                     <Descriptions.Item label="ID Type">
