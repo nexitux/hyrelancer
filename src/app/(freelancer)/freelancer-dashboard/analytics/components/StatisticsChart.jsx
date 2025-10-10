@@ -50,12 +50,12 @@ const ChartHeader = ({ title, subtitle, selectedPeriod, onPeriodChange }) => {
 };
 
 const chartConfig = {
-  AppliedJobs: {
+  job: {
     label: "Applied Jobs",
     color: "#3b82f6",
   },
-  AssignedJobs: {
-    label: "Assigned Jobs",
+  complete: {
+    label: "Completed Jobs",
     color: "#10b981",
   },
 };
@@ -72,39 +72,86 @@ export default function StatisticsChart() {
     const fetchDashboardData = async () => {
       try {
         const data = await freelancerDashboardService.getFreelancerDashboard();
-        const transformedData = freelancerDashboardService.transformFreelancerDashboardData(data);
         
-        // Create chart data with simple monthly job statistics
-        const appliedJobsValue = data?.sendReCount || 0;
-        const assignedJobsValue = data?.AssignJobCount || 0;
+        // Transform the API response format
+        const monthlyData = [];
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         
-        // Update state with API values
-        setAppliedJobs(appliedJobsValue);
-        setAssignedJobs(assignedJobsValue);
-        
-        const monthlyData = [
-          { AppliedJobs: 0, AssignedJobs: 0 },
-          { AppliedJobs: appliedJobsValue, AssignedJobs: assignedJobsValue }
-        ];
+        if (data?.data) {
+          // New format: data with month-based structure (1-12)
+          const sortedMonthKeys = Object.keys(data.data).sort((a, b) => parseInt(a) - parseInt(b));
+          
+          sortedMonthKeys.forEach((monthKey) => {
+            const monthData = data.data[monthKey];
+            const monthIndex = parseInt(monthKey) - 1; // Convert 1-12 to 0-11 for array index
+            monthlyData.push({
+              month: monthNames[monthIndex],
+              job: monthData.job || 0,
+              complete: monthData.complete || 0
+            });
+          });
+        } else if (data?.MoAssignJobCount !== undefined || data?.MocomJobCount !== undefined) {
+          // Old format: Monthly data with Mo* fields
+          const currentMonth = new Date().getMonth(); // 0-11
+          
+          monthNames.forEach((month, index) => {
+            if (index === currentMonth) {
+              // Current month gets the actual data
+              monthlyData.push({
+                month: month,
+                job: data.MoAssignJobCount || 0,
+                complete: data.MocomJobCount || 0
+              });
+            } else {
+              // Other months get zero
+              monthlyData.push({
+                month: month,
+                job: 0,
+                complete: 0
+              });
+            }
+          });
+        } else {
+          // Fallback: Use total counts distributed across months
+          const totalJobs = data?.AssignJobCount || 0;
+          const totalCompleted = data?.comJobCount || 0;
+          const currentMonth = new Date().getMonth();
+          
+          monthNames.forEach((month, index) => {
+            if (index === currentMonth) {
+              monthlyData.push({
+                month: month,
+                job: totalJobs,
+                complete: totalCompleted
+              });
+            } else {
+              monthlyData.push({
+                month: month,
+                job: 0,
+                complete: 0
+              });
+            }
+          });
+        }
         
         setChartData(monthlyData);
+        
+        // Calculate totals for current period
+        const totalJobs = monthlyData.reduce((sum, item) => sum + item.job, 0);
+        const totalCompleted = monthlyData.reduce((sum, item) => sum + item.complete, 0);
+        setAppliedJobs(totalJobs);
+        setAssignedJobs(totalCompleted);
+        
       } catch (error) {
         console.error('Error fetching freelancer dashboard data:', error);
         // Fallback to sample data
-        setChartData([
-          { month: "Jan", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Feb", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Mar", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Apr", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "May", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Jun", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Jul", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Aug", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Sep", AppliedJobs: 0, AssignedJobs: 2 },
-          { month: "Oct", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Nov", AppliedJobs: 0, AssignedJobs: 0 },
-          { month: "Dec", AppliedJobs: 0, AssignedJobs: 0 }
-        ]);
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const fallbackData = monthNames.map(month => ({
+          month: month,
+          job: 0,
+          complete: 0
+        }));
+        setChartData(fallbackData);
       } finally {
         setLoading(false);
       }
@@ -119,22 +166,8 @@ export default function StatisticsChart() {
       // Show all months
       return chartData;
     } else if (period === "Yearly") {
-      // Show Jan-Dec data for yearly view
-      const yearlyData = [
-        { month: "Jan", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Feb", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Mar", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Apr", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "May", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Jun", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Jul", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Aug", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Sep", AppliedJobs: appliedJobs, AssignedJobs: assignedJobs },
-        { month: "Oct", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Nov", AppliedJobs: 0, AssignedJobs: 0 },
-        { month: "Dec", AppliedJobs: 0, AssignedJobs: 0 }
-      ];
-      return yearlyData;
+      // Show yearly data using the same chartData (which already contains all 12 months)
+      return chartData;
     }
     return chartData;
   };
@@ -147,9 +180,9 @@ export default function StatisticsChart() {
   const currentData = getDataForPeriod(selectedPeriod);
   
   // Calculate trend for footer
-  const totalCurrent = currentData.reduce((sum, item) => sum + item.AppliedJobs + item.AssignedJobs, 0);
+  const totalCurrent = currentData.reduce((sum, item) => sum + item.job + item.complete, 0);
   const totalPrevious = selectedPeriod === "Monthly" ? 
-    chartData.slice(-6, -3).reduce((sum, item) => sum + item.AppliedJobs + item.AssignedJobs, 0) : 0;
+    chartData.slice(-6, -3).reduce((sum, item) => sum + item.job + item.complete, 0) : 0;
   const trendPercentage = totalPrevious > 0 ? ((totalCurrent - totalPrevious) / totalPrevious * 100).toFixed(1) : 0;
 
   if (loading) {
@@ -168,7 +201,7 @@ export default function StatisticsChart() {
     <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
       <ChartHeader
         title="Job Statistics"
-        subtitle="Applied and assigned jobs overview"
+        subtitle="Jobs and completed jobs overview"
         selectedPeriod={selectedPeriod}
         onPeriodChange={handlePeriodChange}
       />
@@ -186,27 +219,27 @@ export default function StatisticsChart() {
               }}
             >
               <defs>
-                <linearGradient id="fillAppliedJobs" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="fillJob" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor={chartConfig?.AppliedJobs?.color || "#3b82f6"}
+                    stopColor={chartConfig?.job?.color || "#3b82f6"}
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor={chartConfig?.AppliedJobs?.color || "#3b82f6"}
+                    stopColor={chartConfig?.job?.color || "#3b82f6"}
                     stopOpacity={0.1}
                   />
                 </linearGradient>
-                <linearGradient id="fillAssignedJobs" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="fillComplete" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor={chartConfig?.AssignedJobs?.color || "#10b981"}
+                    stopColor={chartConfig?.complete?.color || "#10b981"}
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor={chartConfig?.AssignedJobs?.color || "#10b981"}
+                    stopColor={chartConfig?.complete?.color || "#10b981"}
                     stopOpacity={0.1}
                   />
                 </linearGradient>
@@ -243,20 +276,20 @@ export default function StatisticsChart() {
 
 
               <Area
-                dataKey="AppliedJobs"
+                dataKey="job"
                 type="monotone"
-                fill="url(#fillAppliedJobs)"
+                fill="url(#fillJob)"
                 fillOpacity={0.4}
-                stroke={chartConfig?.AppliedJobs?.color || "#3b82f6"}
+                stroke={chartConfig?.job?.color || "#3b82f6"}
                 strokeWidth={2}
               />
 
               <Area
-                dataKey="AssignedJobs"
+                dataKey="complete"
                 type="monotone"
-                fill="url(#fillAssignedJobs)"
+                fill="url(#fillComplete)"
                 fillOpacity={0.4}
-                stroke={chartConfig?.AssignedJobs?.color || "#10b981"}
+                stroke={chartConfig?.complete?.color || "#10b981"}
                 strokeWidth={2}
               />
             </AreaChart>
@@ -279,11 +312,11 @@ export default function StatisticsChart() {
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-sm bg-blue-500" />
-            <span className="text-muted-foreground">Applied Jobs</span>
+            <span className="text-muted-foreground">Jobs</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-sm bg-green-500" />
-            <span className="text-muted-foreground">Assigned Jobs</span>
+            <span className="text-muted-foreground">Completed Jobs</span>
           </div>
         </div>
       </div>

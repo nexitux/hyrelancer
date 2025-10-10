@@ -195,6 +195,15 @@ export default function Sidebar() {
         { id: 'messages-add', label: 'Add Message', href: '/control/prefilled-messages/add-message' }
       ]
     },
+    { 
+      id: 'adminFollowMessages', 
+      label: 'Follow-ups', 
+      icon: MdMessage, 
+      href: '/control/adminview',
+      subLinks: [
+        { id: 'adminview-list', label: 'Follow Messages', href: '/control/adminview' }
+      ]
+    },
   ];
 
   const isActive = (href) => {

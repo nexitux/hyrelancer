@@ -53,6 +53,8 @@ const Header = ({ params }) => {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch();
